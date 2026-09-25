@@ -7,9 +7,13 @@
 # no pipeline/.
 #
 # The `full` scale it reads, s3://anyscale-public-materials/genomics/giab-trio-illumina-chr20/full/,
-# and the image are both published (2026-09-25; tools/stage-demo-data.sh builds the data). The
-# job itself has not been run, so nothing about its time or cost is measured, and this file
-# states neither.
+# and the image are both published (2026-09-25; tools/stage-demo-data.sh builds the data).
+#
+# Measured on prod, 2026-09-25, with this file as committed: 299 tasks in 44m07s of pipeline,
+# 25.1 CPU hours by Nextflow's count, and about 47 minutes from submission to persisted results.
+# Across the trio, SNP F1 was 0.9920-0.9922 and indel F1 0.9446-0.9503. The reads are
+# reference-selected, so precision reads somewhat high against a whole-genome run
+# (pipeline/PIPELINE.md, "Bounds on the numbers"). Cost has not been measured.
 #
 # The production counterpart to the notebook, and a cohort for the same reason the notebook
 # is one: three samples over 48 intervals is 144 HaplotypeCaller tasks with nothing
@@ -66,8 +70,8 @@ entrypoint: |
 # Inline, and the same shapes as configs/nextflow-genomics-on-ray/aws.yaml: the pipeline's
 # resource ceiling (pipeline/conf/base.config, conf/ray.config) is sized to these nodes, and a
 # request no node can satisfy pends forever on Ray rather than failing. max_nodes is higher
-# than the template's config because `full` has six times `quick`'s calling tasks; it is a
-# cost bound, not a measurement.
+# than the template's config because `full` has six times `quick`'s calling tasks. It is a cost
+# bound: the measured run asked for at most 6 cpu-workers and 2 gpu-workers at a time.
 compute_config:
   head_node:
     instance_type: m5.2xlarge
