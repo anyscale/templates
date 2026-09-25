@@ -27,11 +27,10 @@ import "../../structs/Structs.wdl"
 #     empty for upstream behaviour.
 #   * `String read_mode` replaces a hardcoded `--nano-raw`, defaulting to exactly
 #     that so an unset caller gets upstream's command line. Flye 2.9 added
-#     `--nano-hq` for Guppy 5+ / Q20 basecalls, and which one a read set deserves is
-#     a property of the reads and not of the pipeline, so it cannot be answered
-#     here, and smuggling it through `extra_args` would pass Flye two conflicting
-#     read-type flags. ONTAssembleWithFlye.wdl derives it from a measurement; see
-#     wdl/tasks/QC/ReadStats.wdl for what that measurement can and cannot settle.
+#     `--nano-hq` for Guppy 5+ / Q20 basecalls. Which one a read set needs is a
+#     property of the reads, not of this task, and passing it through `extra_args`
+#     would hand Flye two conflicting read-type flags. ONTAssembleWithFlye.wdl sets it
+#     from the reads' declared chemistry.
 #   * The sub-workflow takes a `RuntimeAttr? runtime_attr_override` of its own and
 #     falls back to upstream's `100 + genome_size/1e7` GiB formula when none is
 #     given. Upstream hardcodes that formula at its own call site, so the
@@ -43,25 +42,21 @@ import "../../structs/Structs.wdl"
 #     it, which discards the per-contig coverage/circularity/repeat table, the
 #     one artifact that distinguishes a collapsed repeat from a real contig.
 #
-# On `preemptible_tries: 0` in the task's default_attr, which is upstream's value and is
-# kept because this file's job is to stay upstream. Do not read it as advice.
+# `preemptible_tries: 0` in default_attr is upstream's value, kept so this file stays
+# upstream's; it is not advice. Under this workflow's defaults a full chr20 assembly takes
+# 1h19m25s of Flye on c6i.16xlarge and 1h55m33s on m5.8xlarge (the README's trio run), so a
+# reclaimed node costs a fraction of a spot node-hour to redo. inputs.chr20.json and
+# inputs.chr20.cohort.json therefore set `preemptible_tries: 3` on every task, which is the
+# right place for it: a spot policy belongs to the fleet you rent, not to the assembler.
 #
-# It was written for an assembly that took 14h44m, where a preemption meant redoing most
-# of a run. Under this workflow's current defaults a full chr20 assembly is 1h19m on
-# c6i.16xlarge or about 2h23m on m5.8xlarge, and at that length a reclaimed node costs a
-# fraction of a spot node-hour to redo. inputs.chr20.json and inputs.chr20.cohort.json
-# therefore set `preemptible_tries: 3` on every task, which is the right place for it: a
-# spot policy is a property of the fleet you are renting, not of the assembler.
-#
-# Flye still does not checkpoint across a WDL retry. `--resume` reads its own `--out-dir`,
-# and miniwdl gives every attempt a fresh working directory, so a retry starts from
+# Flye does not checkpoint across a WDL retry. `--resume` reads its own `--out-dir`, and
+# miniwdl gives every attempt a fresh working directory, so a retry starts from
 # `configure`. Reaching the previous attempt is possible and deliberately not done; the
-# README's spot note says why. Above roughly ten hours per assembly the arithmetic
-# inverts and restart-from-zero starts to cost more than spot saves.
+# README's spot note says why, and at what assembly length the trade reverses.
 #
-# So do not read the backend's Ray-node-loss -> `Interrupted` -> `runtime.preemptible`
-# mapping as meaning this task retries by default. As declared here it does not; it
-# retries because an inputs file gives it a budget.
+# So the backend's Ray-node-loss -> `Interrupted` -> `runtime.preemptible` mapping does not
+# make this task retry by default. As declared here it does not; it retries because an
+# inputs file gives it a budget.
 
 workflow Flye {
 
@@ -96,8 +91,8 @@ workflow Flye {
     # which leaves a caller of this sub-workflow no way in at all: there is no
     # `runtime_attr_override` input to set, so cpu_cores is unreachable and the
     # memory request is whatever the formula says. On Cromwell that sizes a VM to
-    # order; on Ray it decides whether the task is schedulable on the nodes that
-    # exist, and 100 GiB is more than a demo cluster has in total.
+    # order; on Ray it is a request against nodes that already exist, and 100 GiB is
+    # sized for the Broad's fleet rather than for a small cluster.
     #
     # Keeping the formula as the *fallback* preserves upstream's behaviour exactly
     # when nothing is passed. Note that it is all-or-nothing: an override supplied

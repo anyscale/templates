@@ -3,7 +3,7 @@ version 1.0
 # A deliberately tiny workflow whose only job is to exercise the parts of the
 # WDL <-> Ray contract that are easy to break:
 #
-#   * scatter -> many Ray tasks in flight at once, each with its own container
+#   * scatter -> many Ray tasks in flight at once
 #   * runtime cpu/memory        -> Ray resource requests
 #   * File inputs               -> bind mounts (or symlinks, without a container)
 #   * File and Array[File] outputs, including glob()
@@ -11,9 +11,9 @@ version 1.0
 #   * stdout()/stderr capture   -> streams tailed from the driver
 #
 # It declares a stock debian image instead of a bioinformatics one so it runs in
-# seconds and on both arm64 and amd64 (under an isolating container runtime; with
-# `--container-runtime none` the image is advisory and only shell builtins run).
-# The README's Step 3 runs it.
+# seconds and on both arm64 and amd64 under an isolating container runtime. With
+# `--container-runtime none` the image is advisory, and the commands need only the
+# standard shell tools on the worker. The README's Step 3 runs it.
 
 workflow Smoke {
     meta {

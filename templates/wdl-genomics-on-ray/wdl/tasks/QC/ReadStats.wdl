@@ -4,19 +4,13 @@ import "../../structs/Structs.wdl"
 
 # Measure the properties of a read set that an assembler's parameters should be derived
 # from. Not adapted from upstream: broadinstitute/long-read-pipelines has no equivalent,
-# because on Cromwell the parameters are hardcoded per pipeline.
-#
-# The motivation is a measured one. ONTAssembleWithFlye ran HG002 chr20 (3.52 Gbp, 54.6x)
-# with Flye's parameters entirely undeclared: no --genome-size, no --asm-coverage, and
-# `--nano-raw` on dorado *sup* basecalls. Flye then spent 1h33m finding overlaps, 1h25m+
-# assembling disjointigs, and over seven hours polishing. Every one of those is sensitive
-# to a parameter the pipeline already had the information to set; it just never
-# measured it.
+# because there the parameters are hardcoded per pipeline. ONTAssembleWithFlye.wdl's
+# header has the run that motivated measuring them.
 #
 # Two tasks instead of one, because they cost very different amounts and want different
 # resources: FastqStats is a single gzip pass on one core, MeasureDivergence runs an
-# aligner. They take the same input and no output of one feeds the other, so the compiled
-# runtime submits them concurrently.
+# aligner. They take the same input and neither feeds the other, so miniwdl runs them
+# concurrently.
 #
 # Both assume 4-line FASTQ records, which is what every ONT basecaller emits. Wrapped
 # sequence lines would need a state machine to parse and nothing in this corpus produces
@@ -25,16 +19,15 @@ import "../../structs/Structs.wdl"
 # ---------------------------------------------------------------------------------
 # What MeasureDivergence's number is good for, and what it is not.
 #
-# It is a cheap consistency check on a read set's label, and that is the whole claim.
-# Flye's read-mode flags select different algorithms, and Flye's own guidance selects
-# between them by *chemistry and basecaller* ("for R10 data, use --nano-hq"), not by
-# a divergence reading. Both of those are known metadata for any real read set. This
-# task exists so that a read set which does not behave like its label is visible before
-# a fourteen-hour assembly rather than after it, and so that the choice is recorded in
-# the outputs. It is not evidence that overrules the tool's documented guidance.
+# It is a cheap consistency check on a read set's label. Flye's read-mode flags select
+# different algorithms, and Flye's own guidance selects between them by *chemistry and
+# basecaller* ("for R10 data, use --nano-hq"), not by a divergence reading. Both are
+# known metadata for any real read set. This task makes a read set that does not behave
+# like its label visible before the assembly rather than after it, and records the
+# reading in the outputs. It does not overrule the tool's documented guidance, and
+# nothing branches on it.
 #
-# It is also weaker than a bare number suggests, in three ways, so read it before
-# quoting a number:
+# It is also weaker than a bare number suggests, in three ways:
 #
 #   * `dv:f` is minimap2's *approximate* per-base divergence, estimated from the
 #     minimizer chain. Without `-c` there is no base-level alignment behind it. It is
@@ -45,11 +38,13 @@ import "../../structs/Structs.wdl"
 #     gap-compressed here, and because chimeric reads and adapters survive into the
 #     probe.
 #   * The result is a median over overlapping read pairs in one subsample, so it
-#     inherits whatever that subsample's coverage and repeat content give it.
+#     inherits whatever that subsample's coverage and repeat content give it. Over a
+#     whole chromosome, repeats dominate: the same HG002 reads measure 0.0721 over
+#     2 Mbp of chr20 and 0.1532 over all of it (see ONTAssembleWithFlye.wdl).
 #
-# Concretely: HG002's dorado sup basecalls measure 0.061 pairwise here, which the x2
-# rule reads as ~3% per read. Two things explain the gap from the ~1% "sup" suggests,
-# and neither is a bad basecaller:
+# On an earlier 54.6x cut of the HG002 chr20 dorado sup reads it measured 0.061
+# pairwise, which the x2 rule reads as ~3% per read. Two things explain the gap from the
+# ~1% "sup" suggests, and neither is a bad basecaller:
 #
 #   * The published set is quality-filtered at Q10, not Q20. The source CRAMs carry
 #     `@PG ... CL:samtools view -e [qs] >= 10 --output ...pass.cram`, so `.pass` admits
@@ -62,10 +57,9 @@ import "../../structs/Structs.wdl"
 #
 # Both biases push the same way, so treat the derived per-read figure as an upper
 # bound on a lower bound. Three per cent is well inside Flye's --nano-hq band (<5% per
-# read), the measurement and the chemistry agree, and the pipeline picks --nano-hq
-# either way. It would take a much larger disagreement than this, corroborated by
-# something with base-level alignment behind it, to conclude that a basecaller's Q
-# scores are wrong.
+# read), so on that read set the measurement agreed with the chemistry. It would take a
+# much larger disagreement than this, corroborated by something with base-level
+# alignment behind it, to conclude that a basecaller's Q scores are wrong.
 
 task FastqStats {
 

@@ -49,7 +49,7 @@ they run concurrently.
 | Flye tuning | not reachable | `flye_extra_args` |
 | read type | `--nano-raw`, hardcoded | selected from `read_chemistry`, as Flye's docs prescribe |
 | `--genome-size` | never passed | derived, and required by `--asm-coverage` |
-| `--asm-coverage` | never passed | derived from measured coverage |
+| `--asm-coverage` | never passed | off by default; emitted when coverage exceeds `flye_asm_coverage_target` |
 | `--iterations` | Flye's default | 0 when Medaka will re-polish anyway |
 | variant prefix | `prefix + ".canu"` | `prefix + ".flye"` |
 | polished name | `basename(Flye.fa, ".fasta")`, which strips nothing | `basename(Flye.fa, ".fa")` |
@@ -70,14 +70,14 @@ The memory request was unreachable. Upstream's Flye sub-workflow hardcodes
 `runtime_attr_override = { 'mem_gb': 100.0 + (genome_size/10000000.0) }` at the call
 site, so it has no `runtime_attr_override` input of its own and a caller can't set
 `cpu_cores` at all. On Cromwell that formula sizes a VM to order. On Ray it's a
-request against nodes that already exist, and ~100 GiB is more than a demo cluster
-has in total, which Ray answers by waiting indefinitely instead of failing. The port
+request against nodes that already exist, and ~100 GiB is sized for the Broad's fleet
+rather than for a small cluster. The port
 takes a `RuntimeAttr?` and falls back to upstream's formula when none is given, so
 upstream behaviour is still the default. The fallback is all-or-nothing, though: an
 override replaces it wholesale and unset fields come from the task's own flat 100 GiB
 default, so state `mem_gb` even when you only mean to change `cpu_cores`.
 
-Medaka's polishing rounds default to 0 here; upstream defaults to 3. Nothing
+Medaka's polishing rounds default to 0 here; upstream hardcodes 3. Nothing
 scientific drives that change. Medaka is not in this template's cluster image,
 so under `--container-runtime none` a default of 3 would fail with exit 127 *after*
 the hours-long assembly had succeeded. The workflow's invariant is that total
@@ -112,14 +112,15 @@ for the same reason, each pipeline matching its assembler.
 The template's README walks the pipeline end to end on the GIAB Ashkenazi trio
 (HG002, HG003, HG004) over a chromosome 20 region, one copy of this workflow per
 sample under [`ONTAssembleCohort.wdl`](ONTAssembleCohort.wdl):
-the notebook builds its inputs at demo scale in Step 5, and
-[`inputs.chr20.json`](inputs.chr20.json) is the full-chromosome inputs file that
-[`job.yaml`](../../../../job.yaml) submits as an Anyscale Job. The `runtime_attr_*`
-entries in both are sized to the template's 32-vCPU / 128 GiB workers. On Ray these
-decide schedulability, not just speed: a WDL task is one process on one node, so a
-request larger than the biggest node never runs. It waits, indefinitely, because Ray
-cannot distinguish "no node this big exists" from "the autoscaler hasn't caught up
-yet".
+the notebook builds its inputs at demo scale in Step 5,
+[`inputs.chr20.cohort.json`](inputs.chr20.cohort.json) is the full-chromosome cohort
+inputs file that [`job.yaml`](../../../../job.yaml) submits as an Anyscale Job, and
+[`inputs.chr20.json`](inputs.chr20.json) is its single-sample counterpart for this
+workflow. The `runtime_attr_*` entries in all three are sized to the template's
+32-vCPU / 128 GiB workers. On Ray these decide placement, not just speed: a WDL task is
+one process on one node, so miniwdl clamps a request to the largest node that is up when
+the run starts, and a request above every node the cluster can provide waits
+indefinitely rather than failing.
 
 ## Real data
 

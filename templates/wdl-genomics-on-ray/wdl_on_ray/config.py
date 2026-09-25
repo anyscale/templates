@@ -241,12 +241,13 @@ class RayConfig:
     ``error`` (the default) refuses to dispatch. That is deliberate and is the whole
     reason to choose this runtime: silently running an unmapped task in the cluster
     image is exactly the "declared tag is advisory" behaviour of ``none``, and
-    getting it by accident, on one task out of nine, in a run that otherwise looks
-    isolated, is worse than getting it on purpose.
+    getting it by accident, on one task in a run that otherwise looks isolated, is
+    worse than getting it on purpose.
 
     ``cluster`` opts back into that, per deployment and in writing: unmapped tasks
-    run in the cluster image with no ``image_uri``. Reasonable when most tasks are
-    shell built-ins and only a few need a real toolchain."""
+    run in the cluster image with no ``image_uri``. Reasonable when most tasks need
+    only standard shell tools and a few need a real toolchain. (A ``"*"`` entry in
+    :attr:`task_image_map` is different: it sends unmapped tasks to that one image.)"""
 
 
 def load(cfg: Loader) -> RayConfig:

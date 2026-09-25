@@ -9,9 +9,10 @@ to get wrong quietly:
 * selecting the ``ray`` backend;
 * putting the run directory on shared storage, because the backend's filesystem
   contract requires it (see :mod:`wdl_on_ray.backend`);
-* raising miniwdl's task concurrency to suit the *cluster*, not the driver node.
-  Its default is the driver's ``nproc``, which silently caps a 500-core
-  cluster at however many cores the head node happens to have.
+* raising miniwdl's task concurrency to suit the *cluster*, not the driver node,
+  when ``RAY_ADDRESS`` lets the wrapper ask the cluster at startup. miniwdl's
+  default is the driver's ``nproc``, which silently caps a 500-core cluster at
+  however many cores the head node happens to have.
 
 Unrecognized arguments are forwarded to miniwdl verbatim, so
 ``wdl-on-ray run pipeline.wdl -i inputs.json --verbose`` works as expected.
@@ -58,11 +59,9 @@ def _cluster_cpus() -> int:
     """Total cluster CPUs, or 0 if we can't ask without unwanted side effects.
 
     Goes through :func:`wdl_on_ray.backend.connect` instead of calling
-    ``ray.init()`` here. That matters more than it looks: ``py_modules`` can only be
-    attached when the connection is *established*, so an independent ``ray.init()``
-    at this point, which is what this function used to do, left every Ray worker
-    without ``wdl_on_ray`` on its import path, and the eventual failure named a
-    deserialization error, which points nowhere near a thread pool.
+    ``ray.init()`` here, so the connection is made once, with ``connect``'s settings.
+    An independent ``ray.init()`` at this point would win, and ``connect`` would then
+    keep that connection as it found it.
     """
     import logging
 
@@ -129,9 +128,9 @@ def _apply_run_defaults(args: argparse.Namespace, passthrough: list[str]) -> lis
     argv = list(passthrough)
     if not any(a == "--dir" or a.startswith("--dir=") for a in argv):
         # No mkdir: miniwdl creates the run directory (and any missing parents)
-        # itself. Creating it here was not only redundant, it made merely *computing*
-        # the argv a filesystem write, which fails wherever the working directory
-        # is read-only, as it is inside a Nix build sandbox.
+        # itself, and a mkdir here would make merely *computing* the argv a filesystem
+        # write, which fails wherever the working directory is read-only, as it is
+        # inside a Nix build sandbox.
         argv += ["--dir", args.dir or default_run_dir()]
     return argv
 
@@ -144,9 +143,8 @@ def _warn_missing_downloaders(argv: list[str]) -> None:
     image. Under `none` and `native` there is no image, so the binary has to be on the
     node, and when it is not, the run fails with exit 127 from a task named something
     like `aws_s3_cp`, several directories deep, naming no scheme and no URI.
-
-    `envs.missing_downloaders` has always been able to answer this; until now only
-    `doctor` asked, which is the one moment nobody is about to hit the failure.
+    `envs.missing_downloaders` answers the question here, before the run, as well as
+    in `doctor`.
     """
     import json
     import pathlib

@@ -409,8 +409,8 @@ class RayImageRuntime(NoContainerRuntime):
       task B reads task A's outputs by path. Those paths live on the cluster's
       shared mount, and the nested container has to see them at the same location.
       This holds where the platform propagates node mounts into the worker
-      container; ``wdl-on-ray doctor`` checks it, because a run that gets this wrong
-      fails confusingly, one task late.
+      container; ``wdl-on-ray probe-image`` checks it, because a run that gets this
+      wrong fails confusingly, one task late.
     * **Privileges.** On Kubernetes-backed clouds the ray container has to run
       privileged for the nested worker container to start.
 

@@ -32,8 +32,8 @@ Three consequences follow, and they drive most of the code below.
 3. Node loss is a WDL-level interruption. Ray reports a dead worker or a
    reclaimed spot node as a task error. Mapping those onto miniwdl's
    ``Interrupted`` makes WDL's own ``runtime.preemptible`` counter do the
-   retrying, with a clean working directory each attempt, which is what
-   pipelines like the Broad's (``preemptible_tries: 3``) already expect.
+   retrying, with a clean working directory each attempt: the same budget a
+   Cromwell pipeline sets for preemptible VMs.
 """
 
 from __future__ import annotations
@@ -89,14 +89,12 @@ _INTERRUPTION_ERRORS = (
 def _is_interruption(exn: BaseException) -> bool:
     """Did the node or worker go away, as opposed to the task failing on its merits?
 
-    ``isinstance``, not a name comparison. ``ObjectLostError`` has subclasses, and on
-    ray 2.56 three of them (``ObjectReconstructionFailedError``, which has its own
-    subclasses, plus ``ReferenceCountingAssertionError`` and ``ObjectFreedError``) are
-    not named in the tuple above. Those are raised when an object is lost *because* the
-    node holding it died, which is the reclaimed-spot case: it should spend the WDL's
-    ``runtime.preemptible`` budget. Matching on the exact name let them through as
-    ordinary failures, where they consumed ``maxRetries`` instead and bypassed the
-    pipeline's own preemption policy entirely.
+    ``isinstance``, not a name comparison. ``ObjectLostError`` has subclasses, such as
+    ``ObjectReconstructionFailedError``, that are not named in the tuple above. Ray
+    raises them when an object is lost *because* the node holding it died, which is the
+    reclaimed-spot case, so they should spend the WDL's ``runtime.preemptible`` budget.
+    Matching on the exact name would treat them as ordinary failures, spending
+    ``maxRetries`` instead and bypassing the pipeline's own preemption policy.
 
     The name tuple stays as a fallback, so a Ray release that renames or adds a class
     still degrades to the previous behaviour rather than to nothing.
@@ -179,9 +177,9 @@ def connect(ray_cfg: ray_config.RayConfig, logger: logging.Logger) -> None:
     logger.notice(  # type: ignore[attr-defined]
         _(
             "connected to Ray",
-            # The GCS it actually joined, not what was asked for: a bare ray.init() that found
-            # the running cluster used to log "local" here, the same as one that started a new
-            # empty instance, which hid exactly that failure.
+            # The GCS it actually joined, not what was asked for, so a bare ray.init() that
+            # started a new, empty local instance reads differently in the log from one that
+            # joined the running cluster.
             address=ray.get_runtime_context().gcs_address,
             nodes=len([n for n in ray.nodes() if n.get("Alive")]),
             cluster_cpus=int(ray.cluster_resources().get("CPU", 0)),
@@ -1057,8 +1055,8 @@ def warn_if_not_shared(run_dir: str, logger: logging.Logger) -> None:
     Node count is only used to pick the severity, never to skip the check. An
     autoscaling cluster with ``min_nodes: 1``, which is this template's shape,
     has one node at startup and three by the time the assemblies dispatch, so a
-    check gated on "more than one node right now" is silent precisely when it is
-    needed. Earlier it was gated that way.
+    check gated on "more than one node right now" would be silent precisely when it
+    is needed.
     """
     import ray
 

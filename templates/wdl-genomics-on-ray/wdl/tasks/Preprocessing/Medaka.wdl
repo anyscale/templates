@@ -25,9 +25,8 @@ import "../../structs/Structs.wdl"
 # run a bogus round, whereas `seq 1 0` is empty, making `n_rounds = 0` a clean
 # pass-through of the draft assembly; and `source /medaka/venv/bin/activate` (the
 # venv inside upstream's lr-medaka image) is guarded with a file test, so the
-# pass-through works quietly on a worker that has no medaka at all instead of
-# logging a spurious `No such file or directory` before doing exactly the same
-# thing.
+# pass-through works on a worker that has no medaka at all without logging a
+# spurious `No such file or directory` first.
 #
 # Three further edits are not about scheduling. `n_rounds` defaults to 1 rather than
 # upstream's 3, for the reason below. `disk_size` gained a `10 +` floor, so a small
@@ -39,13 +38,13 @@ import "../../structs/Structs.wdl"
 # the divergence in this file most likely to change results rather than scheduling.
 #
 # medaka does not validate the model against the data. Handed an R9.4.1 model and
-# R10.4.1 reads it runs to completion, exits 0, and emits a consensus that is
-# *worse* than the unpolished draft, because the error model it is correcting for is not
-# the error model in the reads. Nothing downstream notices; QUAST reports a number
-# and the number is bad for a reason nobody can see from the outputs. A default
-# that is wrong for the data it ships with is a trap for the first person who sets
-# n_rounds > 0, so the default here matches this template's reads
-# (r1041_e82_400bps_sup_v4.1.0: R10.4.1, E8.2 pore, 400 bps, dorado sup v4.1.0).
+# R10.4.1 reads it runs to completion, exits 0, and can emit a consensus *worse* than
+# the unpolished draft, because the error model it corrects for is not the error model
+# in the reads. Nothing downstream notices; QUAST reports a number and the number is
+# bad for a reason nobody can see from the outputs. A default that is wrong for the
+# data it ships with is a trap for the first person who sets n_rounds > 0, so the
+# default here matches this template's reads (r1041_e82_400bps_sup_v4.1.0: R10.4.1
+# pore, E8.2 chemistry, 400 bps, dorado sup v4.1.0).
 # Change the model whenever you change the data, and run `medaka tools list_models`
 # for the set your medaka build actually carries. Match the sampling rate too, not
 # just the pore and kit: 4 kHz and 5 kHz R10.4.1 runs take different model lines
@@ -55,10 +54,10 @@ import "../../structs/Structs.wdl"
 # Two more things to know before turning this on:
 #
 #   * One round, not three. Upstream's n_rounds = 3 applies the model to its own
-#     output, which after the first round is no longer the distribution medaka was
-#     trained on — it was trained to correct draft assemblies, and the guidance that
+#     output, which after the first round is no longer the kind of input medaka was
+#     trained on: it was trained to correct draft assemblies, and the guidance that
 #     did call for iteration called for iterating *racon* before a single medaka
-#     pass. Rounds two and three buy wall clock and, on paper, a slightly
+#     pass. Rounds two and three cost wall clock and feed the model an
 #     out-of-distribution input.
 #   * For a *human* assembly, medaka is no longer ONT's recommendation. Since dorado
 #     0.9.0 (Dec 2024) ONT points large-genome consensus polishing at `dorado
@@ -66,18 +65,13 @@ import "../../structs/Structs.wdl"
 #     task is retained because it is what upstream's pipeline calls; a chr20-scale
 #     or larger assembly is the case ONT would send to dorado polish instead.
 #
-# Packaging, for anyone turning this on. medaka is not in the cluster image, and the
-# reason is size rather than compatibility: 2.2.2 ships cp312 wheels and declares
-# python >=3.10,<3.14, so it installs on this image's 3.12.13 fine. What it costs is
-# 1.2 GB even with CPU-only torch; on the 2.56.0 base it also forced a numpy
-# 1.26.4 -> 2.5.2 bump that broke cupy, which the 2.58.0 base (numpy 2.2.6) no longer
-# does. It therefore gets its own per-task image,
-# tools/Dockerfile.medaka-gpu, selected under `--container-runtime ray` by mapping the
-# tag this task already declares. tools/BUILDING.md has the worked example.
-#
-# The Python constraint that kept medaka out of this template belonged to the 1.x line
-# (which is what the r941 models ship with) and has not applied since 2.1.1. Moving to
-# 2.x means re-choosing the model, since the generations differ.
+# Packaging, for anyone turning this on. medaka is not in the cluster image because of
+# its size: 2.2.2 ships cp312 wheels and declares python >=3.10,<3.14, so it installs on
+# this image's 3.12.13, but it adds 1.2 GB even with CPU-only torch, and GPU polishing
+# needs a CUDA base. (On the 2.56.0 base it also forced a numpy 1.26.4 -> 2.5.2 bump
+# that broke cupy; the 2.58.0 base, on numpy 2.2.6, does not.) It gets its own per-task
+# image, tools/Dockerfile.medaka-gpu, selected under `--container-runtime ray` by
+# mapping the tag this task already declares. tools/BUILDING.md has the worked example.
 
 task MedakaPolish {
 
@@ -118,14 +112,15 @@ task MedakaPolish {
 
     ###
     # Medaka models. This list is upstream's and is kept only as a record of what
-    # upstream targeted: every entry is R9.4.1-or-older chemistry, and none of them
-    # is correct for R10.4.1 data:
+    # upstream targeted: every entry predates R10.4.1 (R9.4.1, R10 and R10.3 pores),
+    # and none of them is correct for R10.4.1 data:
     #
     #   r103_*, r10_*, r941_*  (Guppy 3.0-3.6 era)
     #
-    # The naming scheme for current models is
-    # `r<pore><chemistry>_e<pore version>_<translocation speed>_<variant>_v<basecaller>`,
-    # e.g. r1041_e82_400bps_sup_v4.1.0 for R10.4.1 / E8.2 / 400 bps / dorado sup 4.1.0.
+    # Current model names read
+    # `r<pore>_e<chemistry>_<translocation speed>_<accuracy>_v<basecaller model version>`,
+    # e.g. r1041_e82_400bps_sup_v4.1.0 for the R10.4.1 pore, E8.2 chemistry (Kit 14),
+    # 400 bps, dorado sup v4.1.0.
     # Do not copy a name from here or from any doc, including this one: model
     # availability is a property of the installed medaka build, so run
     # `medaka tools list_models` on the workers and pick the entry whose basecaller

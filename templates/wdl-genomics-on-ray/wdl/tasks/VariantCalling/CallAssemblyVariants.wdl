@@ -10,7 +10,7 @@ import "../../structs/Structs.wdl"
 #
 #   * Per-task RuntimeAttr overrides are plumbed out to the sub-workflow's
 #     inputs so callers can re-size them (upstream fixes AlignAsPAF at 4 cores /
-#     40 GiB, which is more memory than the demo's whole cluster).
+#     40 GiB).
 #   * `num_cpus` (minimap2's `-t`) is exposed as `align_num_threads`. Upstream
 #     leaves it at the task default of 4 with no way in, so a caller who sets
 #     `runtime_attr_align.cpu_cores: 8`, as this template's inputs.chr20.json
@@ -30,10 +30,10 @@ import "../../structs/Structs.wdl"
 # invites a misreading. Flye collapses haplotypes (no --keep-haplotypes, no purge
 # step), so a diploid sample yields one mosaic haploid consensus and paftools
 # reports homozygous calls only. That is a structural sanity check of the
-# assembly against the reference, not a diploid variant callset, and the
-# calls include every real sample-vs-reference difference as well as every
-# assembly error. For a callset, align haplotype-resolved assemblies with dipcall
-# or call from the reads.
+# assembly against the reference, not a diploid variant callset: the calls mix
+# real sample-vs-reference differences (homozygous sites and roughly half the
+# heterozygous ones) with assembly errors. For a callset, align
+# haplotype-resolved assemblies with dipcall or call from the reads.
 
 workflow CallAssemblyVariants {
 
@@ -104,16 +104,18 @@ workflow CallAssemblyVariants {
 #
 # On divergence alone, asm5 is the indicated preset and asm20 is not. HG002 against
 # GRCh38 is ~0.1% biological divergence, and this pipeline's own worst measurement,
-# the unpolished chr20 arm, adds 125 mismatches and 42 indels per 100 kbp, so ~0.17%
-# all told. asm5 is what dipcall and minimap2's cookbook use for exactly this job.
+# the unpolished full-chr20 assembly, shows 125 mismatches and 42 indels per 100 kbp
+# against GRCh38, biological differences included, so ~0.17% all told. asm5 is what
+# dipcall and minimap2's cookbook use for exactly this job.
 #
 # The default stays upstream's asm20 for comparability with upstream, not because
 # the divergence argument supports it. What does differ between the two on this
 # input is the mismatch penalty rather than the band: -B19 breaks an alignment
 # where consensus error clusters, and an ONT assembly polished only by Flye's
 # single round has such clusters, so asm5 fragments alignment blocks that asm20
-# carries through. That shows up as lower NGA50 and reads as an assembly problem
-# when it is an aligner setting. It also changes which blocks clear Paftools'
+# carries through. That shows up as shorter PAF blocks and reads as an assembly
+# problem when it is an aligner setting; QUAST's NGA50 is unaffected, since QUAST
+# runs its own alignment. It also changes which blocks clear Paftools'
 # `min_alignment_length_call` floor, so the preset moves the callset twice over.
 #
 # Set `align_preset = "asm5"` once real polishing is on (medaka_rounds > 0, or

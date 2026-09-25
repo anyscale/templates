@@ -40,7 +40,7 @@ out of two individually valid ones.
 4. Nothing. The task then behaves exactly as it does under ``none``, which is the right
    fallback: the tool may well be in the cluster image already.
 
-Two notes on the emitted shape, both of which cost real debugging time to find:
+Two notes on the emitted shape, neither of which fails loudly:
 
 * ``pip_install_options`` belongs *inside* the ``pip`` dict. As a sibling ``runtime_env`` key it
   is accepted and silently ignored, and the install then goes to the network instead of the

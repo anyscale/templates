@@ -18,17 +18,17 @@ import "../../structs/Structs.wdl"
 #   * ComputeGenomeLength's final awk prints with `printf "%.0f\n"` where upstream
 #     uses `print`. mawk, which is /usr/bin/awk on Debian and Ubuntu and therefore
 #     on the cluster image, formats any value above INT_MAX through OFMT, so
-#     upstream emits GRCh38's 3,099,922,541 as "3.09992e+09" and read_float takes
-#     it — quietly turning a 3.1 Gbp genome into 3.1 billionths of one. Only a
-#     genome above 2^31 reaches this, which is why it survives testing on demo
-#     data.
+#     upstream emits GRCh38's 3,099,922,541 as "3.09992e+09". read_float parses
+#     that, so upstream's genome size is only rounded to six significant figures;
+#     the exact integer costs nothing, and ReadStats.wdl, where read_int rejects the
+#     exponent form outright, needs the same fix.
 #
-#     Note "%.0f" and not "%d". "%d" also fixes the OFMT problem, and was what this
-#     file used first, but mawk 1.3.4-20200120 converts %d through a 32-bit int and
-#     clamps: GRCh38 comes back as exactly 2147483647, read_float accepts it, and the
-#     genome is then wrong by 31% with nothing failing. "%.0f" formats the double and
-#     is exact to 2^53. wdl/tasks/QC/ReadStats.wdl carries the same fix, and its
-#     comment has the measurement.
+#     Note "%.0f" and not "%d". "%d" also avoids OFMT, but mawk 1.3.4-20200120
+#     converts %d through a 32-bit int and clamps: GRCh38 comes back as exactly
+#     2147483647, read_float accepts it, and the genome is then wrong by 31% with
+#     nothing failing. "%.0f" formats the double and is exact to 2^53.
+#     wdl/tasks/QC/ReadStats.wdl carries the same fix, and its comment has the
+#     measurement.
 #   * MergeFastqs' docker moved from gcr.io/cloud-marketplace/google/ubuntu2004 to
 #     docker.io/library/ubuntu:20.04: no GCP credentials needed, and multi-arch.
 
