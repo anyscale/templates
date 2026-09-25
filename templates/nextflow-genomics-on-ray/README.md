@@ -309,7 +309,9 @@ task 3 are both in it.
 
 Colour is the node. A grey lead-in is time spent queued: waiting for a node with room, which on
 an autoscaling cluster includes waiting for one to boot. The cell checks the join is complete, since
-a trace row with no placement row would mean the executor lost track of a task.
+a trace row with no placement row would mean the executor lost track of a task. The one exception
+is `COLLECT_PLACEMENT`, the task that copies the record into the results: it is still running when
+it copies, so its own row is not in the copy.
 
 
 ```python
@@ -321,10 +323,18 @@ with open(RESULTS / "pipeline_info" / "nf_ray_placement.tsv") as handle:
     placed = {row["work_dir"]: row for row in csv.DictReader(handle, delimiter="\t")}
 
 # Keyed on work dir, so earlier runs' rows in the same record cannot match this run's tasks.
-missing = [t["name"] for t in trace.values() if t["workdir"] not in placed]
+#
+# One task is exempt: COLLECT_PLACEMENT, which copied this record into the results. The daemon
+# appends a task's row when the task finishes, and that one was still running when it made the
+# copy, so the copy cannot hold its own row. Every other traced task must have one.
+COLLECTOR = "COLLECT_PLACEMENT"
+tasks = [t for t in trace.values() if t["process"] != COLLECTOR]
+assert len(trace) - len(tasks) == 1, f"expected exactly one {COLLECTOR} task in the trace"
+missing = [t["name"] for t in tasks if t["workdir"] not in placed]
 assert not missing, f"{len(missing)} traced task(s) have no placement row, e.g. {missing[:3]}"
-rows = [(placed[t["workdir"]], t) for t in trace.values()]
-rows.sort(key=lambda pair: float(pair[0]["started"] or pair[0]["submitted"]))
+rows = [(placed[t["workdir"]], t) for t in tasks]
+# A task that never started records `started` as 0.000, so it sorts by its submit time.
+rows.sort(key=lambda pair: float(pair[0]["started"]) or float(pair[0]["submitted"]))
 
 t0 = min(float(p["submitted"]) for p, _ in rows)
 node_ids = sorted({p["node_id"] for p, _ in rows})
