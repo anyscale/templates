@@ -5,77 +5,102 @@
   <a href="https://github.com/anyscale/templates/tree/main/templates/nextflow-genomics-on-ray" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
 </div>
 
-**⏱️ Time to complete**: 13m22s for the `standard` pipeline, the default, with the GPU leg on; about 5 minutes at `quick` (4m47s and 4m52s); 44m07s for all of chr20 as a job. Prod, 2026-09-25; see Step 1 and "Run it as a job"
+**⏱️ Time to complete**: 20 min at the default `standard` scale, 10 min at `quick`
 
-A Nextflow executor, `executor 'ray'`, that runs each process as a
-[Ray task](https://docs.ray.io/en/latest/ray-core/tasks.html) on an autoscaling cluster. The pipeline
-it runs here is GATK Best Practices germline short-variant calling, shaped the way
-[nf-core/sarek](https://nf-co.re/sarek) shapes it: Illumina reads from the GIAB Ashkenazi trio
-(HG002, HG003, HG004) over a region of chromosome 20, aligned, recalibrated, called per sample and
-interval, joint-genotyped, and scored against each sample's GIAB v4.2.1 truth set with
-`rtg vcfeval`. A GPU process scores the callset with a DNA language model on the same cluster.
+This template runs a Nextflow pipeline through a Ray executor, `executor 'ray'`, on an Anyscale
+cluster that adds CPU and GPU nodes as the DAG needs them. The pipeline is GATK germline
+short-variant calling in the shape of [nf-core/sarek](https://nf-co.re/sarek): fastp, BWA-MEM2,
+MarkDuplicates and BQSR per sample, HaplotypeCaller per sample and interval, GenomicsDBImport and
+GenotypeGVCFs per interval, hard filtering, and `rtg vcfeval` against GIAB v4.2.1. It runs on the
+three GIAB Ashkenazi trio samples (HG002, HG003, HG004) over a region of chr20, with one GPU process
+in the same DAG.
 
-[Nextflow](https://www.nextflow.io/) is how most of the field writes pipelines; nf-core alone
-curates over a hundred. It already knows how to hand a process to a batch scheduler: write
-directives into a job script, submit it with a command, poll a queue, cancel by id. That is the
-seam this executor uses. A Nextflow plugin (`nf-ray-plugin/`) subclasses `AbstractGridExecutor`, the
-class the SLURM and PBS executors extend, and writes `#RAY` directives where SLURM writes
-`#SBATCH`. It submits with `nf-ray submit`, and a long-lived Python daemon (`nf_ray/`) holds the Ray
-connection and owns every task. Nothing in `main.nf` or its modules knows it is running on Ray;
-`-profile ray` is the diff.
+At the end you have:
 
-`cpus 6`, `memory 36.GB` and `accelerator 1, type: 'nvidia-l4'` on a process become `num_cpus=6`,
-`memory=36<<30`, `num_gpus=1, accelerator_type='L4'` on the Ray task. The scheduler places it, the
-autoscaler adds a node when nothing fits, and nothing is provisioned per task.
+- a joint callset, with SNP and indel precision, recall and F1 for each sample;
+- a chart of which node ran each task and how long each task waited for one;
+- a `ray` profile to add to your own pipeline, and the limits to check before you do.
 
-### What was ported
+## Why run it on Ray
 
-The processes are adapted from [nf-core/modules](https://github.com/nf-core/modules) (MIT);
-[`pipeline/PIPELINE.md`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/pipeline/PIPELINE.md) has the per-process table and every
-divergence. Three of them change what a run produces, and matter if you compare against sarek:
+Each process's `cpus`, `memory` and `accelerator` directives become a Ray resource request. Ray
+places the task on a node with room, and the autoscaler adds a node when none has any, up to the
+compute config's `max_nodes`. The `accelerator` directive alone sends a process to the L4 group,
+which starts at zero and comes up when the DAG reaches the GPU process. After the pipeline, Step 7
+runs a Ray Data job over its outputs on the same L4s.
 
-- **No `container` directives.** There is no container runtime inside a Ray worker to nest into,
-  so the tools come from this template's image instead of per-process biocontainers.
-- **Hard filters, not VQSR.** One chromosome is too few variants to train VQSR's model.
-- **One known-sites resource** (dbSNP 138) for BQSR, not three.
+On an on-premises Slurm cluster a run queues for a fixed partition; this cluster grows and shrinks
+with the run. AWS Batch and Seqera Platform scale too; here the CPU and GPU processes share one
+cluster, placed by their directives, and the work directory is shared POSIX storage rather than S3.
 
-## Where this fits
+The executor subclasses Nextflow's `AbstractGridExecutor`, like the SLURM and PBS executors, and
+writes `#RAY` directives where SLURM writes `#SBATCH`. Apart from dropping nf-core's `container`
+directives, the pipeline has no Ray-specific code; `-profile ray` adds the executor.
 
-Existing Nextflow, elastic compute, no rewrite. Pipelines whose processes ask for an order of
-magnitude different resources, where a node per process wastes money and a fixed HPC queue wastes
-time. Cohorts: three samples over 24 intervals is 72 HaplotypeCaller tasks with nothing serialising
-them but the cluster's size, and 500 samples is the same shape wider.
+## What differs from nf-core/sarek
 
-It is also the case Ray is good at that a batch scheduler is not: the callset is on shared storage
-at the end, and Step 7 runs Ray Data over it on the same cluster and the same GPUs, with no job
-hand-off in between.
+The processes are adapted from [nf-core/modules](https://github.com/nf-core/modules) (MIT), and
+[`pipeline/PIPELINE.md`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/pipeline/PIPELINE.md)
+lists every divergence. These change what a run produces:
 
-## Scope
+- Tools come from this template's image, pinned in `tools/env.main.yml`, instead of per-process
+  biocontainers.
+- The callset is hard-filtered, where sarek's joint-germline mode uses VQSR. GATK recommends VQSR
+  for at least one whole genome or about 30 exomes, and a region of chr20 is far smaller.
+- The hard filter applies GATK's SNP thresholds to every record. GATK's indel thresholds are looser
+  (FS > 200, ReadPosRankSum < -20, no MQ or MQRankSum filter), so indel recall can only be lower
+  than GATK's recipe gives.
+- BQSR gets one known-sites resource, dbSNP 138, where sarek gives it dbSNP, Mills and a
+  known-indels set.
 
-What the executor does with a process's directives and the pipeline's files, and what it leaves alone:
+The three samples are a family, but nothing uses the pedigree: they are joint-genotyped without a
+pedigree file, nothing checks Mendelian consistency, and each sample is scored against its own truth
+set.
 
-| | |
+## What the executor does with a process
+
+| Directive or file | Under `executor 'ray'` |
 |---|---|
-| `cpus`, `memory` | become `num_cpus` and `memory` on the Ray task |
-| `accelerator` | `num_gpus`, plus `accelerator_type` from the GCE-style name (`nvidia-l4` becomes `L4`); `nvidia.com/gpu` means any GPU, and `ray.defaultAccelerator` names one |
+| `cpus`, `memory` | `num_cpus` and `memory` on the Ray task, used for placement: Ray does not cap usage. When a node runs out of memory, Ray's memory monitor kills a task there, reported as exit 137 |
+| `accelerator` | `num_gpus`, plus `accelerator_type` from the GCE-style name (`nvidia-l4` becomes `L4`). No type, or `nvidia.com/gpu`, means any GPU, and `ray.defaultAccelerator` picks one |
 | `ext.ray_resources` | custom Ray resources, as JSON |
 | `ext.image` | `runtime_env={'image_uri': ...}`, only through an explicit `NF_RAY_IMAGE_MAP` |
-| `time` | parsed, recorded, and **not enforced**: Ray has no wall-clock limit |
-| `errorStrategy`, `maxRetries` | Nextflow's, unchanged. Ray-level retries are 0, so they cannot bypass them |
-| `container` | not honoured; see "Executors" below |
-| the pipeline's `bin/` | copied under the work directory when the run starts and made executable, because a worker cannot see the project directory; tasks get the copy on `PATH` |
+| `time` | recorded and **not enforced**: Ray has no wall-clock limit |
+| `errorStrategy`, `maxRetries` | Nextflow's, unchanged. Ray-level retries are 0 |
+| `container` | not honoured; see "Containers" below |
+| the pipeline's `bin/` | copied under the work directory at the start of the run and made executable, because workers cannot see the project directory |
 
-Two limits worth knowing before you port anything:
+Two limits to know before you port a pipeline:
 
-- **A task's ceiling is the largest node, and what Ray schedules, not what it has.** Ray 2.58.0
-  offers about 70% of a node's free memory as `memory`, so a 128 GiB worker schedules roughly
-  85 GiB. `conf/base.config` clamps requests to 80 GB and `conf/ray.config` declares the same
-  ceiling to the executor, which rejects anything larger at submit time.
-- **An unsatisfiable request would wait forever.** Ray cannot tell "no node this big exists" from
-  "the autoscaler has not caught up", which is why the executor refuses a request over the declared
-  ceiling rather than submitting it.
+- A task's ceiling is what the largest node can schedule, which is less than it has. Ray 2.58.0
+  offers about 70% of a node's free memory as `memory`, so a 128 GiB worker schedules roughly 85
+  GiB; it took the 72 GB `process_high` tasks in every prod run. `conf/base.config` clamps requests
+  to 80 GB, and `conf/ray.config` declares that ceiling to the executor, which refuses anything
+  larger at submit time.
+- Ray keeps a request that no node type can satisfy pending instead of failing it, so Nextflow would
+  show the task queued forever. The declared ceiling is what lets the executor refuse it.
+
+### Containers
+
+A Ray worker is already a container, with no runtime to start another in, so this template's modules
+drop nf-core's biocontainer directives and the image carries the tools. A pipeline you don't want to
+edit has two routes, neither exercised here: `-profile conda`, which builds each process's declared
+environment once on shared storage, or `ext.image` mapped through `NF_RAY_IMAGE_MAP` to an image
+rebuilt on this cluster's base. Ray refuses a task image whose Ray and Python versions differ from
+the cluster's; `nf-ray probe-image <uri>` checks one.
+
+### The daemon
+
+Ray cancels a task when the process that submitted it exits, so the executor keeps a daemon on the
+head node for the length of the run, which owns every task; `nf-ray submit` reaches it over a unix
+socket. When Ray fails around a task (a lost node, a memory-monitor kill), the daemon writes the
+task's `.exitcode` with a code in nf-core's retry band, so `errorStrategy` retries the task instead
+of Nextflow timing out on a file the task never wrote.
 
 ## Set-up
+
+If you're not in a workspace created from this template, clone the repository and work from the
+template directory:
 
 ```bash
 git clone https://github.com/anyscale/templates && cd templates/templates/nextflow-genomics-on-ray
@@ -83,28 +108,26 @@ git clone https://github.com/anyscale/templates && cd templates/templates/nextfl
 
 ## Step 1: Check the cluster and the toolchain
 
-One knob controls how much work this notebook does. `standard` is the default and calls a 10 Mbp
-region of chromosome 20 for each of three samples; `quick` does 2 Mbp and is what CI runs; set
-`NF_DEMO_SCALE=quick` before launching Jupyter to use it. A third, `full`, is all of chr20 and
-runs as the job at the end rather than in this notebook. Only the region size differs: same
-tools, same DAG, same resource requests.
+`NF_DEMO_SCALE`, set before starting Jupyter, picks how much work the notebook does. The scales run
+the same processes with the same tools and resource requests; they differ in region size and in how
+many intervals and GPU shards the region is split into.
 
-Measured on prod, 2026-09-25, on the AWS compute config: an m5.2xlarge head with `CPU: 0`,
-r6i.4xlarge CPU workers and g6.2xlarge L4 workers.
+| Scale | Region | Intervals | Runs as | Measured on prod, 2026-09-25 |
+|---|---|---|---|---|
+| `quick` | chr20:1,000,000-3,000,000 | 8 | CI, with `NF_ANNOTATE=false` | 81 tasks in 4m47s and 4m52s (two runs), 1.4 CPU h each, on 4 CPU workers |
+| `standard` (default) | chr20:1,000,000-11,000,000 | 24 | this notebook | 171 tasks in 13m22s, 4.6 CPU h, on 4 CPU workers and 2 L4 workers |
+| `full` | all of chr20 | 48 | `job.yaml` | 299 tasks in 44m07s, 25.1 CPU h, on at most 6 CPU workers and 2 L4 workers at a time |
 
-- `standard`, with the GPU leg on: the Step 5 pipeline ran its 171 tasks in 13m22s, 4.6 CPU hours
-  by Nextflow's count, and Step 7's Ray Data pass took 116 s on two L4s.
-- `quick`, in two runs with `NF_ANNOTATE=false` and so no GPU node: 81 tasks in 4m47s and 4m52s,
-  1.4 CPU hours each.
+Times are the pipeline's wall time and CPU hours are Nextflow's count, on the AWS compute config: an
+m5.2xlarge head with `CPU: 0`, r6i.4xlarge CPU workers and g6.2xlarge L4 workers.
 
-The Step 3 smoke run took 36 s in all three runs, its eight shards on two nodes.
+`NF_ANNOTATE=false` skips the GPU process and Step 7, for a cluster with no L4. CI sets it so that a
+test never waits on L4 capacity.
 
-`NF_ANNOTATE=false` skips the GPU leg, both the Nextflow process and the Ray Data step in Step 7,
-for a cluster with no L4 to give it. CI sets it, so a test run never waits on L4 capacity.
-
-`nf-ray doctor` reports what the executor would decide without running anything: the interpreter
-and Ray versions it would hand to workers, whether the work directory is on shared storage, and
-whether every tool the pipeline calls is on `PATH`.
+The cell prints the run's settings and runs `nf-ray doctor`, which checks the Python and Ray
+versions, that the work directory is on shared storage, and that every tool the pipeline calls is on
+`PATH`. Look for `no problems found`. Doctor reads only `NF_RAY_*` environment variables, so its
+`declared ceiling` line says `none`; Step 2 shows the ceiling the executor uses.
 
 
 ```python
@@ -114,8 +137,8 @@ import os
 import pathlib
 import subprocess
 
-# `standard` is what a reader gets; CI sets `quick`. Only the size of the region differs, so a
-# green `quick` run and a `standard` run exercise the same code path.
+# `standard` is what a reader gets; CI sets `quick`. The scales share one code path and differ
+# only in region size and how finely it is split, so a green `quick` run covers `standard`.
 SCALE = os.getenv("NF_DEMO_SCALE", "standard")
 SCALES = {
     "quick":    {"region": "chr20:1000000-3000000",  "span": "2 Mbp"},
@@ -163,14 +186,13 @@ run(["nf-ray", "doctor", "--work-dir", NF_WORK])
 
 ## Step 2: Read the pipeline you're about to run
 
-`main.nf` is an ordinary DSL2 pipeline, and its processes carry nf-core's resource labels,
-unchanged: `process_medium` is 6 CPUs and 36 GB here as it is on any nf-core pipeline. The labels
-live in `conf/base.config`; everything Ray-specific lives in `conf/ray.config`, which only the
-`ray` profile includes.
+`main.nf` is an ordinary DSL2 pipeline whose processes carry nf-core's resource labels at nf-core's
+values: `process_medium` is 6 CPUs and 36 GB. The labels live in `conf/base.config`. Everything
+Ray-specific is in `conf/ray.config`, which only the `ray` profile includes.
 
-The cell prints the configuration Nextflow resolves under `-profile ray`, filtered to the parts
-that decide scheduling: the label requests, the ceiling they are clamped to, and the executor's
-settings.
+The cell prints what Nextflow resolves under `-profile ray`, filtered to what decides scheduling:
+the label requests, the `resourceLimits` ceiling they are clamped to, the executor's queue settings
+and the `ray` scope. `ray.maxNodeMemoryGb` should match the memory in `process.resourceLimits`.
 
 
 ```python
@@ -189,43 +211,17 @@ for prefix in ("process.executor", "process.resourceLimits", "process.'withLabel
     print("\n".join(shown))
 ```
 
-### Executors
+## Step 3: Run a one-minute smoke test
 
-**Why a grid executor.** Nextflow's engine is a JVM, and Ray does ship a Java API, but it is
-documented as experimental and community-supported, its version must match Ray Python exactly, and
-`ray-runtime` loads a JNI library that would have to initialise inside Nextflow's plugin
-classloader. `AbstractGridExecutor`'s contract (write a header, run a submit command, parse a job
-id, poll a status command) has been stable for a decade, and it keeps Ray on the Python side of a
-`fork`/`exec`. [`RayExecutor.groovy`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/nf-ray-plugin/src/main/groovy/ai/anyscale/nfray/RayExecutor.groovy)
-is under three hundred lines.
+`smoke.nf` fans out eight shards and gathers them. It calls no genomics tool and reads no data, so a
+failure here belongs to the executor or the cluster, and you find it before any alignment starts.
+The gather runs `pipeline/bin/smoke_collect.sh`, so the test also checks that the pipeline's `bin/`
+reaches a worker.
 
-**Why a daemon.** A Ray task belongs to the process that submitted it and is cancelled when that
-process exits, and `nf-ray submit` lives for milliseconds. So the first submit starts a daemon that
-holds the Ray connection for the whole run, and every `nf-ray` call talks to it over a unix socket
-on the head node. The daemon also writes `.exitcode` when Ray fails *around* a task (a lost node, a
-memory-monitor kill), with a code nf-core's `errorStrategy` already retries, instead of leaving
-Nextflow to time out on a file the task never wrote.
-
-**Containers.** Every nf-core module declares a biocontainer, and a Ray worker is already a
-container with no runtime to nest another in. This template's modules drop the directive and the
-image carries the tools, pinned in [`tools/env.main.yml`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/tools/env.main.yml). For a pipeline
-you do not want to edit there are two routes, neither exercised by this notebook: `-profile conda`,
-which has Nextflow build each process's declared environment on shared storage, and `ext.image`
-mapped through `NF_RAY_IMAGE_MAP` to an image rebuilt on this cluster's base, since Ray refuses a
-task image whose Ray and Python do not match the cluster's. `nf-ray probe-image <uri>` checks a
-candidate before a pipeline depends on it.
-
-## Step 3: Run a 60-second pipeline first
-
-`smoke.nf` fans out a few shards and gathers them. It calls no genomics tool and reads no data, so
-when it fails the failure is the executor's, and that is worth knowing before an hour of alignment
-depends on the answer. The gather runs `pipeline/bin/smoke_collect.sh`, so it also checks that the
-pipeline's `bin/` reaches a worker, which only the executor's copy on shared storage makes true.
-
-It is also an equivalence oracle. Shard *i* sums the thousand integers from `i*1000+1`, so its
-checksum is `1,000,000*i + 500,500` whatever node ran it; a changed number means the environment
-changed under the task. The cell checks that, then reads the executor's placement record, which
-the daemon writes as each task finishes: one row per Ray task, with the node it ran on.
+Shard *i* sums the integers from `i*1000+1` to `i*1000+1000`, so its checksum is
+`1,000,000*i + 500,500` on any node. The cell checks every checksum, then reads the placement record
+the daemon appends to as each task finishes, and prints how many nodes the shards ran on. On prod it
+took 36 s in each of three runs, with the eight shards on two nodes.
 
 
 ```python
@@ -246,20 +242,19 @@ print(f"the last {len(shard_rows)} SHARD tasks ran on {len(nodes)} node(s)")
 
 ## Step 4: Stage the reads
 
-The reads are the GIAB Ashkenazi trio from GIAB's NHGRI Illumina 300x GRCh38 alignments, sliced to
-the region and subsampled by read name to about 30x, which keeps mates together.
+The reads come from GIAB's NHGRI Illumina 300x GRCh38 alignments of the three samples: read pairs
+whose primary alignment falls in the region, subsampled by read name to about 30x so that mates stay
+together. The reference is all of chr20 from the GRCh38 no-alt analysis set, the known sites are
+dbSNP 138 over chr20, and each sample has its own GIAB v4.2.1 benchmark VCF and benchmark-regions
+BED.
 [`tools/stage-demo-data.sh`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/tools/stage-demo-data.sh)
-derives every file from public sources, so the derivation is reproducible: the reads, all of chr20
-from the GRCh38 no-alt analysis set, dbSNP 138 over chr20 for BQSR, and each sample's own GIAB
-v4.2.1 benchmark VCF and high-confidence BED.
+builds every file from public sources. The pairs were chosen by where GIAB's whole-genome alignment
+put them and are realigned here against chr20 alone, so they are reference-selected; Step 6 says
+what that does to the scores.
 
-**These reads are reference-selected.** A pair is in the slice because it aligned to the region, so
-reads that would mismap *into* chr20 from elsewhere in the genome are absent by construction, and
-precision below reads somewhat high against a whole-genome run. Treat the table in Step 6 as a
-check that the pipeline is right, not as a benchmark of GATK.
-
-Each scale ships a `MANIFEST.json` with every file's checksum. `make_samplesheet.py` builds the
-pipeline's samplesheet from it, verifies the checksums, and gives each sample its own truth set.
+Each scale's `MANIFEST.json` lists its files, with checksums for the FASTQs and the reference.
+`make_samplesheet.py` builds the samplesheet from it, verifies the FASTQ checksums and gives each
+sample its own truth set. The cell prints the region and each sample's read pairs.
 
 
 ```python
@@ -280,27 +275,23 @@ REFERENCE = DATA_DIR / manifest["reference"]["fasta"]
 KNOWN_SITES = DATA_DIR / manifest["known_sites"]["vcf"]
 ```
 
-## Step 5: Call variants across the trio
+## Step 5: Call variants for the three samples
 
-One command. The pipeline aligns each sample, marks duplicates and recalibrates, then splits the
-region into intervals and runs HaplotypeCaller on every sample-interval pair at once: at `standard`,
-3 samples x 24 intervals = 72 independent tasks. Each interval's three GVCFs then meet for joint
-genotyping, the intervals are merged and hard-filtered, and the joint callset is split back out per
-sample and scored.
+The cell runs the whole pipeline. Each sample is aligned, duplicate-marked and recalibrated. The
+region is then split into intervals, and HaplotypeCaller is submitted for every sample and interval
+at once: 3 samples x 24 intervals = 72 independent tasks at `standard`. Each interval's three GVCFs
+go through GenomicsDBImport and GenotypeGVCFs, the intervals are merged and hard-filtered, and the
+joint callset is split per sample for scoring.
 
-That fan-out is what gives the autoscaler something to do. HaplotypeCaller asks for 6 CPUs and
-36 GB (`process_medium`), so two fit a 16-vCPU, ~85 GiB-schedulable worker, and the compute config
-lets the worker group grow to four. The GPU process asks for one L4 and lands on the GPU group,
-which starts from zero when the DAG reaches it.
+HaplotypeCaller asks for 6 CPUs and 36 GB (`process_medium`), so two fit on a 16-vCPU worker that
+schedules about 85 GiB, and the compute config lets the CPU group grow to four workers: at most
+eight calling tasks at a time. The GPU process asks for one L4 and lands on the L4 group, which
+starts from zero when the DAG reaches it. On prod at `standard`, g6.2xlarge returned
+`InsufficientInstanceCapacity` three times over 19 seconds before both L4 workers launched.
 
-Measured on prod, 2026-09-25, AWS config. At `standard` the chart below drew 170 tasks on 6 nodes,
-13.1 minutes from first submit to last finish, with the GPU tasks on 2 nodes of their own. Getting
-those two L4s took three `InsufficientInstanceCapacity` errors for g6.2xlarge, over 19 seconds,
-before both launched. At `quick`, with the GPU leg off, it drew 80 tasks on 4 nodes in 4.5 minutes.
-
-`--scale` picks the region and interval count from `main.nf`'s presets, which match what the
-staging script published. The `ray` profile adds the executor, the plugin, the shared work
-directory and the declared node ceiling; nothing else changes.
+`--scale` takes the region, interval count and GPU shard count from `main.nf`'s presets, which match
+the staged data. The `ray` profile adds the executor, the plugin, the shared work directory and the
+declared node ceiling.
 
 
 ```python
@@ -315,20 +306,17 @@ run(["nextflow", "run", PIPELINE / "main.nf", "-profile", "ray",
 
 ### How the run used the cluster
 
-Every process above ran as one Ray task, and the executor recorded each: when Nextflow submitted
-it, when it started holding resources on a worker, when it finished, and on which node. Nextflow's
-own `trace.txt` names each task, so joining the two draws the run with no instrumentation added.
+The executor records every task it runs: when Nextflow submitted it, when it started on a worker,
+when it finished and on which node. The cell joins that placement record to Nextflow's `trace.txt`
+on each task's work directory and draws one bar per task, coloured by node. A grey lead-in is time
+spent queued, which on an autoscaling cluster includes waiting for a node to boot. The cell asserts
+that every traced task has a placement row and, with the GPU leg on, that no HaplotypeCaller task
+ran on a GPU task's node.
 
-The join is on the task's work directory, which both files record, and not on the Ray task id.
-Each run starts its own executor daemon and numbers its tasks from 1, and the placement record
-accumulates in the shared work directory across runs, so the smoke run's task 3 and this run's
-task 3 are both in it.
-
-Colour is the node. A grey lead-in is time spent queued: waiting for a node with room, which on
-an autoscaling cluster includes waiting for one to boot. The cell checks the join is complete, since
-a trace row with no placement row would mean the executor lost track of a task. The one exception
-is `COLLECT_PLACEMENT`, the task that copies the record into the results: it is still running when
-it copies, so its own row is not in the copy.
+On prod the chart drew 170 tasks on 6 nodes at `standard`, 13.1 min from first submit to last
+finish, with the GPU tasks on 2 of them; at `quick` it drew 80 tasks on 4 nodes in 4.5 min. It
+leaves out `COLLECT_PLACEMENT`, the task that copies the record, which is why it shows one task
+fewer than Nextflow counts.
 
 
 ```python
@@ -378,28 +366,28 @@ print(f"{len(rows)} tasks, {len(node_ids)} node(s), "
 if ANNOTATE:
     gpu_nodes = {p["node_id"] for p, t in rows if t["process"].endswith("ANNOTATE_VARIANTS")}
     cpu_nodes = {p["node_id"] for p, t in rows if t["process"].endswith("HAPLOTYPECALLER")}
-    # A GPU task can only have landed on the GPU group, so the two sets cannot overlap.
+    # A GPU task fits only the L4 group, and HaplotypeCaller's 36 GB does not fit an L4 node,
+    # so the two sets cannot overlap.
     assert gpu_nodes and not gpu_nodes & cpu_nodes, (gpu_nodes, cpu_nodes)
     print(f"GPU tasks ran on {len(gpu_nodes)} node(s) of their own")
 ```
 
-## Step 6: Score the callset
+## Step 6: Benchmark the callset against GIAB
 
-`rtg vcfeval` compares each sample's calls with that sample's GIAB v4.2.1 truth set, matching
-variants by the haplotypes they imply rather than by position, so a left-aligned indel and its
-right-aligned twin count as the same call. SNPs and indels are scored separately because they fail
-for different reasons, and a combined F1 would hide which one moved. The unthresholded row is the
-one reported: a threshold chosen to maximise F-measure against the truth set being scored is
-fitted to the answer.
+`rtg vcfeval` compares each sample's calls with that sample's GIAB v4.2.1 benchmark, over the region
+and inside the benchmark regions (`--evaluation-regions`), requiring genotypes to match (vcfeval's
+default). Calls and truth are both split into SNPs and indels, after splitting multi-allelic
+records, before matching. The table reports vcfeval's unthresholded `None` row, because the
+best-F-measure threshold is fitted to the truth set being scored.
 
-Read the numbers with the bounds they come with: one chromosome, hard filters instead of VQSR, one
-known-sites resource, reference-selected reads (Step 4), and scoring restricted to the region ∩ the
-high-confidence BED. They are not comparable to a published genome-wide benchmark.
-
-Measured on prod, 2026-09-25, on the AWS compute config, the cell below printed these. The reads
-are reference-selected, so precision reads somewhat high against a whole-genome run;
+These numbers check that the pipeline runs end to end and scores each sample against its own truth.
+They are not a GATK benchmark: the reads are reference-selected (Step 4), which makes precision read
+high against a whole-genome run; the SNP thresholds on indels lower indel recall; and scoring covers
+one region of one chromosome, with one known-sites resource for BQSR.
 [`PIPELINE.md`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/pipeline/PIPELINE.md#bounds-on-the-numbers)
-has the bounds.
+has the details.
+
+Measured on prod, 2026-09-25, on the AWS compute config; the cell prints the same values.
 
 `standard`, chr20:1,000,000-11,000,000:
 
@@ -409,7 +397,7 @@ has the bounds.
 | HG003 | 0.9972 | 0.9914 | 0.9943 | 0.9498 | 0.9326 | 0.9411 |
 | HG004 | 0.9980 | 0.9884 | 0.9932 | 0.9563 | 0.9439 | 0.9501 |
 
-`full`, all of chr20, from the job ("Run it as a job" below, with `job.yaml`'s config):
+`full`, all of chr20, from the job ("Run it as a job" below):
 
 | sample | SNP precision | SNP recall | SNP F1 | indel precision | indel recall | indel F1 |
 |---|---|---|---|---|---|---|
@@ -440,22 +428,27 @@ table = bench.pivot_table(index="sample", columns="variant_type",
 print(table.round(4).to_string())
 ```
 
-## Step 7: Annotate at scale with Ray Data, on the same GPUs
+## Step 7: Run the GPU step again as a Ray Data job
 
-`ANNOTATE_VARIANTS` scored the callset in shards, one Nextflow process per shard. The next cell
-runs the *same* scorer, the `VariantScorer` class in `pipeline/bin/score_variants.py`, over the
-whole callset as one Ray Data job: the same cluster, the same L4s, the same files on shared storage,
-no hand-off. One implementation seen two ways, so the two result tables should agree.
+`ANNOTATE_VARIANTS`, the pipeline's GPU process, scored the joint callset's PASS variants one shard
+per task. The next cell runs the same `VariantScorer` class, from `pipeline/bin/score_variants.py`,
+over the whole callset as one Ray Data job on the same L4s. It checks that both paths scored the
+same variants, then prints the largest difference between them and the five highest scores.
 
-Measured at `standard` (prod, 2026-09-25, AWS config, g6.2xlarge L4s): `ANNOTATE_VARIANTS` ran as
-8 shards, and the cell below scored the same 25,197 PASS variants with two GPU actors in 116 s. The
-two tables' embedding distances agreed to within 2.88e-05.
+The score is a zero-shot embedding distance.
+[Nucleotide Transformer v2 (50M, multi-species)](https://huggingface.co/InstaDeepAI/nucleotide-transformer-v2-50m-multi-species),
+pinned in the image, embeds the 1 kb of reference around each variant with and without the alternate
+allele, and the score is the L2 distance between the two mean-pooled embeddings. It is not a
+likelihood score, it sees neither reads nor genotypes, and nothing validates it against
+pathogenicity, function or call quality. The model reads 6-mer tokens, so an indel whose length is
+not a multiple of six re-tokenizes the rest of the window and scores well above SNPs: expect indels
+at the top of the printout. The step is here to show a GPU process in the DAG and Ray Data on the
+same GPUs. Don't use the score to rank variants.
 
-**What the score is, and is not.** For each variant a nucleotide language model
-(`InstaDeepAI/nucleotide-transformer-v2-50m-multi-species`, baked into the image at a pinned
-revision) embeds the reference and alternate sequence around it, and the score is the distance
-between the two embeddings. That correlates with "this changes the sequence in a way the model
-noticed". It is not a pathogenicity score and is not comparable to SpliceAI or CADD.
+Measured at `standard` on prod, 2026-09-25: `ANNOTATE_VARIANTS` ran as 8 shards, and the cell scored
+the same 25,197 PASS variants with two L4 actors in 116 s; the two paths agreed to within 2.88e-05.
+As the actors start, Ray 2.58 logs an error-level advisory ("constructor arguments in the object
+store and max_restarts > 0") from Ray Data itself; it does not affect the result.
 
 
 ```python
@@ -482,10 +475,10 @@ else:
     rows = [{"chrom": v.chrom, "pos": v.pos, "ref": v.ref, "alt": v.alt}
             for v in sv.read_vcf(str(pass_vcf))]
 
-    # Two actors, one L4 each. Ray 2.58 logs an E-level advisory as they start: "constructor
-    # arguments in the object store and max_restarts > 0". It is Ray Data's own. Every
-    # actor-pool map gets its transform by ObjectRef, which the dataset holds until it finishes,
-    # so a restart can still read it. max_restarts=0 would silence the line and lose restarts.
+    # Two actors, one L4 each. The error-level "constructor arguments in the object store" line
+    # Ray 2.58 logs as they start is Ray Data's own: every actor-pool map gets its transform by
+    # ObjectRef, which the dataset holds until it finishes, so a restart can still read it.
+    # max_restarts=0 would silence the line and lose restarts.
     scored = ray.data.from_items(rows).map_batches(
         sv.VariantScorer,
         fn_constructor_kwargs={"reference": str(REFERENCE)},
@@ -505,16 +498,15 @@ else:
 
 ## Step 8: Persist the outputs
 
-`/mnt/cluster_storage` is shared across the nodes of *one* cluster and is deleted when that cluster
-terminates. In a workspace that is fine, since the cluster is yours and stays up. As an Anyscale
-Job it is a trap: a job terminates its cluster on success, so a run that finishes correctly
-destroys its own results.
+`/mnt/cluster_storage` is shared by the nodes of one cluster and is gone once that cluster
+terminates. In a workspace that is fine: the cluster is yours and stays up. A job's cluster
+terminates when the job ends, so results left there are lost even when the run succeeds.
 
-Every process that produces a result declares a `publishDir`, so `--outdir` already holds the
-declared outputs and none of the intermediates.
+Every process that produces a result declares a `publishDir`, so `--outdir` holds the declared
+outputs and none of the intermediates.
 [`persist_outputs.py`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/persist_outputs.py)
 copies that tree to `NF_RAY_RESULTS`, or to the first writable durable mount (`/mnt/user_storage`,
-then `/mnt/shared_storage`).
+then `/mnt/shared_storage`), and prints how many files it copied and where.
 
 
 ```python
@@ -523,51 +515,58 @@ run(["python", TEMPLATE_DIR / "persist_outputs.py", "--results", RESULTS])
 
 ## Run it as a job
 
-[`job.yaml`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/job.yaml) is the same pipeline over all of chromosome 20 (`--scale full`: 48
-intervals, 144 calling tasks), staged, run and persisted in one entrypoint:
+[`job.yaml`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/job.yaml)
+runs the same pipeline over all of chr20 (`--scale full`: 48 intervals, 144 HaplotypeCaller tasks)
+and persists the results, in one entrypoint. Submit it from the template directory:
 
 ```bash
 anyscale job submit --config-file job.yaml
 ```
 
-Measured on prod, 2026-09-25, with `job.yaml` as committed and its inline compute config: the same
-m5.2xlarge head, up to 8 r6i.4xlarge CPU workers and up to 2 g6.2xlarge L4 workers. The pipeline ran
-299 tasks in 44m07s, 25.1 CPU hours by Nextflow's count. That included the 144 HaplotypeCaller
-tasks and the GPU leg's 16 shards, and the run took about 47 minutes from submission to persisted
-results. The autoscaler asked for at most 6 CPU workers at a time. g6.2xlarge returned
-`InsufficientInstanceCapacity` twice, over 13 seconds, before launching. `persist_outputs.py` copied
+Its inline compute config has the notebook's node types, with up to 8 CPU workers and 2 L4 workers.
+On prod, 2026-09-25, the job took about 47 min from submission to persisted results, of which the
+pipeline took 44m07s (Step 1 has its task count and CPU hours). g6.2xlarge returned
+`InsufficientInstanceCapacity` twice over 13 seconds before launching. `persist_outputs.py` copied
 173 files to `/mnt/user_storage/nextflow-genomics-on-ray/results/chr20-trio`, and Step 6 has the
-scores. Cost has not been measured.
+scores. Cost was not measured.
 
-`max_retries` is 0 because a job-level retry starts on a new cluster with an empty work directory;
-retries belong inside the run, per task, where nf-ray's exit codes put them.
+`max_retries` is 0 because a job-level retry starts a new cluster with an empty work directory.
+Retries happen per task, inside the run.
 
 ## Next steps
 
 ### Point it at your own reads
 
-The samplesheet is the whole change: `sample,fastq_1,fastq_2`, plus `truth_vcf,truth_bed` for a
-sample you want scored. A row without truth columns is called and not scored. Three things bite:
+The samplesheet takes `sample,fastq_1,fastq_2`, plus `truth_vcf,truth_bed` for a sample you want
+scored; a row without truth columns is called and not scored. Before you run:
 
-- **The reference sets the contig names.** Truth sets, known sites and the reference must agree on
-  `chr20` against `20`; `collect_vcfeval.py` says so by name when they do not.
-- **`--region` and `--intervals` override the scale presets**, and a region the reads do not cover
-  produces an empty table rather than an error at the start.
-- **The ceiling must fit a node you have.** `conf/base.config`, `conf/ray.config` and the compute
-  config are one decision; `tests/nextflow-genomics-on-ray/test_config_agreement.py` checks them.
+- Known sites, truth sets and the reference must agree on contig names (`chr20` or `20`). A
+  mismatched known-sites file stops GATK at BQSR, and a mismatched truth set stops `RTG_VCFEVAL`.
+- `--region` and `--intervals` override the scale presets. Nothing checks up front that your reads
+  cover the region; the benchmark at the end shows it.
+- The ceiling must fit a node you have. `conf/base.config`, `conf/ray.config` and the compute config
+  are one decision; `tests/nextflow-genomics-on-ray/test_config_agreement.py` checks they agree.
 
 ### Run your own pipeline
 
-Add the `ray` profile from [`nextflow.config`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/pipeline/nextflow.config) and include
-[`conf/ray.config`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/pipeline/conf/ray.config), pinning the plugin as `nf-ray@0.1.0`: without a
-version Nextflow looks for nf-ray in the plugin registry, where it is not. Run `smoke.nf` first,
-then `nf-ray doctor`. This has been exercised with this template's pipeline only; an nf-core
-pipeline's biocontainer directives need one of the two routes under "Executors".
+On this template's image, which carries the plugin, `nf-ray` and the tools, add the `ray` profile
+from
+[`nextflow.config`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/pipeline/nextflow.config)
+and include
+[`conf/ray.config`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/pipeline/conf/ray.config),
+keeping the plugin pinned as `nf-ray@0.1.0`: without a version, Nextflow looks for nf-ray in the
+plugin registry, where it isn't. Run `nf-ray doctor` and `smoke.nf` first. Only this template's
+pipeline has run this way; an nf-core pipeline's biocontainer directives need one of the routes
+under "Containers".
 
 ### Read the executor
 
-[`RayExecutor.groovy`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/nf-ray-plugin/src/main/groovy/ai/anyscale/nfray/RayExecutor.groovy) is
-the whole Nextflow side; [`nf_ray/resources.py`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/nf_ray/resources.py) maps directives onto Ray
-resources; [`nf_ray/daemon.py`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/nf_ray/daemon.py) owns the tasks; and
-[`nf_ray/errors.py`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/nf_ray/errors.py) is the table of Ray failures and the exit codes they
-become.
+[`RayExecutor.groovy`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/nf-ray-plugin/src/main/groovy/ai/anyscale/nfray/RayExecutor.groovy)
+is the whole Nextflow side, about 400 lines with comments; it calls the `nf-ray` CLI rather than
+Ray's Java API, which Ray documents as experimental.
+[`nf_ray/resources.py`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/nf_ray/resources.py)
+maps directives onto Ray resources,
+[`nf_ray/daemon.py`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/nf_ray/daemon.py)
+owns the tasks, and
+[`nf_ray/errors.py`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/nf_ray/errors.py)
+maps Ray failures to exit codes.
