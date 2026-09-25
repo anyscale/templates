@@ -168,7 +168,9 @@ process COLLECT_BENCHMARK {
     // an input file name collision. A staged directory keeps its name; a staged
     // file's parent is a hash directory.
     //
-    // Called bare: Nextflow puts <projectDir>/bin on PATH for every task.
+    // Called bare: Nextflow puts the pipeline's bin/ on every task's PATH. Under
+    // `-profile ray` that is the executor's copy on shared storage, since a worker
+    // cannot see <projectDir> (RayExecutor.getBinDir).
     """
     collect_vcfeval.py --output benchmark.tsv ${eval_dirs}
     """

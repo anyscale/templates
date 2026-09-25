@@ -52,7 +52,7 @@ hand-off in between.
 
 ## Scope
 
-What the executor does with a process's directives, and what it leaves alone:
+What the executor does with a process's directives and the pipeline's files, and what it leaves alone:
 
 | | |
 |---|---|
@@ -63,6 +63,7 @@ What the executor does with a process's directives, and what it leaves alone:
 | `time` | parsed, recorded, and **not enforced**: Ray has no wall-clock limit |
 | `errorStrategy`, `maxRetries` | Nextflow's, unchanged. Ray-level retries are 0, so they cannot bypass them |
 | `container` | not honoured; see "Executors" below |
+| the pipeline's `bin/` | copied under the work directory when the run starts and made executable, because a worker cannot see the project directory; tasks get the copy on `PATH` |
 
 Two limits worth knowing before you port anything:
 

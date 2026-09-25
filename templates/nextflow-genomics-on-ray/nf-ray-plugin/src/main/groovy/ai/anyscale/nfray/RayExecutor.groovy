@@ -1,7 +1,13 @@
 package ai.anyscale.nfray
 
+import java.nio.file.FileSystems
+import java.nio.file.FileVisitOption
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import java.nio.file.attribute.PosixFilePermission
 import java.util.regex.Pattern
+import java.util.stream.Stream
 
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -194,11 +200,109 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
         }
     }
 
+    // -- the pipeline's bin/ ---------------------------------------------
+
+    /** The copy of the project's bin/ that tasks run; null when there is none to use. */
+    private Path stagedBinDir
+
+    /**
+     * Where tasks find the pipeline's bin/ scripts.
+     *
+     * <p>Nextflow appends this to every task's PATH (TaskProcessor.getProcessEnvironment),
+     * and the default is {@code session.binDir}, i.e. {@code <projectDir>/bin}, a path on
+     * the machine running Nextflow. A grid executor gets away with that on HPC, where the
+     * project sits on a filesystem every node mounts. A Ray cluster shares only
+     * /mnt/cluster_storage: the pipeline lives in the workspace's or the job's working
+     * directory on the head node, so the first process to call a bin/ script failed on a
+     * worker with `collect_vcfeval.py: command not found`, exit 127. Tasks get a copy under
+     * the work directory instead, which every node must see anyway. The AWS Batch executor
+     * does the same with S3.
+     *
+     * <p>Module-level bin directories ({@code nextflow.enable.moduleBinaries}) are not
+     * copied.
+     */
+    @Override
+    Path getBinDir() {
+        return stagedBinDir ?: super.getBinDir()
+    }
+
+    /**
+     * Copy {@code session.binDir} to a fresh {@code <workDir>/tmp/..../bin}.
+     *
+     * <p>Every file in the copy is made executable. rayapp's template zip records no Unix
+     * modes, so a template unpacked from it (CI, or a console template) has its bin/
+     * scripts at 0644, and bash refuses a non-executable script it finds on PATH with
+     * `Permission denied`, exit 126. Symlinks are followed, since a link back into the
+     * project would dangle on a worker.
+     *
+     * <p>Returns null, leaving tasks on the original path, when the pipeline has no bin/,
+     * when {@code executor.disableRemoteBinDir} says the project is already on shared
+     * storage, or when the work directory is not a local POSIX path.
+     */
+    private Path stageBinDir() {
+        final Path source = session?.getBinDir()
+        if( source == null || !Files.isDirectory(source) )
+            return null
+        if( session.disableRemoteBinDir ) {
+            log.debug "nf-ray: executor.disableRemoteBinDir is set; tasks use ${source}"
+            return null
+        }
+        if( getWorkDir().getFileSystem() != FileSystems.getDefault() )
+            return null
+        try {
+            final Path target = getTempDir('bin')
+            copyExecutable(source, target)
+            log.info "nf-ray: copied ${source} to ${target}, where every node can run it"
+            return target
+        }
+        catch( IOException | UncheckedIOException e ) {
+            log.warn "nf-ray: could not copy ${source} to the work directory (${e.message}). " +
+                     "Tasks will look for bin/ scripts in ${source}, which only this node has."
+            return null
+        }
+    }
+
+    private static void copyExecutable(Path source, Path target) throws IOException {
+        final Set<PosixFilePermission> exec = EnumSet.of(
+            PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_EXECUTE,
+            PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_EXECUTE,
+            PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_EXECUTE)
+        final Stream<Path> walk = Files.walk(source, FileVisitOption.FOLLOW_LINKS)
+        try {
+            final Iterator<Path> it = walk.iterator()
+            while( it.hasNext() ) {
+                final Path path = it.next()
+                final Path dest = target.resolve(source.relativize(path).toString())
+                if( Files.isDirectory(path) ) {
+                    Files.createDirectories(dest)
+                    continue
+                }
+                Files.copy(path, dest, StandardCopyOption.REPLACE_EXISTING)
+                try {
+                    final Set<PosixFilePermission> perms = EnumSet.noneOf(PosixFilePermission)
+                    perms.addAll(Files.getPosixFilePermissions(dest))
+                    perms.addAll(exec)
+                    Files.setPosixFilePermissions(dest, perms)
+                }
+                catch( IOException | UnsupportedOperationException e ) {
+                    // Still worth using: the copy was created with the source's mode.
+                    log.debug "nf-ray: could not chmod ${dest}: ${e.message}"
+                }
+            }
+        }
+        finally {
+            walk.close()
+        }
+    }
+
     // -- lifecycle -------------------------------------------------------
 
     @Override
     protected void register() {
         super.register()
+        // Before any task exists: TaskProcessor reads getBinDir() once per process and
+        // keeps the answer.
+        stagedBinDir = stageBinDir()
         // Start the daemon now rather than on the first submit. Connecting to Ray
         // is the step most likely to fail, and failing here costs seconds at
         // pipeline start instead of surfacing as an unexplained submit error once
