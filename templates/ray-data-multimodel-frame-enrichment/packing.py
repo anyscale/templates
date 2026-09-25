@@ -1,57 +1,33 @@
 #!/usr/bin/env python3
-"""Does this multi-model packing fit on one GPU, and what binds when it does not?
+"""Check whether a set of Ray Data stages fits on one GPU, and which limit binds each stage.
 
-    python packing.py                                  # the originating workload's config
-    python packing.py --stages measured --vram 22.03    # this template's four models, on an L4
-    python packing.py --strict                         # exit 1 if any GPU is over-committed
+    python packing.py                                  # the shipped configuration, 48 GiB card
+    python packing.py --stages measured --vram 22.03    # this template's models, on an L4
+    python packing.py --strict                         # exit 1 on any problem found
     python packing.py --json
 
-Two tables. `--stages shipped` is the originating workload's configuration on its own model
-set, which is where every lever in the README was measured. `--stages measured` is this
-template's sam3 + dinov3 + siglip2, measured on a g6 L4. Their footprints differ: 21.01 GiB
-shipped, 5.53 GiB measured. Do not quote one for the other.
+Two tables. `--stages shipped` is pipeline.py's default actor counts and fractions, with the
+per-actor VRAM of the production workload they came from, measured on that workload's own
+models. `--stages measured` is this template's SAM 3, DINOv3 and SigLIP2, measured on a g6 L4.
+One actor of each holds 21.01 GiB shipped and 5.53 GiB measured; do not quote one for the other.
 
 An L4 is 24 GB, which is 22.35 GiB, of which torch reports 22.03 usable. Pass `--vram 22.03`;
 `--vram 24` invents about 2 GiB of headroom.
 
-THE TRAP
+WHY TWO LIMITS
 
-`num_gpus=0.02` is an admission-control token and does not cap VRAM. Ray will place 50 actors
-of that stage on one GPU because the fractions sum to 1.0, and CUDA then OOMs. The two limits
-come from different numbers and the smaller wins:
+`num_gpus=0.02` is admission control and does not cap VRAM. Ray will place 50 actors of that
+stage on one GPU because the fractions sum to 1.0, and CUDA then OOMs. The smaller of two
+numbers wins:
 
     by fraction :  floor(1 / num_gpus)                     actors per GPU
     by VRAM     :  floor(vram_per_gpu / vram_per_actor)     actors per GPU
 
-On the shipped configuration the fraction budget allows 20 object-embedder actors on one GPU
-and VRAM allows 6. Reading only the fractions provisions three times what fits.
+On the shipped configuration the fraction allows 20 object-embedder actors on one GPU and VRAM
+allows 6. Reading only the fractions provisions three times what fits.
 
-WHETHER PACKING PAYS: MEASURED, >=26.5% ON ONE L4
-
-Not asserted here. On one L4, 96 frames at 640x480, one actor per stage:
-
-    coresident  n=3  1.2619 / 1.2631 / 1.2792 rows/s   (spread 1.4%)
-    serial      n=3  0.9882 / 0.9903 / 0.9979 rows/s   (spread 1.0%)
-    verdict: SEPARABLE, coresident > serial by >= 26.5%
-
-`serial` gives each stage the whole GPU with `materialize()` between stages, so the models are
-never co-resident. The metric is end-to-end wall clock including warm model loads. Do not
-compare it to the ~49.7 rows/s steady-state figure below. Three rounds ran: >=27.7%, >=27.9%,
->=26.5%. The first two needed a run discarded; the third put the throwaway inside the harness.
-
-Re-run `measure_packing.py` after any change to the model set, the image, the batch sizes or
-the card. It carries the three guards and the failure each one prevents.
-
-WHAT THIS FILE ASSERTS
-
-Feasibility and ordering, never throughput. It needs no cluster, no GPU and no weights.
-Throughput for this shape is fleet-specific:
-
-    ~49.7 rows/s    end to end, fixed confirmation run on the source fleet
-    ~88 rows/s      active compute only; output prefix carried ~321k duplicate rows
-    209.999 rows/s  extraction only, no detector
-
-Stdlib only.
+This file checks feasibility and ordering, never throughput, and needs no cluster, GPU or
+weights. Whether packing pays is measure_packing.py's question. Stdlib only.
 """
 
 from __future__ import annotations
@@ -67,8 +43,8 @@ class Stage:
     """One model stage, as it appears in a Ray Data `map_batches` call.
 
     `vram_gib` is measured per actor at `batch`/`subbatch` and does not survive a change to
-    either: batch 192-256 OOMed at 30+ GiB per actor, and batch 32 landed at 4.95 GiB. Record
-    the batch alongside the VRAM figure.
+    either: on the shipped workload's metrics stage, batch 192-256 OOMed at 30+ GiB per actor
+    and batch 32 used 4.95 GiB. Record the batch with the VRAM figure.
     """
 
     name: str
@@ -104,17 +80,16 @@ class Stage:
         return "both"
 
 
-# The configuration behind the originating workload's best full run (G2 fleet, 2026-06-09):
+# pipeline.py's defaults, from the production workload's best full run (2026-06-09):
 #
-#   detector : 10 actors x num_gpus 0.2, batch 4, bfloat16, torch.compile DEFAULT mode
+#   detector : 10 actors x num_gpus 0.2, batch 4, bfloat16, torch.compile `default` mode
 #   metrics  :  8-24 actors x num_gpus 0.02, batch 32, sub-batch 4
 #   embedders:            num_gpus 0.05
 #
-# Per-actor VRAM measured on the same shape: object embedding 7.65 GiB, image embedding
-# 0.96 GiB, metrics ~2.8 GiB at sub-batch 4. The detector figure is the one the source
-# never recorded per-actor; 0.2 of a 48 GiB card is 9.6 GiB of fraction budget and the
-# stage is the throughput floor at ~13 images/s per actor, so it is entered here as its
-# fraction share, flagged UNMEASURED.
+# Per-actor VRAM measured on that workload's models: object embedding 7.65 GiB, image
+# embedding 0.96 GiB, metrics ~2.8 GiB at sub-batch 4. Its detector was never measured per
+# actor, so the entry is its fraction share of a 48 GiB card (0.2 x 48 = 9.6 GiB), flagged
+# UNMEASURED.
 SHIPPED = [
     Stage("detector", num_gpus=0.2, vram_gib=9.6, actors=10, batch=4),
     Stage("object-embedder", num_gpus=0.05, vram_gib=7.65, actors=4, batch=32),
@@ -124,26 +99,19 @@ SHIPPED = [
 
 UNMEASURED = {"detector"}  # vram_gib is its fraction share, not a measurement
 
-# THIS TEMPLATE'S OWN MODEL SET, MEASURED. Two GPU probe jobs on a g6 L4, 2026-08-17,
-# 640x480 frames, bf16, no torch.compile. `SHIPPED` above is the ORIGINATING WORKLOAD's
-# configuration on a different model set, and its 21.01 GiB one-each footprint describes
-# their models, not sam3 + dinov3 + siglip2. Quoting it as this set's footprint was the
-# mistake these numbers replace.
-#
-# Peak allocated ABOVE the pre-stage baseline, so weights plus activations for that stage
-# alone. `batch` is a field, not a comment: a VRAM figure without its batch does not plan.
+# This template's own models, measured in two GPU probe jobs on a g6 L4, 2026-08-17: 640x480
+# frames, bf16, no torch.compile. Each figure is peak allocated above the pre-stage baseline,
+# so weights plus activations for that stage alone. `batch` is a field because a VRAM figure
+# without its batch cannot be planned with.
 #
 #   detector          batch 8, 2 labels   4.19 GiB   (weights alone 1.60)
 #   object-embedder   batch 4             0.59 GiB   <- see the caveat below
 #   image-embedder    batch 4             0.72 GiB
 #   metrics           batch 4, sub 4      0.03 GiB
 #
-# CAVEAT ON THE OBJECT EMBEDDER, and it is the same trap as everywhere else in this file:
-# it was measured at ONE crop per frame, so 4 crops total. Its cost scales with DETECTIONS,
-# not with frames, and the originating workload's 7.65 GiB was 32 frames' worth of crops.
-# This figure is a floor for a nearly-empty batch and must not be read as a per-actor budget
-# for a busy one. It is entered here because a measured floor beats an invented number, and
-# flagged for the same reason.
+# The object embedder was measured at one crop per frame, 4 crops in all. Its cost scales with
+# detections, not frames; the shipped workload's 7.65 GiB was 32 frames' worth of crops. Treat
+# 0.59 GiB as a floor for a nearly empty batch, not a per-actor budget for a busy one.
 MEASURED_L4 = [
     Stage("detector", num_gpus=0.2, vram_gib=4.19, actors=1, batch=8),
     Stage("object-embedder", num_gpus=0.05, vram_gib=0.59, actors=1, batch=4),
@@ -153,14 +121,12 @@ MEASURED_L4 = [
 
 STAGE_SETS = {"shipped": SHIPPED, "measured": MEASURED_L4}
 
-# Which stages carry a fraction share instead of a measurement, PER TABLE. The detector is
-# the originating workload's one gap; on the measured table it is the best-measured stage of
-# the four, and printing "(UNMEASURED)" beside a real figure would be a lie in the direction
-# that costs least to tell.
+# Stages whose VRAM figure is a fraction share instead of a measurement, per table. The
+# measured table's detector is measured, so nothing is flagged there.
 UNMEASURED_BY_SET = {"shipped": UNMEASURED, "measured": set()}
 
-# A FLOOR for this template's own model set, from the hub file sizes, 2026-08-17. Not a
-# measurement. Weights only: no activations, no workspace, no allocator slack.
+# Weight-only floors for this template's models, from the hub file sizes, 2026-08-17. Not
+# measurements: no activations, no workspace, no allocator slack.
 #
 #   facebook/sam3                model.safetensors  3.44 GB fp32  -> ~1.72 GB bf16
 #   facebook/dinov3-vitl16       model.safetensors  1.21 GB fp32  -> ~0.61 GB bf16
@@ -168,14 +134,11 @@ UNMEASURED_BY_SET = {"shipped": UNMEASURED, "measured": set()}
 #                                                    towers; this template uses the vision
 #                                                    tower only, so less)
 #
-# Two things follow, and neither is a per-actor figure. The table above is the ORIGINATING
-# WORKLOAD's measurement on a DIFFERENT model set, so these floors do not replace it --
-# they bound it. And the object embedder's 7.65 GiB against a 0.61 GB weight floor says
-# activations at batch 32 dominate its footprint by an order of magnitude. The GPU measurement that replaces the
-# detector's UNMEASURED entry has these numbers to sanity-check itself against: a measured
-# per-actor figure BELOW its own weight floor is a measurement error, not a win.
+# Use them to sanity-check a measurement: a per-actor figure below its model's weight floor is
+# a measurement error.
 
-# G2: one workstation-class 48 GB card. The fleet the shipped configuration was tuned on.
+# The production workload's card: one workstation-class 48 GB GPU, the one the shipped
+# configuration was tuned on.
 DEFAULT_VRAM_GIB = 48.0
 
 
@@ -239,16 +202,16 @@ def overcommitted(stages: list[Stage], vram_per_gpu: float) -> list[str]:
 
 
 def coresident_footprint(stages: list[Stage], actors_each: int = 1) -> float:
-    """VRAM held when one GPU carries `actors_each` of EVERY stage at once."""
+    """VRAM held when one GPU carries `actors_each` of every stage at once."""
     return sum(s.vram_gib * actors_each for s in stages)
 
 
 def check_coresidency(stages: list[Stage], vram_per_gpu: float) -> list[str]:
-    """Can all four stages actually sit on one card together?
+    """Can one actor of every stage sit on one card together?
 
-    The per-stage checks ask how many of one stage fit. This asks whether the set fits, which
-    is the binding constraint here. Checking stages independently calls an L4 fine for a set
-    whose one-actor-each footprint is 21.0 GiB and whose two-detector variant is 30.6 GiB.
+    The per-stage checks ask how many of one stage fit; this asks whether the set does, which
+    is the binding constraint here. On an L4, a per-stage check passes a set whose
+    one-actor-each footprint is 21.0 GiB, or 30.6 GiB with two detectors.
     """
     problems = []
     one = coresident_footprint(stages, 1)
@@ -273,7 +236,8 @@ def check_ordering(stages: list[Stage]) -> list[str]:
     """The relative-cost ordering the shape depends on.
 
     A detector that is cheap next to the embedders inverts the shape, and the packing defaults
-    stop transferring. Direction only; the magnitudes are this fleet's.
+    stop transferring. Direction only; the magnitudes are the shipped workload's. main() skips
+    this for the measured table, which was taken at one crop per frame.
     """
     by_name = {s.name: s for s in stages}
     problems = []
@@ -312,12 +276,14 @@ def render(verdicts: list[StageVerdict], vram: float) -> str:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--vram", type=float, default=DEFAULT_VRAM_GIB,
-                    help=f"VRAM per GPU in GiB (default {DEFAULT_VRAM_GIB:g}, the source fleet)")
+                    help=f"VRAM per GPU in GiB (default {DEFAULT_VRAM_GIB:g}, the card the "
+                         "shipped configuration was tuned on)")
     ap.add_argument("--strict", action="store_true",
-                    help="exit 1 if any stage is over-committed or the ordering inverted")
+                    help="exit 1 if a stage is over-committed, one actor of each stage does "
+                         "not fit on one GPU, or (shipped table) the cost ordering has inverted")
     ap.add_argument("--stages", choices=sorted(STAGE_SETS), default="shipped",
-                    help="'shipped' is the originating workload's config on ITS model set; "
-                         "'measured' is this template's own four models, measured on an L4")
+                    help="'shipped': pipeline.py's defaults with the production workload's "
+                         "VRAM figures; 'measured': this template's models, measured on an L4")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
 

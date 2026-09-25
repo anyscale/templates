@@ -1,21 +1,16 @@
 #!/usr/bin/env python3
-"""Four models on one GPU: promptable detection, two embedders, quality metrics.
+"""Four stages on one GPU: promptable detection, two embedders, quality metrics.
 
     python pipeline.py --input /mnt/cluster_storage/frames --stub      # CPU, no weights
-    HF_TOKEN=hf_... python pipeline.py --input /mnt/cluster_storage/frames
+    python pipeline.py --input /mnt/cluster_storage/frames             # HF_TOKEN on every node
 
-Fractional-GPU packing across heterogeneous stages: four models on one GPU, each holding a
-different amount of VRAM and running at a different rate. `packing.py` does the arithmetic
-without a GPU.
+Each stage is a Ray Data actor pool with its own GPU fraction, batch size and pool size. The
+stages hold different amounts of VRAM and run at different rates; `packing.py` checks whether
+they fit, without a GPU.
 
-Every lever below carries its measured effect and what should change it.
-
-RATES FOR THIS SHAPE, WITH THEIR SCOPE. Quote the scope with the rate.
-
-    ~49.7 rows/s    end to end, fixed 131k x 2 confirmation run on the source fleet
-    ~88 rows/s      active compute only; a watcher bug inserted 3h15m of idle, and the
-                    output prefix carried ~321k duplicate rows from earlier runs
-    209.999 rows/s  extraction only, no detector
+The comment on each setting below gives its effect as measured on the production workload the
+defaults came from, and what should change it. That workload's throughput figures are in the
+README, with their scope.
 """
 
 from __future__ import annotations
@@ -31,47 +26,38 @@ import numpy as np
 # exercise them with no Ray installed.
 
 # --------------------------------------------------------------------------------------
-# Model set. All public. The two Meta repos are GATED and their terms are accepted per
-# account, so HF_TOKEN comes from the reader's environment. Do not add a shared organisation
-# token: a service account cannot agree to SAM 3's licence for someone else. CI runs
+# Models. All public; the two facebook/ repos are gated and their terms are accepted per
+# account, so HF_TOKEN comes from the user's environment. Do not add a shared organisation
+# token: a service account cannot accept SAM 3's licence for someone else. CI runs
 # --ungated-only.
 # --------------------------------------------------------------------------------------
 DETECTOR_MODEL = os.environ.get("DETECTOR_MODEL", "facebook/sam3")
 OBJECT_EMBED_MODEL = os.environ.get("OBJECT_EMBED_MODEL", "facebook/dinov3-vitl16-pretrain-lvd1689m")
 IMAGE_EMBED_MODEL = os.environ.get("IMAGE_EMBED_MODEL", "google/siglip2-base-patch16-224")
 
-# The prompts the detector grounds against. Built once per actor, never per batch: 32 images
-# x 17 labels settled at ~2.2 s per actor once precomputed.
+# Detector prompts: one forward pass per label per batch (see Detector). This code passes the
+# label text, with the images, to the processor on every batch; it does not precompute
+# prompts. On the production workload, precomputing them once per actor settled 32 images x
+# 17 labels at ~2.2 s per actor.
 #
-# Each label must be a concrete noun phrase. PCS grounds noun phrases; abstractions ground to
-# nothing. Measured on an L4 against make_fixture.py's fixture, boxes per frame at the shipped
-# threshold of 0.4:
-#
-#     object          0 0 0 0        rectangle       1 0 0 3
-#     shape           0 0 0 0        bright square   1 1 1 2
-#     region          0 0 0 0
-#
-# `object,shape,region` was this file's default until that was run, and it returns NOTHING
-# at every threshold down to 0.05. The same model on the same GPU finds 2 cats, 2 remote
-# controls and 1 couch in a COCO photograph at the same threshold, which is the control
-# that says the model and the call are fine and the words were wrong.
-#
-# So: if you change the imagery, re-check the labels against it. A label that grounds to
-# nothing still costs a full forward pass per batch and returns no detections, which reads
-# downstream as an empty frame.
+# Each label must be a concrete noun phrase. On make_fixture.py's frames (an L4, the shipped
+# threshold of 0.4), `object`, `shape` and `region` return no boxes at any threshold down to
+# 0.05, while `rectangle` and `bright square` do; the README has the table and the COCO
+# control. If you change the imagery, re-check the labels: a label that grounds to nothing
+# still costs a full forward pass per batch and reads downstream as an empty frame.
 LABELS = [s for s in os.environ.get("LABELS", "bright square,rectangle").split(",") if s]
 
 # --------------------------------------------------------------------------------------
 # Levers
 # --------------------------------------------------------------------------------------
 
-# Read CPU. A divisor, not a budget. At 0.1 on 96 cores the read stage opened ~950 slots and
-# one 64-row block took 430 s. The value is fleet-specific; the direction is what transfers.
+# CPUs per read task, so read parallelism is cores divided by this. At 0.1 on 96 cores the
+# read stage opened ~950 slots and one 64-row block took 430 s. The value is fleet-specific;
+# the direction transfers.
 DOWNLOAD_NUM_CPUS = float(os.environ.get("DOWNLOAD_NUM_CPUS", "1.0"))
 
-# Detector. The throughput floor at ~13 images/s per actor with all SMs busy. Raising the
-# batch does not raise throughput; buy parallelism with actors. Raise the batch only if a
-# profile shows the SMs idle.
+# Detector. The slowest stage, at ~13 images/s per actor with all SMs busy. A larger batch
+# does not raise throughput; add actors. Raise the batch only if a profile shows idle SMs.
 DETECTOR_ACTORS = int(os.environ.get("DETECTOR_ACTORS", "10"))
 DETECTOR_GPU = float(os.environ.get("DETECTOR_GPU", "0.2"))
 DETECTOR_BATCH = int(os.environ.get("DETECTOR_BATCH", "4"))
@@ -80,17 +66,17 @@ DETECTOR_BATCH = int(os.environ.get("DETECTOR_BATCH", "4"))
 # overwritten-output failures inside Ray actors. Reproduce that before re-enabling it.
 TORCH_COMPILE = os.environ.get("TORCH_COMPILE", "default")
 
-# Embedders. Measured per-actor VRAM on the source shape: object embedding 7.65 GiB, image
-# embedding 0.96 GiB. Same GPU fraction, 8x the memory. The fraction is admission control and
-# does not cap VRAM; see packing.py.
+# Embedders. Per-actor VRAM on the production workload's models: object embedding 7.65 GiB,
+# image embedding 0.96 GiB. Same GPU fraction, 8x the memory: the fraction is admission
+# control and does not cap VRAM (see packing.py).
 OBJ_EMB_GPU = float(os.environ.get("OBJ_EMB_GPU", "0.05"))
 IMG_EMB_GPU = float(os.environ.get("IMG_EMB_GPU", "0.05"))
 EMB_BATCH = int(os.environ.get("EMB_BATCH", "32"))
 EMB_ACTORS = int(os.environ.get("EMB_ACTORS", "4"))
 
-# Metrics. Sub-batch is decoupled from the Ray batch. Variable per-image shapes create VRAM
+# Metrics. The sub-batch is separate from the Ray batch. Variable per-image shapes create VRAM
 # shape-buckets: a Ray batch of 192-256 OOMed at 30+ GiB per actor, and Ray batch 32 with a
-# sub-batch of 4 landed at 4.95 GiB. Raise the sub-batch only on fixed-shape input.
+# sub-batch of 4 used 4.95 GiB. Raise the sub-batch only on fixed-shape input.
 METRICS_ACTORS = int(os.environ.get("METRICS_ACTORS", "8"))
 METRICS_GPU = float(os.environ.get("METRICS_GPU", "0.02"))
 METRICS_BATCH = int(os.environ.get("METRICS_BATCH", "32"))
@@ -109,9 +95,10 @@ def runtime_env(stub: bool = False) -> dict:
     Keep this. The driver's install does not reach the actors: the compute config pins the
     head unschedulable (`resources: {CPU: 0}`), so every `map_batches` actor runs on a GPU
     worker that never ran `uv pip install`, and `--system` installs do not propagate. Without
-    this the models are importable only where they are never loaded.
+    it, torch is on the driver and missing from every actor.
 
-    Hand the actors the same lock the driver installed. A second pin list here would drift.
+    Hand the actors the same lock the driver installed; a second pin list here would drift.
+    This carries no environment variables, so HF_TOKEN has to be set where every node sees it.
 
     `--stub` needs none of it: the stub branches touch numpy, which the base image ships.
     """
@@ -138,15 +125,15 @@ def _frames(batch: dict) -> list[np.ndarray]:
 
 
 class Detector:
-    """Promptable detection. The batch dimension collapses; the label dimension does not.
+    """Promptable detection with SAM 3: one forward pass per label, each over the whole batch.
 
     Promptable Concept Segmentation takes one noun phrase and returns every instance of it, so
     `L` labels cost `L` forward passes. `Sam3Processor` hands `text` straight to its tokenizer
     with `padding="max_length", max_length=32`, so `list[str]` is one prompt per image.
 
-    Do not write `text=[labels] * len(frames)`. That is `list[list[str]]`, HuggingFace's
-    pre-tokenized-words form, which needs `is_split_into_words=True` that the processor never
-    passes. Measured on real weights, the fast tokenizer rejects it:
+    Do not write `text=[labels] * len(frames)`. That is `list[list[str]]`, Hugging Face's
+    pre-tokenized-words form, which needs `is_split_into_words=True`, and the processor never
+    passes it. Measured on real weights, the fast tokenizer rejects it:
 
         TypeError: TextEncodeInput must be Union[TextInputSequence,
                    Tuple[InputSequence, InputSequence]]
@@ -213,11 +200,11 @@ class Detector:
                 for i, r in enumerate(results):
                     per_frame[i].append(r["boxes"].to(torch.int32))
 
-            # One transfer per batch, at the end, across every label. Device syncs in this
-            # path were ~2000 per batch; removing them was the largest single contributor to
-            # the 6.64 -> 39.65 rows/s move, confounded with Arrow and packing changes that
-            # landed the same days. Do not put `.cpu()` inside the loop: that is B x L
-            # transfers.
+            # One transfer per batch, at the end, across every label. On the production
+            # workload this path made ~2000 device syncs per batch, and removing them was the
+            # largest single contributor to its 6.64 -> 39.65 rows/s gain, though Arrow and
+            # packing changes landed the same days. Do not put `.cpu()` inside the loop:
+            # that is B x L transfers.
             joined = [torch.cat(bs, dim=0) if bs else torch.zeros((0, 4), dtype=torch.int32)
                       for bs in per_frame]
             counts = [int(t.shape[0]) for t in joined]
@@ -237,7 +224,8 @@ class Detector:
 
 
 class ObjectEmbedder:
-    """Embed each detected crop. The VRAM hog: 7.65 GiB per actor on the source shape."""
+    """Embed each detected crop. The largest VRAM user: 7.65 GiB per actor in the shipped
+    configuration."""
 
     def __init__(self) -> None:
         self.stub = STUB
@@ -251,8 +239,9 @@ class ObjectEmbedder:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.processor = AutoImageProcessor.from_pretrained(OBJECT_EMBED_MODEL)
         model = AutoModel.from_pretrained(OBJECT_EMBED_MODEL, dtype=torch.bfloat16)
-        # Raise on unloaded weights. A random-initialization warning is logged and ignored,
-        # and the model then emits garbage at full speed.
+        # Refuse a model with no checkpoint source. This does not catch a partial load:
+        # from_pretrained fills missing weights randomly and only logs it (checked on
+        # transformers 5.15.0). Pass output_loading_info=True and check missing_keys for that.
         if getattr(model.config, "_name_or_path", "") == "":
             raise RuntimeError(
                 f"{OBJECT_EMBED_MODEL} did not load pretrained weights. Refusing to emit "
@@ -317,7 +306,8 @@ class ObjectEmbedder:
 
 
 class ImageEmbedder:
-    """Whole-frame embedding. The cheap one: 0.96 GiB per actor, same GPU fraction."""
+    """Whole-frame embedding. The cheap one: 0.96 GiB per actor in the shipped configuration,
+    0.72 GiB for SigLIP2 on an L4, at the object embedder's GPU fraction."""
 
     def __init__(self) -> None:
         self.stub = STUB
@@ -345,8 +335,8 @@ class ImageEmbedder:
             with torch.inference_mode():
                 feats = self.model.get_image_features(**inputs)
             # On transformers 5.15.0 this returns a `BaseModelOutputWithPooling`, not a
-            # tensor; a bare `.to(...)` raises AttributeError. Handle both: the pin is a
-            # floor, and this return type has changed once.
+            # tensor; a bare `.to(...)` raises AttributeError. Handle both, because this
+            # return type has changed once across versions.
             if not isinstance(feats, torch.Tensor):
                 pooled = getattr(feats, "pooler_output", None)
                 if pooled is None:
@@ -413,8 +403,8 @@ STAGES = [
 def stage_plan(ungated_only: bool = False) -> list[str]:
     """The stage keys to build, in order.
 
-    `ungated_only` drops SAM 3 and DINOv3 and leaves SigLIP2 plus the weightless metrics
-    stage: two models on one card with real weights, which is not the four-model claim.
+    `ungated_only` drops SAM 3 and DINOv3 and keeps SigLIP2 plus the weightless metrics stage:
+    two stages on one card, one with real weights. That does not test the four-stage fit.
 
     The object embedder goes with the detector. It embeds the detector's crops, so with no
     `boxes` column there is nothing to embed.
@@ -446,10 +436,10 @@ def build(input_path: str, stub: bool = False, ungated_only: bool = False):
         # scheduling 30 actors to do that teaches nothing extra.
         actors = dict.fromkeys(actors, 1)
 
-    # Use `compute=ActorPoolStrategy(size=n)`, not `concurrency=(n, n)`. The tuple form is
-    # deprecated as of Ray 2.51 and warns once per stage on 2.57. `size=n` is the spelling of
-    # min_size == max_size, and this template needs a fixed pool: the autoscaler parks below
-    # the GPU count on whole-GPU actors.
+    # Use `compute=ActorPoolStrategy(size=n)`, not `concurrency=(n, n)`: the tuple form is
+    # deprecated as of Ray 2.51 and warned once per stage on 2.57. `size=n` means
+    # min_size == max_size, and this template needs a fixed pool: on the production workload,
+    # an autoscaling pool of whole-GPU actors settled below the GPU count.
     from ray.data import ActorPoolStrategy
 
     def pool(stage: str) -> dict:
@@ -473,14 +463,16 @@ def build(input_path: str, stub: bool = False, ungated_only: bool = False):
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--input", required=True)
-    ap.add_argument("--output", default=None)
+    ap.add_argument("--input", required=True,
+                    help="directory of frame Parquet files, as make_fixture.py writes them")
+    ap.add_argument("--output", default=None,
+                    help="write the enriched Parquet here; without it the run only counts rows")
     ap.add_argument("--stub", action="store_true",
                     help="no weights, no GPU: exercises the DAG and every shape")
     ap.add_argument("--ungated-only", action="store_true",
-                    help="real GPU and real weights, but only the stages whose models are "
-                         "not gated (SigLIP2 + metrics). Needs no HF_TOKEN. This is TWO-model "
-                         "co-residency, not the four-model claim")
+                    help="real GPU and real weights, but only the stages whose models are not "
+                         "gated (SigLIP2 and metrics); needs no HF_TOKEN. Tests two stages "
+                         "sharing a card, not the four-stage fit")
     # Stats are on by default. Spell the flag as the one that turns them off: an
     # `action="store_true", default=True` flag cannot change anything.
     ap.add_argument("--no-stats", action="store_false", dest="stats",
@@ -491,6 +483,8 @@ def main(argv: list[str] | None = None) -> int:
         os.environ["STUB"] = "1"
         globals()["STUB"] = True
 
+    # An explicit flag selects the ungated stages. Do not infer it from a missing HF_TOKEN: a
+    # run that silently drops stages would pass while testing half the pipeline.
     if not args.stub and not args.ungated_only and not os.environ.get("HF_TOKEN"):
         raise SystemExit(
             "Set HF_TOKEN before running. Two of the three models are GATED, so this needs\n"
