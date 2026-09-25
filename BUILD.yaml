@@ -823,20 +823,10 @@
 # README.ipynb is the source; README.md is its nbconvert render. Never hand-edit the .md;
 # regenerate it, because check-readme compares bytes.
 #
-# From a customer engagement whose data is private. The data is synthetic; the model is public,
-# MIT and ungated. The notebook's Provenance section says what ran where. Its table's ratios
-# (1.73x and 2.35x packing on A10G) are the engagement's, on another cluster, and not this
-# notebook's.
-#
-# Measured on a 14-CPU macOS laptop, 2026-09-24, Ray 2.58.0, torch 2.13.0 on CPU: the notebook
-# end to end through papermill, 23/23 cells, 3 min 17 s, with the lock install skipped and no
-# `pip` in ray.init (the lock is Linux CUDA wheels) and CLASSIFY_ROWS=2000. The probe and the hash
-# left_anti join returned the same 10,081 rows, all 371 NULL-key rows kept, 14 aggregators
-# against 0; 200 per-partition markers against 1. The 1.11x that run printed is two CPU actors
-# against one: Ray on Apple Silicon reports a GPU torch cannot use. Not yet run on this entry's
-# compute config, so no GPU cell has run anywhere.
-#
-# Unmeasured: the probe under worker loss, and run_pipeline.py / job.yaml, never submitted.
+# The data is synthetic; the model is public, MIT and ungated. Measured 2026-09-24 in two CI
+# runs on the AWS config (23/23 cells; the second ran the current code) and in laptop papermill
+# runs on CPU. The README's Provenance section says which figure came from where. Unmeasured:
+# the GCP config, the probe under worker loss, and job.yaml / run_pipeline.py on a cluster.
 # owner: @em-anyscale
 - name: ray-data-incremental-batch-classification
   owner_team: ray-data
@@ -849,9 +839,9 @@
   test:
     tests_path: tests/ray-data-incremental-batch-classification/
     command: bash tests.sh
-    # MEASURED on the AWS config (one g5.2xlarge), 2026-09-24: the rayapp test took 11 min 41 s,
+    # Measured on the AWS config (one g5.2xlarge), 2026-09-24: the rayapp test took 11 min 41 s,
     # and tests.sh, which this bounds, under 9 minutes of it (workspace RUNNING to cleanup). The
     # untimed first join is 189.6 s of that, most of it while the autoscaler adds a CPU worker,
-    # which cloud capacity can stretch. 1800 leaves more than 3x headroom. The GCP config has not
-    # been measured. Cluster start and image pull sit outside it.
+    # which cloud capacity can stretch. 1800 leaves more than 3x headroom. Cluster start and
+    # image pull sit outside it. The GCP config has not been measured.
     timeout_in_sec: 1800

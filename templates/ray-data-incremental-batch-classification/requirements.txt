@@ -1,9 +1,9 @@
-# Installed on top of anyscale/ray:2.58.0-py312-cu129. Read from
-# dependencies/images/ray-2.58.0-py312-cu129.freeze.txt, not re-measured on a job: the image
-# ships pyarrow 23.0.1 and no torch, transformers or huggingface-hub. `-cu129` is the CUDA
-# runtime, not PyTorch.
+# Installed on top of anyscale/ray:2.58.0-py312-cu129. Per
+# dependencies/images/ray-2.58.0-py312-cu129.freeze.txt (not re-measured on a job), the image
+# ships pyarrow 23.0.1 and no torch, transformers or huggingface-hub. Its `-cu129` tag names
+# the CUDA runtime; torch comes from this file.
 #
-# TORCH'S CUDA COMES FROM THE DEPSET INDEX, NOT FROM PyPI. python_depset.lock is compiled with
+# torch's CUDA build comes from the depset index. python_depset.lock is compiled with
 # `--index https://download.pytorch.org/whl/cu129` (dependencies/template.depsets.yaml) and
 # holds the cu129 build, matching the image. 2.13.0 is the newest torch that index carries for
 # cp312 on 2026-09-24; PyPI's 2.14.0 has no cu129 wheel there. Check the index before bumping:
@@ -11,10 +11,9 @@
 # compiles.
 torch==2.13.0
 
-# Newest on PyPI on 2026-09-24. transformers declares torch under its `torch` extra, not as a
-# core dependency, so torch has to be named above. huggingface-hub is named because
-# incremental.py imports it directly (snapshot_download); 1.33.0 is the newest transformers
-# 5.17.0 accepts (<2.0).
+# Newest on PyPI on 2026-09-24. transformers declares torch only under its `torch` extra, so
+# torch is named above. huggingface-hub is named because incremental.py imports it
+# (snapshot_download); 1.33.0 is the newest version transformers 5.17.0 accepts (<2.0).
 #
 # No sentencepiece. Checked on a laptop CPU, 2026-09-24, torch 2.13.0 and transformers 5.17.0:
 # the tokenizer loads from tokenizer.json without it, and 30 synthetic rows classify to the
@@ -22,11 +21,11 @@ torch==2.13.0
 transformers==5.17.0
 huggingface-hub==1.33.0
 
-# pyarrow is the image's own version, pinned anyway because keeping it inside 22-23 is one of
-# this template's levers. 21 and older deadlock on concurrent partitioned writes under S3
-# throttling (apache/arrow#47124, fixed in 22); 24.x can deadlock at interpreter exit with a
-# live S3FileSystem (apache/arrow#50188). A pin equal to the freeze is a no-op until the image
-# moves, and a downgrade after: here that downgrade is the point. 23.0.1 is the newest 23.x.
+# pyarrow is the image's own version, pinned so it stays inside 22.x-23.x. 21 and older can
+# deadlock the dataset writer on concurrent writes (apache/arrow#47124, fixed in 22); 24.x can
+# deadlock at interpreter exit with a live S3FileSystem (apache/arrow#50188). A pin equal to
+# the freeze is a no-op until the image moves, and a downgrade after, which is the point.
+# 23.0.1 is the newest 23.x.
 pyarrow==23.0.1
 
 # The lock moves two image packages up, each forced by a hard requirement, neither on the

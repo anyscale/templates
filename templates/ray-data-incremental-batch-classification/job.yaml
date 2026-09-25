@@ -29,14 +29,20 @@ compute_config:
       instance_type: m5.2xlarge
       max_nodes: 2
 working_dir: .
-# timeout_s is the only bound a job has. A Ray Data job that stops making
-# progress raises nothing: the no-progress guard turns itself off when the plan
-# contains a shuffle, and job clusters do not idle-terminate. Set it about 30%
-# above your longest healthy run. It applies per attempt.
+# timeout_s is this job's only bound. Job clusters don't idle-terminate, and Ray
+# Data's no-progress timeout is off for this plan because run_pipeline.py's
+# repartition is an all-to-all operation. Set it about 30% above your longest
+# healthy run; it applies per attempt. 3600 is not measured: this job has not
+# run on a cluster yet.
 timeout_s: 3600
 # Each retry re-runs the whole job, so the worst case is
 # timeout_s * (max_retries + 1). Use 0 while a pipeline is still unstable.
 max_retries: 1
+# run_pipeline.py also reads TODAY_PATH, PRIOR_PATH and OUTPUT_PATH (default: under
+# STORAGE_DIR, /mnt/cluster_storage/incremental-demo) and STACK_DUMP_AFTER_S (3000). Each
+# run deletes everything under OUTPUT_PATH first. Unless os.path.isdir finds both
+# TODAY_PATH and PRIOR_PATH, the script writes synthetic data to both, over anything there,
+# including any s3:// or gs:// path.
 env_vars:
   NUM_ROWS: "200000"
   GPU_FRACTION: "0.5"
