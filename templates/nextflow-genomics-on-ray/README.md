@@ -473,10 +473,15 @@ else:
     rows = [{"chrom": v.chrom, "pos": v.pos, "ref": v.ref, "alt": v.alt}
             for v in sv.read_vcf(str(pass_vcf))]
 
+    # Two actors, one L4 each. Ray 2.58 logs an E-level advisory as they start: "constructor
+    # arguments in the object store and max_restarts > 0". It is Ray Data's own. Every
+    # actor-pool map gets its transform by ObjectRef, which the dataset holds until it finishes,
+    # so a restart can still read it. max_restarts=0 would silence the line and lose restarts.
     scored = ray.data.from_items(rows).map_batches(
         sv.VariantScorer,
         fn_constructor_kwargs={"reference": str(REFERENCE)},
-        batch_size=64, batch_format="numpy", num_gpus=1, concurrency=2,
+        batch_size=64, batch_format="numpy", num_gpus=1,
+        compute=ray.data.ActorPoolStrategy(size=2),
     ).to_pandas()
 
     nextflow = pd.read_csv(RESULTS / "annotation" / "variant_scores.tsv", sep="\t")
