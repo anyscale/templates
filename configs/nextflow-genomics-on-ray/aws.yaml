@@ -22,13 +22,13 @@ worker_nodes:
   instance_type: r6i.4xlarge
   min_nodes: 1
   max_nodes: 4
-# One NVIDIA L4, for ANNOTATE_VARIANTS (label process_gpu) and the notebook's Ray Data pass.
+# One NVIDIA L4, for NVSCOREVARIANTS (label process_gpu), GATK's CNN on each sample's calls.
 # `nvidia-l4` is the accelerator the pipeline asks for, and g6 (AWS) and g2 (GCP) are both L4,
 # so the request is the same on both clouds. 8 vCPU / 32 GiB schedules about 20 GiB, which is
 # why process_gpu carries its own 18 GB resourceLimits in base.config.
 #
-# min_nodes: 0: the GPU leg is the last stage of the DAG, so a node started for it at the
-# beginning would sit idle through alignment and calling.
+# min_nodes: 0: the CNN arm runs after calling, so a node started for it at the beginning would
+# sit idle through alignment and calling.
 - name: gpu-worker
   instance_type: g6.2xlarge
   min_nodes: 0

@@ -83,16 +83,21 @@ The scores show the pipeline working end to end against GIAB's truth sets, withi
 - The reads are reference-selected: pairs whose primary alignment in GIAB's NHGRI Illumina 300x
   GRCh38 BAM falls in the region, subsampled to about 30x and realigned here against chr20 alone.
   Reads a whole-genome run would misplace into chr20 are mostly absent, so precision reads high.
-- Hard filters replace sarek's VQSR, which GATK recommends for at least one whole genome or about 30
-  exomes. They apply GATK's SNP thresholds to indels as well, so indel recall is at most what GATK's
-  indel recipe would give.
+- Hard filters replace sarek's VQSR on the joint callset. VQSR fits a model to the callset's own
+  annotations, and GATK recommends it for at least one whole genome or about 30 exomes; a region of
+  chr20 has a fraction of that. SNPs and indels are filtered separately, each with GATK's
+  thresholds for its type.
+- The CNN callset is single-sample calls, because the model was trained on them, so it differs from
+  the joint callset in calling mode as well as in filter. Its tranche cutoffs are set by the
+  resource sites inside the region, a few hundred indels per sample at `quick`, so they are coarser
+  than the ones GATK tuned on whole genomes.
 - BQSR gets dbSNP 138 alone, where sarek adds Mills and a known-indels set.
 - The callset covers one region of one chromosome, so none of these numbers compares with a
   genome-wide sarek benchmark.
 
 The processes are adapted from [nf-core/modules](https://github.com/nf-core/modules) (MIT);
 [`pipeline/PIPELINE.md`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/pipeline/PIPELINE.md)
-has each one's provenance, the filter thresholds and the vcfeval settings.
+has each one's provenance, the filter thresholds, the CNN arm's choices and the vcfeval settings.
 
 ## Step 1: Check the cluster and the toolchain
 
