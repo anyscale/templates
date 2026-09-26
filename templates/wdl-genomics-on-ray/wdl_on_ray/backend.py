@@ -46,7 +46,7 @@ import tempfile
 import threading
 import time
 from collections.abc import Callable
-from contextlib import ExitStack
+from contextlib import ExitStack, suppress
 from typing import Any, cast
 
 from WDL import Error, Type
@@ -733,6 +733,15 @@ class RayContainer(SubprocessBase):
 
             cli_log_filename = os.path.join(self.host_dir, f"{self.cli_name}.log.txt")
             placement_path = os.path.join(self.host_dir, "ray_placement.json")
+
+            # The worker writes this as the task starts, and _await takes its appearance as
+            # the start. miniwdl retries in this same directory (work2, stdout2.txt), so the
+            # previous attempt's copy would make a queued retry look started, on the old node.
+            # Removed before submitting, so only this attempt's worker can write it again; the
+            # driver, which also polls it, sees its own removal at once, NFS included. What
+            # is left at the end is the final attempt's, which is what the notebook reads.
+            with suppress(FileNotFoundError):
+                os.unlink(placement_path)
 
             # Create the log now, on the driver. The worker appends to it, but the
             # driver starts tailing it immediately, and if the task fails before

@@ -11,4 +11,7 @@ export WDL_DEMO_SCALE=quick
 # Checks the readout cells against a synthetic outputs.json in seconds, before any assembly runs.
 python "$(dirname "$0")/test_readout_cells.py"
 
+# Checks backend behaviour a smoke run would not catch, with stand-ins for Ray, in seconds.
+python "$(dirname "$0")/test_backend_units.py"
+
 papermill README.ipynb /tmp/wdl-genomics-on-ray.out.ipynb --log-output --kernel python3 --cwd .
