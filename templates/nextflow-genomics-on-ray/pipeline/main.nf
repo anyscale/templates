@@ -21,8 +21,9 @@ nextflow.enable.dsl = 2
 
 include { BWAMEM2_INDEX; FASTP; BWAMEM2_MEM; GATK4_MARKDUPLICATES;
           GATK4_BASERECALIBRATOR; GATK4_APPLYBQSR; SAMTOOLS_STATS } from './modules/local/preprocessing.nf'
-include { MAKE_INTERVALS; GATK4_HAPLOTYPECALLER; GATK4_GENOMICSDBIMPORT;
-          GATK4_GENOTYPEGVCFS; GATK4_MERGEVCFS; GATK4_VARIANTFILTRATION } from './modules/local/calling_gatk.nf'
+include { MAKE_INTERVALS; GATK4_HAPLOTYPECALLER; GATK4_GENOMICSDBIMPORT; GATK4_GENOTYPEGVCFS;
+          GATK4_MERGEVCFS; GATK4_MERGEVCFS as GATK4_MERGEVCFS_FILTERED;
+          GATK4_SELECTVARIANTS; GATK4_VARIANTFILTRATION } from './modules/local/calling_gatk.nf'
 include { BENCHMARK } from './modules/local/benchmark.nf'
 include { SHARD_VCF; ANNOTATE_VARIANTS; COLLECT_SCORES } from './modules/local/annotate.nf'
 include { MULTIQC; COLLECT_PLACEMENT } from './modules/local/reporting.nf'
@@ -174,11 +175,25 @@ workflow {
     GATK4_GENOMICSDBIMPORT(ch_by_interval)
     GATK4_GENOTYPEGVCFS(GATK4_GENOMICSDBIMPORT.out.db, ch_reference)
 
+    // Sorted, so the gather's inputs, and its -resume hash, do not depend on which
+    // interval finished first.
     GATK4_MERGEVCFS(
-        GATK4_GENOTYPEGVCFS.out.vcf.map { vcf, _tbi -> vcf }.collect(),
-        GATK4_GENOTYPEGVCFS.out.vcf.map { _vcf, tbi -> tbi }.collect(),
+        GATK4_GENOTYPEGVCFS.out.vcf.map { vcf, _tbi -> vcf }.collect(sort: true),
+        GATK4_GENOTYPEGVCFS.out.vcf.map { _vcf, tbi -> tbi }.collect(sort: true),
+        'joint',
     )
-    GATK4_VARIANTFILTRATION(GATK4_MERGEVCFS.out.vcf, ch_reference)
+
+    // -- hard filters, per variant type ---------------------------------------
+
+    // SNPs and everything else apart, each filtered with GATK's thresholds for its
+    // type, then merged back into one callset.
+    GATK4_SELECTVARIANTS(GATK4_MERGEVCFS.out.vcf.combine(channel.of('snp', 'indel')), ch_reference)
+    GATK4_VARIANTFILTRATION(GATK4_SELECTVARIANTS.out.vcf, ch_reference)
+    GATK4_MERGEVCFS_FILTERED(
+        GATK4_VARIANTFILTRATION.out.vcf.map { vcf, _tbi -> vcf }.collect(sort: true),
+        GATK4_VARIANTFILTRATION.out.vcf.map { _vcf, tbi -> tbi }.collect(sort: true),
+        'joint.filtered',
+    )
 
     // -- benchmarking ---------------------------------------------------------
 
@@ -186,7 +201,7 @@ workflow {
     // to be scored. 'gatk' labels the callset in benchmark.tsv.
     ch_gatk_calls = ch_bam
         .map { meta, _bam, _bai -> meta }
-        .combine(GATK4_VARIANTFILTRATION.out.vcf)
+        .combine(GATK4_MERGEVCFS_FILTERED.out.vcf)
         .map { meta, vcf, tbi -> tuple(meta, 'gatk', vcf, tbi) }
 
     BENCHMARK(ch_gatk_calls, ch_reference, ch_truth, region)
@@ -195,7 +210,7 @@ workflow {
 
     ch_scores = channel.empty()
     if( annotate ) {
-        SHARD_VCF(GATK4_VARIANTFILTRATION.out.vcf, n_shards)
+        SHARD_VCF(GATK4_MERGEVCFS_FILTERED.out.vcf, n_shards)
         ANNOTATE_VARIANTS(SHARD_VCF.out.shards.flatten(), ch_reference)
         COLLECT_SCORES(ANNOTATE_VARIANTS.out.scores.collect())
         ch_scores = COLLECT_SCORES.out.table
@@ -212,7 +227,7 @@ workflow {
     // Ordering only: the placement record is complete once the work is. Waits on
     // every terminal output rather than on the benchmark alone, which emits
     // nothing when no sample has a truth set.
-    ch_done = GATK4_VARIANTFILTRATION.out.vcf
+    ch_done = GATK4_MERGEVCFS_FILTERED.out.vcf
         .mix(BENCHMARK.out, ch_scores, MULTIQC.out.report)
         .collect()
         .map { _outputs -> 'done' }

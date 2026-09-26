@@ -3,7 +3,8 @@
  *
  * Per sample: HaplotypeCaller in GVCF mode, once per interval.
  * Per interval: GenomicsDBImport across all samples, then GenotypeGVCFs.
- * Then gather and filter for the joint callset.
+ * Then gather, and hard-filter SNPs and indels separately, each with GATK's
+ * thresholds for its type.
  *
  * The scatter is two-dimensional: three samples over 24 intervals is 72
  * independent calling tasks, which is what the autoscaler has to work with.
@@ -134,68 +135,107 @@ process GATK4_GENOTYPEGVCFS {
     """
 }
 
+/*
+ * Used twice by main.nf: to gather the per-interval joint callset (`joint`) and to
+ * merge the two hard-filtered halves back into one (`joint.filtered`). Both are
+ * published; the unfiltered one is there to filter differently.
+ */
 process GATK4_MERGEVCFS {
-    tag "joint"
+    tag "${prefix}"
     label 'process_medium'
+    publishDir "${params.outdir}/variants", mode: params.publish_mode
 
     input:
     path vcfs
     path tbis
+    val  prefix
 
     output:
-    tuple path("joint.vcf.gz"), path("joint.vcf.gz.tbi"), emit: vcf
+    tuple path("${prefix}.vcf.gz"), path("${prefix}.vcf.gz.tbi"), emit: vcf
 
     script:
     def heap = Math.max(1, (task.memory.toGiga() * 0.8) as int)
     """
-    # Sorted so the merge order is deterministic. `path vcfs` arrives in whatever
-    # order the channel emitted, which depends on which interval finished first --
-    # so without this the merged header's contig order can vary between runs of
-    # the same pipeline, and two runs' outputs stop being byte-comparable.
+    # MergeVcfs sorts the records itself. The list is sorted too, as main.nf sorts
+    # the collected inputs, so the command is the same on every run rather than in
+    # the order the inputs finished.
     ls *.vcf.gz | LC_ALL=C sort > vcf.list
     gatk --java-options "-Xmx${heap}g" MergeVcfs \\
         --INPUT vcf.list \\
-        --OUTPUT joint.vcf.gz
+        --OUTPUT ${prefix}.vcf.gz
     """
 }
 
 /*
- * Hard filters, with GATK's SNP thresholds applied to every record, indels
- * included. GATK's indel thresholds are looser (FS > 200, ReadPosRankSum < -20,
- * no MQ or MQRankSum filter), so indel recall is at most what GATK's indel recipe
- * gives. PIPELINE.md has the detail.
+ * The joint callset split for hard filtering: SNPs, and everything else.
+ *
+ * GATK hard-filters SNPs and indels separately, and its article on it notes that
+ * `-select-type INDEL` leaves out mixed records (a SNP and an indel allele at one
+ * site), which it suggests filtering as indels, as VQSR does. `--select-type-to-exclude
+ * SNP` is that: indels and mixed records, and anything else, so no record is dropped
+ * between the split and the merge.
  */
-process GATK4_VARIANTFILTRATION {
-    tag "joint"
+process GATK4_SELECTVARIANTS {
+    tag "${vtype}"
     label 'process_low'
-    publishDir "${params.outdir}/variants", mode: params.publish_mode
 
     input:
-    tuple path(vcf), path(tbi)
+    tuple path(vcf), path(tbi), val(vtype)
     tuple path(fasta), path(fai), path(dict)
 
     output:
-    tuple path("joint.filtered.vcf.gz"), path("joint.filtered.vcf.gz.tbi"), emit: vcf
+    tuple val(vtype), path("joint.${vtype}.vcf.gz"), path("joint.${vtype}.vcf.gz.tbi"), emit: vcf
 
     script:
     def heap = Math.max(1, (task.memory.toGiga() * 0.8) as int)
-    // GATK's published hard-filter thresholds, not VQSR. VQSR needs far more
-    // variants than a single chromosome provides -- it would either refuse to
-    // build a model or build a bad one -- and this is the documented fallback for
-    // small callsets. It is a real divergence from what sarek does genome-wide,
-    // and it is declared in PIPELINE.md rather than left for a reader to notice
-    // in the precision numbers.
+    def select = vtype == 'snp' ? '--select-type-to-include SNP' : '--select-type-to-exclude SNP'
+    """
+    gatk --java-options "-Xmx${heap}g" SelectVariants \\
+        --reference ${fasta} \\
+        --variant ${vcf} \\
+        ${select} \\
+        --output joint.${vtype}.vcf.gz
+    """
+}
+
+/*
+ * GATK's generic hard filters, the thresholds for the record's type, from "(How to)
+ * Filter variants either with VQSR or by hard-filtering" (GATK article 360035531112).
+ * Indels get no SOR, MQ or MQRankSum filter and looser FS and ReadPosRankSum
+ * thresholds: an indel lowers the mapping quality of the reads that carry it, and
+ * that is not evidence of an error the way it is for a SNP.
+ *
+ * Hard filters rather than sarek's VQSR, which needs a genome's worth of variants to
+ * fit; PIPELINE.md has the detail.
+ */
+process GATK4_VARIANTFILTRATION {
+    tag "${vtype}"
+    label 'process_low'
+
+    input:
+    tuple val(vtype), path(vcf), path(tbi)
+    tuple path(fasta), path(fai), path(dict)
+
+    output:
+    tuple path("joint.${vtype}.filtered.vcf.gz"), path("joint.${vtype}.filtered.vcf.gz.tbi"), emit: vcf
+
+    script:
+    def heap = Math.max(1, (task.memory.toGiga() * 0.8) as int)
+    // The filter names are the article's, so a FILTER column reads the same as GATK's.
+    def filters = vtype == 'snp'
+        ? [ 'QD2': 'QD < 2.0', 'QUAL30': 'QUAL < 30.0', 'SOR3': 'SOR > 3.0', 'FS60': 'FS > 60.0',
+            'MQ40': 'MQ < 40.0', 'MQRankSum-12.5': 'MQRankSum < -12.5',
+            'ReadPosRankSum-8': 'ReadPosRankSum < -8.0' ]
+        : [ 'QD2': 'QD < 2.0', 'QUAL30': 'QUAL < 30.0', 'FS200': 'FS > 200.0',
+            'ReadPosRankSum-20': 'ReadPosRankSum < -20.0' ]
+    def filter_args = filters.collect { name, expression ->
+        "--filter-name '${name}' --filter-expression '${expression}'"
+    }.join(' ')
     """
     gatk --java-options "-Xmx${heap}g" VariantFiltration \\
         --reference ${fasta} \\
         --variant ${vcf} \\
-        --filter-name "QD2"      --filter-expression "QD < 2.0" \\
-        --filter-name "QUAL30"   --filter-expression "QUAL < 30.0" \\
-        --filter-name "SOR3"     --filter-expression "SOR > 3.0" \\
-        --filter-name "FS60"     --filter-expression "FS > 60.0" \\
-        --filter-name "MQ40"     --filter-expression "MQ < 40.0" \\
-        --filter-name "MQRS-12.5" --filter-expression "MQRankSum < -12.5" \\
-        --filter-name "RPRS-8"   --filter-expression "ReadPosRankSum < -8.0" \\
-        --output joint.filtered.vcf.gz
+        ${filter_args} \\
+        --output joint.${vtype}.filtered.vcf.gz
     """
 }
