@@ -147,10 +147,14 @@ def get_iv(option):
 
 def get_npv(option, underlying_price, implied_volatility):
     """
-    Get NPV for a given option
+    NPV of an American option at the given spot and vol.
 
-    Returns NaN (PRICING_FAILED) if the contract can't be priced, so a failed
-    valuation stays distinguishable from a zero-value position.
+    The scenarios pass a shocked spot and the contract's base implied vol plus
+    a vol shock. That is sticky-strike: each strike keeps its own vol when spot
+    moves, so nothing is re-solved at the shocked spot.
+
+    Returns NaN (PRICING_FAILED) if the engine fails, so a failed valuation
+    stays distinguishable from a zero-value position.
     """
     risk_free_rate = 0.0425
 
@@ -162,7 +166,6 @@ def get_npv(option, underlying_price, implied_volatility):
         return PRICING_FAILED
 
     spot_price = underlying_price
-    option_price = option['last_price']
     dividend_yield = option['dividend_yield']
     strike_price = option['strike']
     days_to_maturity = (datetime.strptime(option['expiration'], '%Y-%m-%d') - datetime.now()).days
@@ -197,20 +200,11 @@ def get_npv(option, underlying_price, implied_volatility):
     american_option.setPricingEngine(engine)
 
     try:
-        implied_volatility = american_option.impliedVolatility(
-            option_price, bsm_process, 1e-4, 1000, 1e-8, 4.0
-        )
         return american_option.NPV()
     except RuntimeError as exc:
-        # Same handling as get_iv(): QuantLib solver and engine errors ("root
-        # not bracketed", "negative probability") become NaN.
-        #
-        # The call that usually fails is the impliedVolatility() re-solve
-        # above, not NPV(). It re-solves last_price at the shocked spot, which
-        # has no root when the quote is below intrinsic value there (typically
-        # a put under a spot-down shock). Its result is discarded, since NPV()
-        # prices with the shocked vol, but its failure still fails the
-        # scenario. That is why count_priced() checks every sN_npv column.
+        # Same handling as get_iv(): QuantLib engine errors (such as the
+        # binomial tree's "negative probability") become NaN, and
+        # count_priced() checks every sN_npv column for them.
         log.warning(
             "NPV failed for %s (%s strike=%s exp=%s spot=%s vol=%s): %s",
             option.get("contractSymbol", "<unknown contract>"),
