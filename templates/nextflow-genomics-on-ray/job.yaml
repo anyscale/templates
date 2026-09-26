@@ -7,6 +7,10 @@
 # so submitting from the repo root uploads the repo root and the entrypoint finds no pipeline/.
 # tools/stage-demo-data.sh builds the `full` data the entrypoint syncs.
 #
+# Both callsets come out, each benchmarked against every sample's own GIAB truth: the joint
+# callset with GATK's hard filters, and each sample's own calls filtered by GATK's CNN on the
+# L4 workers.
+#
 # Measured on Anyscale, 2026-09-25, with this file as committed: the pipeline ran 299 tasks in
 # 44m07s, 25.1 CPU hours by Nextflow's count, and the job took about 47 minutes from submission
 # to persisted results. SNP F1 was 0.9920-0.9922 across the three samples and indel F1
@@ -14,9 +18,9 @@
 # whole-genome run (README, "Measured runs"). Cost was not measured.
 name: nextflow-genomics-on-ray-chr20-trio
 
-# The template's image, with the toolchain, the nf-ray plugin and the scorer's model (see
-# Dockerfile). Processes run with no container runtime, so every tool has to be on every node
-# before the first task starts, and a job's `requirements:` installs pip packages only.
+# The template's image, with the toolchain, the nf-ray plugin and the Python NVScoreVariants runs
+# in (see Dockerfile). Processes run with no container runtime, so every tool has to be on every
+# node before the first task starts, and a job's `requirements:` installs pip packages only.
 image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/nextflow-genomics-on-ray:2.58.0
 
 working_dir: .
@@ -43,7 +47,8 @@ entrypoint: |
   mkdir -p "$DATA" "$OUT"
   aws s3 sync --no-sign-request --only-show-errors \
     s3://anyscale-public-materials/genomics/giab-trio-illumina-chr20/full/ "$DATA/"
-  python pipeline/bin/make_samplesheet.py --data-dir "$DATA" --output "$DATA/samplesheet.csv"
+  python pipeline/bin/make_samplesheet.py --data-dir "$DATA" --output "$DATA/samplesheet.csv" \
+    --resources-output "$DATA/tranche_resources.txt"
 
   # -resume is not here on purpose. It needs the work directory from the previous attempt,
   # and /mnt/cluster_storage is recreated per job, so there is nothing to resume from -- which
@@ -54,6 +59,7 @@ entrypoint: |
     --samplesheet "$DATA/samplesheet.csv" \
     --reference "$DATA/reference/chr20.fa" \
     --known_sites "$DATA/known_sites/dbsnp138.chr20.vcf.gz" \
+    --tranche_resources "$(cat "$DATA/tranche_resources.txt")" \
     --outdir "$OUT"
   STATUS=$?
 

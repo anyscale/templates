@@ -59,9 +59,27 @@ def check(name: str):
     return wrap
 
 
-def stage(root: str, samples=("HG002", "HG003", "HG004"), truth=True, corrupt=None) -> None:
+#: The tranche resources tools/stage-demo-data.sh publishes, in its order.
+RESOURCES = (
+    "hapmap_3.3",
+    "1000G_phase1.snps.high_confidence",
+    "Mills_and_1000G_gold_standard.indels",
+)
+
+
+def stage(root: str, samples=("HG002", "HG003", "HG004"), truth=True, corrupt=None,
+          resources=RESOURCES) -> None:
     """Write a manifest and the files it names, the way a finished download looks."""
     os.makedirs(os.path.join(root, "truth"), exist_ok=True)
+    os.makedirs(os.path.join(root, "known_sites"), exist_ok=True)
+    tranche = []
+    for name in resources:
+        rel = f"known_sites/{name}.chr20.vcf.gz"
+        body = f"{name} sites\n".encode()
+        with open(os.path.join(root, rel), "wb") as out:
+            out.write(body)
+        open(os.path.join(root, f"{rel}.tbi"), "w").close()
+        tranche.append({"name": name, "vcf": rel, "sha256": hashlib.sha256(body).hexdigest()})
     entries = []
     for s in samples:
         entry = {"id": s, "fastq_1": f"{s}_R1.fastq.gz", "fastq_2": f"{s}_R2.fastq.gz"}
@@ -79,8 +97,11 @@ def stage(root: str, samples=("HG002", "HG003", "HG004"), truth=True, corrupt=No
     if corrupt:
         with open(os.path.join(root, corrupt), "ab") as out:
             out.write(b"truncated?")
+    manifest = {"scale": "quick", "region": "chr20:1000000-3000000", "samples": entries}
+    if tranche:
+        manifest["tranche_resources"] = tranche
     with open(os.path.join(root, "MANIFEST.json"), "w") as out:
-        json.dump({"scale": "quick", "region": "chr20:1000000-3000000", "samples": entries}, out)
+        json.dump(manifest, out)
 
 
 def read_sheet(path: str) -> list[dict[str, str]]:
@@ -174,6 +195,59 @@ def _() -> None:
         # --no-verify is the documented way past it, for a re-run you trust.
         out = os.path.join(tmp, "s.csv")
         assert ms.main(["--data-dir", tmp, "--output", out, "--no-verify"]) == 0
+
+
+@check("tranche resources come out comma-separated, absolute, in manifest order")
+def _() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        stage(tmp)
+        res = os.path.join(tmp, "tranche_resources.txt")
+        assert ms.main(["--data-dir", tmp, "--output", os.path.join(tmp, "s.csv"),
+                        "--resources-output", res]) == 0
+        with open(res) as handle:
+            got = handle.read().strip().split(",")
+        want = [os.path.join(tmp, "known_sites", f"{name}.chr20.vcf.gz") for name in RESOURCES]
+        # main.nf splits --tranche_resources on commas and adds .tbi to each.
+        assert got == want, got
+
+
+@check("a manifest with no tranche resources writes an empty list, not an error")
+def _() -> None:
+    # The synthetic trio's manifest has none, and CI runs it with the CNN arm off.
+    with tempfile.TemporaryDirectory() as tmp:
+        stage(tmp, resources=())
+        res = os.path.join(tmp, "tranche_resources.txt")
+        assert ms.main(["--data-dir", tmp, "--output", os.path.join(tmp, "s.csv"),
+                        "--resources-output", res]) == 0
+        with open(res) as handle:
+            assert handle.read().strip() == ""
+
+
+@check("a tranche resource without its .tbi stops here, not in FilterVariantTranches")
+def _() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        stage(tmp)
+        os.unlink(os.path.join(tmp, "known_sites", "hapmap_3.3.chr20.vcf.gz.tbi"))
+        try:
+            ms.main(["--data-dir", tmp, "--output", os.path.join(tmp, "s.csv")])
+        except ms.ManifestError as exn:
+            assert "hapmap_3.3" in str(exn) and ".tbi" in str(exn), exn
+        else:
+            raise AssertionError("expected ManifestError")
+
+
+@check("a tranche resource that does not match its checksum is caught")
+def _() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        stage(tmp, corrupt="known_sites/Mills_and_1000G_gold_standard.indels.chr20.vcf.gz")
+        try:
+            ms.main(["--data-dir", tmp, "--output", os.path.join(tmp, "s.csv")])
+        except ms.ManifestError as exn:
+            assert "Mills" in str(exn) and "checksum" in str(exn), exn
+        else:
+            raise AssertionError("expected ManifestError")
+        assert ms.main(["--data-dir", tmp, "--output", os.path.join(tmp, "s.csv"),
+                        "--no-verify"]) == 0
 
 
 if _FAILURES:

@@ -15,6 +15,11 @@
  * genotyping and once more for the callset. One sample would still scatter
  * over N intervals; three add the joint-genotyping step. The pedigree is not
  * used.
+ *
+ * Two filtered callsets come out, and both are benchmarked: the joint callset
+ * with GATK's hard filters (`gatk_hard`), and, with --cnn, each sample's own
+ * calls filtered by GATK's CNN on a GPU (`gatk_cnn`), as sarek's joint and
+ * single-sample modes would filter them.
  */
 
 nextflow.enable.dsl = 2
@@ -24,14 +29,14 @@ include { BWAMEM2_INDEX; FASTP; BWAMEM2_MEM; GATK4_MARKDUPLICATES;
 include { MAKE_INTERVALS; GATK4_HAPLOTYPECALLER; GATK4_GENOMICSDBIMPORT; GATK4_GENOTYPEGVCFS;
           GATK4_MERGEVCFS; GATK4_MERGEVCFS as GATK4_MERGEVCFS_FILTERED;
           GATK4_SELECTVARIANTS; GATK4_VARIANTFILTRATION } from './modules/local/calling_gatk.nf'
+include { CNN_FILTER } from './modules/local/cnn_filter.nf'
 include { BENCHMARK } from './modules/local/benchmark.nf'
-include { SHARD_VCF; ANNOTATE_VARIANTS; COLLECT_SCORES } from './modules/local/annotate.nf'
 include { MULTIQC; COLLECT_PLACEMENT } from './modules/local/reporting.nf'
 
 /*
  * Scale presets. The processes, tools and resource requests are the same at
- * every scale; the region, interval count and GPU shard count differ, so a green
- * CI run at `quick` exercises the code path a reader gets at `standard`. The
+ * every scale; the region and interval count differ, so a green CI run at
+ * `quick` exercises the code path a reader gets at `standard`. The
  * regions match what tools/stage-demo-data.sh publishes, and
  * tests/nextflow-genomics-on-ray/test_config_agreement.py fails if the two
  * drift, since the pipeline would then score a region the data does not cover.
@@ -42,11 +47,11 @@ include { MULTIQC; COLLECT_PLACEMENT } from './modules/local/reporting.nf'
  */
 def scales() {
     return [
-        quick   : [ region: 'chr20:1000000-3000000',  intervals: 8,  annotate_shards: 4,
+        quick   : [ region: 'chr20:1000000-3000000',  intervals: 8,
                     note: 'chr20 2 Mbp, all three samples -- what CI runs' ],
-        standard: [ region: 'chr20:1000000-11000000', intervals: 24, annotate_shards: 8,
+        standard: [ region: 'chr20:1000000-11000000', intervals: 24,
                     note: 'chr20 10 Mbp, all three samples -- the notebook default' ],
-        full    : [ region: 'chr20',                  intervals: 48, annotate_shards: 16,
+        full    : [ region: 'chr20',                  intervals: 48,
                     note: 'the whole of chr20, all three samples -- what job.yaml runs' ],
     ]
 }
@@ -54,8 +59,8 @@ def scales() {
 /*
  * Every boolean param goes through this. Under the strict parser a param given on
  * the command line arrives as a String, and a non-empty String is true in Groovy,
- * so without it `--annotate false` would turn annotation on. The numeric params
- * below have the same problem, one type over.
+ * so without it `--cnn false` would turn the CNN arm on. The numeric params below
+ * have the same problem, one type over.
  */
 def flag(value) {
     return value instanceof Boolean ? value : value.toString().trim().toLowerCase() in ['true', 'yes', '1']
@@ -79,18 +84,22 @@ workflow {
     // character code. Unconverted, smoke.nf's `--shards 4` runs 53 shards and
     // reports success.
     def n_intervals = (params.intervals ?: preset.intervals) as Integer
-    def n_shards    = (params.annotate_shards ?: preset.annotate_shards) as Integer
     if( n_intervals < 2 )
         error "--intervals must be >= 2 (got ${n_intervals}); the scatter is the point"
-    def annotate    = flag(params.annotate)
+    def cnn = flag(params.cnn)
+
+    // FilterVariantTranches' resources, comma-separated. Only the CNN arm reads them.
+    def resource_paths = (params.tranche_resources ?: '').toString().tokenize(',')
+        .collect { p -> p.trim() }
+        .findAll { p -> p }
 
     log.info """
     ${workflow.manifest.name} ${workflow.manifest.version}
       scale        ${params.scale}  (${preset.note})
       region       ${region}
       intervals    ${n_intervals}   -> ${n_intervals} x samples calling tasks
-      caller       GATK HaplotypeCaller
-      annotate     ${annotate ? "yes (${n_shards} GPU shards)" : 'no'}
+      joint        GATK HaplotypeCaller, GenotypeGVCFs, hard filters per type
+      cnn          ${cnn ? "yes: single-sample calls, NVScoreVariants 1D on a GPU, ${resource_paths.size()} tranche resources" : 'no'}
       workDir      ${workflow.workDir}
       outdir       ${params.outdir}
     """.stripIndent()
@@ -98,6 +107,8 @@ workflow {
     if( !params.samplesheet ) error "--samplesheet is required"
     if( !params.reference )   error "--reference is required"
     if( !params.outdir )      error "--outdir is required"
+    if( cnn && !resource_paths )
+        error "--tranche_resources is required with --cnn (comma-separated VCFs); --cnn false skips the CNN arm"
 
     ch_rows = channel
         .fromPath(params.samplesheet, checkIfExists: true)
@@ -137,6 +148,9 @@ workflow {
         file(params.known_sites,          checkIfExists: true),
         file("${params.known_sites}.tbi", checkIfExists: true),
     ))
+
+    ch_resources     = channel.value(resource_paths.collect { p -> file(p, checkIfExists: true) })
+    ch_resource_tbis = channel.value(resource_paths.collect { p -> file("${p}.tbi", checkIfExists: true) })
 
     // -- preprocessing: FASTQ -> analysis-ready BAM ---------------------------
 
@@ -195,26 +209,31 @@ workflow {
         'joint.filtered',
     )
 
+    // -- the CNN arm, on a GPU ------------------------------------------------
+
+    // Each sample's GVCFs, regrouped by sample this time: the CNN scores single-sample
+    // calls (modules/local/cnn_filter.nf has why).
+    ch_cnn = channel.empty()
+    if( cnn ) {
+        ch_sample_gvcfs = GATK4_HAPLOTYPECALLER.out.gvcf
+            .map { _interval_id, meta, gvcf, tbi -> tuple(meta, gvcf, tbi) }
+            .groupTuple(sort: true)
+        CNN_FILTER(ch_sample_gvcfs, ch_reference, ch_resources, ch_resource_tbis)
+        ch_cnn = CNN_FILTER.out
+    }
+
     // -- benchmarking ---------------------------------------------------------
 
     // The joint callset carries every sample, so it is fanned back out per sample
-    // to be scored. 'gatk' labels the callset in benchmark.tsv.
-    ch_gatk_calls = ch_bam
+    // to be scored; the CNN callsets are one per sample already. The label names
+    // each callset in benchmark.tsv.
+    ch_hard_calls = ch_bam
         .map { meta, _bam, _bai -> meta }
         .combine(GATK4_MERGEVCFS_FILTERED.out.vcf)
-        .map { meta, vcf, tbi -> tuple(meta, 'gatk', vcf, tbi) }
+        .map { meta, vcf, tbi -> tuple(meta, 'gatk_hard', vcf, tbi) }
+    ch_cnn_calls = ch_cnn.map { meta, vcf, tbi -> tuple(meta, 'gatk_cnn', vcf, tbi) }
 
-    BENCHMARK(ch_gatk_calls, ch_reference, ch_truth, region)
-
-    // -- GPU annotation -------------------------------------------------------
-
-    ch_scores = channel.empty()
-    if( annotate ) {
-        SHARD_VCF(GATK4_MERGEVCFS_FILTERED.out.vcf, n_shards)
-        ANNOTATE_VARIANTS(SHARD_VCF.out.shards.flatten(), ch_reference)
-        COLLECT_SCORES(ANNOTATE_VARIANTS.out.scores.collect())
-        ch_scores = COLLECT_SCORES.out.table
-    }
+    BENCHMARK(ch_hard_calls.mix(ch_cnn_calls), ch_reference, ch_truth, region)
 
     // -- reporting ------------------------------------------------------------
 
@@ -228,7 +247,7 @@ workflow {
     // every terminal output rather than on the benchmark alone, which emits
     // nothing when no sample has a truth set.
     ch_done = GATK4_MERGEVCFS_FILTERED.out.vcf
-        .mix(BENCHMARK.out, ch_scores, MULTIQC.out.report)
+        .mix(BENCHMARK.out, ch_cnn, MULTIQC.out.report)
         .collect()
         .map { _outputs -> 'done' }
     COLLECT_PLACEMENT(ch_done)

@@ -13,7 +13,11 @@ the kind of small path-assembling code that is wrong in a way nobody notices unt
 a pipeline reads the wrong file.
 
     make_samplesheet.py --data-dir /mnt/cluster_storage/data/.../quick \\
-                        --output samplesheet.csv
+                        --output samplesheet.csv \\
+                        --resources-output tranche_resources.txt
+
+The second file is the manifest's FilterVariantTranches resources, checked the same
+way and comma-separated, which is the form main.nf's ``--tranche_resources`` takes.
 """
 
 from __future__ import annotations
@@ -103,10 +107,44 @@ def build_rows(manifest: dict, data_dir: str, verify: bool) -> list[dict[str, st
     return rows
 
 
+def check_tranche_resources(manifest: dict, data_dir: str, verify: bool) -> list[str]:
+    """Absolute paths of the manifest's FilterVariantTranches resources, checked.
+
+    Not samplesheet columns, since every sample is filtered against the same ones;
+    main.nf takes them as ``--tranche_resources``. Checked here all the same, because
+    a missing or truncated resource otherwise surfaces as a GATK error after calling
+    has finished. A manifest without any (the synthetic trio's) returns none.
+    """
+    paths = []
+    for resource in manifest.get("tranche_resources", []):
+        path = os.path.join(data_dir, resource["vcf"])
+        for needed in (path, f"{path}.tbi"):
+            if not os.path.exists(needed):
+                raise ManifestError(
+                    f"tranche resource {resource.get('name', resource['vcf'])}: "
+                    f"manifest lists {resource['vcf']} but {needed} is missing."
+                )
+        want = resource.get("sha256")
+        if verify and want:
+            got = sha256(path)
+            if got != want:
+                raise ManifestError(
+                    f"tranche resource {os.path.basename(path)}: checksum mismatch\n"
+                    f"  expected {want}\n  actual   {got}"
+                )
+        paths.append(os.path.abspath(path))
+    return paths
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--data-dir", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument(
+        "--resources-output",
+        help="also write the tranche resources, comma-separated, for main.nf's "
+        "--tranche_resources (an empty file when the manifest lists none)",
+    )
     parser.add_argument(
         "--no-verify",
         action="store_true",
@@ -116,15 +154,20 @@ def main(argv: list[str] | None = None) -> int:
 
     manifest = load_manifest(args.data_dir)
     rows = build_rows(manifest, args.data_dir, verify=not args.no_verify)
+    resources = check_tranche_resources(manifest, args.data_dir, verify=not args.no_verify)
 
     with open(args.output, "w") as out:
         out.write(",".join(COLUMNS) + "\n")
         for row in rows:
             out.write(",".join(row[c] for c in COLUMNS) + "\n")
+    if args.resources_output:
+        with open(args.resources_output, "w") as out:
+            out.write(",".join(resources) + "\n")
 
     print(
-        f"make_samplesheet: {len(rows)} sample(s) from "
-        f"{manifest.get('scale', '?')} ({manifest.get('region', '?')}) -> {args.output}",
+        f"make_samplesheet: {len(rows)} sample(s) and {len(resources)} tranche "
+        f"resource(s) from {manifest.get('scale', '?')} ({manifest.get('region', '?')}) "
+        f"-> {args.output}",
         file=sys.stderr,
     )
     return 0

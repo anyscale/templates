@@ -46,6 +46,11 @@ CONTIG = "chrS"
 SAMPLES = {"HG002": ("A", "C"), "HG003": ("A", "B"), "HG004": ("C", "D")}
 BASES = "ACGT"
 
+#: The callset the gate scores: the hard-filtered joint callset, main.nf's `gatk_hard`.
+#: The CNN arm's `gatk_cnn` is not gated. CI runs with it off, and these reads, with a
+#: flat base quality on a random genome, are nothing like the data its model learned.
+GATED_CALLER = "gatk_hard"
+
 
 def plant_variants(seq: str, rng: random.Random, spacing: int, margin: int) -> list[dict]:
     """SNPs, insertions and deletions, one per ``spacing`` bases, never near an edge."""
@@ -136,22 +141,25 @@ def check(data_dir: str, benchmark: str) -> list[str]:
     """What is wrong with ``benchmark`` as a score of the trio in ``data_dir``.
 
     Empty when the run is right. The truth set is what was planted, so the one
-    right answer is a perfect one: for every sample, SNPs and indels each at
-    precision, recall and F1 1.0000 with no false positive or negative, and the
-    true positives of the two adding up to everything planted in that sample.
+    right answer is a perfect one: for every sample, SNPs and indels of the
+    hard-filtered callset each at precision, recall and F1 1.0000 with no false
+    positive or negative, and the true positives of the two adding up to
+    everything planted in that sample.
 
     The sum is not redundant. A truth variant that neither the SNP nor the indel
     split keeps is scored nowhere, and every rate still reads 1.0000 without it.
     """
     expected = planted(data_dir)
     with open(benchmark) as handle:
-        rows = list(csv.DictReader(handle, delimiter="\t"))
+        rows = [r for r in csv.DictReader(handle, delimiter="\t") if r["caller"] == GATED_CALLER]
 
     problems = []
     got = sorted((r["sample"], r["variant_type"]) for r in rows)
     want = sorted((sample, vtype) for sample in expected for vtype in ("indel", "snp"))
     if got != want:
-        problems.append(f"expected one row per sample and type, {want}; got {got}")
+        problems.append(
+            f"expected one {GATED_CALLER} row per sample and type, {want}; got {got}"
+        )
 
     true_pos = dict.fromkeys(expected, 0)
     for row in rows:
@@ -198,8 +206,9 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         counts = ", ".join(f"{sample} {n}" for sample, n in planted(args.check[0]).items())
         print(
-            "synthetic trio scores perfect: precision, recall and F1 1.0000 for every "
-            f"sample and type, and every planted variant a true positive ({counts})"
+            f"synthetic trio scores perfect ({GATED_CALLER}): precision, recall and F1 "
+            "1.0000 for every sample and type, and every planted variant a true "
+            f"positive ({counts})"
         )
         return 0
 

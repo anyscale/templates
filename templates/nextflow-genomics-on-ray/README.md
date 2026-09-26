@@ -11,20 +11,18 @@ This template runs a Nextflow pipeline on an autoscaling Anyscale cluster throug
 `executor 'ray'`. The pipeline is GATK germline short-variant calling in the shape of
 [nf-core/sarek](https://nf-co.re/sarek): fastp, BWA-MEM2, MarkDuplicates, BQSR, HaplotypeCaller
 scattered by interval, GenomicsDBImport, GenotypeGVCFs and hard filters, scored with `rtg vcfeval`
-against GIAB v4.2.1. You end with a joint callset benchmarked per sample, a chart of which node ran
-each task and how long it queued, and a `ray` profile to try on your own pipeline.
+against GIAB v4.2.1. You end with two callsets benchmarked per sample, the hard-filtered joint
+callset and a CNN-filtered one, a chart of which node ran each task and how long it queued, and a
+`ray` profile to try on your own pipeline.
 
 The samples are the GIAB Ashkenazi trio, HG002, HG003 and HG004, over a region of chr20, called
 jointly as three samples. No pedigree is used: no PED file, no Mendelian check. The only
 trio-derived input is GIAB's `_noinconsistent` benchmark-regions BED.
 
-One GPU process shares the DAG, to show GPU scheduling. It scores each PASS variant by the L2
-distance between mean-pooled
-[Nucleotide Transformer v2](https://huggingface.co/InstaDeepAI/nucleotide-transformer-v2-50m-multi-species)
-embeddings of the 1 kb reference window with and without the allele. It is a zero-shot embedding
-distance, not a likelihood, and nothing validates it against pathogenicity, function or call
-quality. Indel scores are dominated by length and the model's 6-mer tokenisation, since an indel
-whose length is not a multiple of six re-tokenizes the rest of the window.
+One GPU process shares the DAG. Each sample's GVCFs are also genotyped on their own and scored on
+an L4 by GATK's NVScoreVariants, the PyTorch port of CNNScoreVariants, with its 1D model; then
+FilterVariantTranches filters them against HapMap, 1000G and Mills, as sarek filters a
+single-sample run. vcfeval scores those calls beside the hard-filtered joint callset.
 
 Outside a workspace created from this template, work from `templates/nextflow-genomics-on-ray` in a
 clone of [anyscale/templates](https://github.com/anyscale/templates).
@@ -68,17 +66,17 @@ refuses a task image whose Ray or Python version differs from the cluster's;
 
 ## Measured runs, and what differs from sarek
 
-| Scale | Region of chr20 | Intervals, GPU shards | Run by | Tasks | Wall time | CPU h | Workers | SNP F1 | Indel F1 |
+| Scale | Region of chr20 | Intervals | Run by | Tasks | Wall time | CPU h | Workers | SNP F1 | Indel F1 |
 |---|---|---|---|---|---|---|---|---|---|
-| `quick` | 1-3 Mb | 8, 4 | CI, GPU off | 81 | 4m47s, 4m52s (2 runs) | 1.4 | 4 CPU | 0.9843-0.9930 | 0.9441-0.9514 |
-| `standard` | 1-11 Mb | 24, 8 | this notebook | 171 | 13m22s | 4.6 | 4 CPU, 2 L4 | 0.9932-0.9943 | 0.9411-0.9501 |
-| `full` | all | 48, 16 | `job.yaml` | 299 | 44m07s | 25.1 | up to 6 CPU, 2 L4 | 0.9920-0.9922 | 0.9446-0.9503 |
+| `quick` | 1-3 Mb | 8 | CI, GPU off | 81 | 4m47s, 4m52s (2 runs) | 1.4 | 4 CPU | 0.9843-0.9930 | 0.9441-0.9514 |
+| `standard` | 1-11 Mb | 24 | this notebook | 171 | 13m22s | 4.6 | 4 CPU, 2 L4 | 0.9932-0.9943 | 0.9411-0.9501 |
+| `full` | all | 48 | `job.yaml` | 299 | 44m07s | 25.1 | up to 6 CPU, 2 L4 | 0.9920-0.9922 | 0.9446-0.9503 |
 
 Measured on Anyscale on AWS, 2026-09-25: an m5.2xlarge head with `CPU: 0`, r6i.4xlarge CPU workers and
 g6.2xlarge L4 workers. Wall time is the pipeline's, CPU hours are Nextflow's count, and F1 is the
-range over the three samples, each against its own GIAB v4.2.1 benchmark. Cost was not measured. Set
-`NF_DEMO_SCALE` before Jupyter starts to pick a scale, and `NF_ANNOTATE=false` to skip the GPU
-process and Step 7.
+hard-filtered callset's range over the three samples, each against its own GIAB v4.2.1 benchmark;
+Step 6 has both callsets. Cost was not measured. Set `NF_DEMO_SCALE` before Jupyter starts to pick a
+scale, and `NF_CNN=false` to skip the CNN arm and its GPU process.
 
 The scores show the pipeline working end to end against GIAB's truth sets, within these limits:
 
@@ -120,7 +118,8 @@ SCALES = {
 if SCALE not in SCALES:
     raise ValueError(f"NF_DEMO_SCALE must be one of {sorted(SCALES)}, got {SCALE!r}")
 CFG = SCALES[SCALE]
-ANNOTATE = os.getenv("NF_ANNOTATE", "true").lower() in ("1", "true", "yes")
+# The CNN arm, which is the GPU process. CI turns it off.
+CNN = os.getenv("NF_CNN", "true").lower() in ("1", "true", "yes")
 
 # Son, father and mother, called jointly as three samples.
 SAMPLES = ["HG002", "HG003", "HG004"]
@@ -146,7 +145,7 @@ def run(cmd, **kwargs):
 
 print(f"scale       {SCALE}  ({CFG['span']} of {CFG['region']})")
 print(f"samples     {', '.join(SAMPLES)}")
-print(f"annotate    {ANNOTATE}")
+print(f"cnn arm     {CNN}")
 print(f"data        {DATA_URI}\n")
 run(["nf-ray", "doctor", "--work-dir", NF_WORK])
 ```
@@ -201,9 +200,9 @@ print(f"the last {len(shard_rows)} SHARD tasks ran on {len(nodes)} node(s)")
 
 ## Step 4: Stage the reads
 
-The cell syncs the scale's data from a public bucket, and `make_samplesheet.py` verifies the FASTQ
-checksums in `MANIFEST.json` and gives each sample its own truth set. The reference is chr20 of the
-GRCh38 no-alt analysis set, and
+The cell syncs the scale's data from a public bucket, and `make_samplesheet.py` verifies the
+checksums in `MANIFEST.json`, gives each sample its own truth set, and lists the tranche resources
+the CNN arm filters against. The reference is chr20 of the GRCh38 no-alt analysis set, and
 [`tools/stage-demo-data.sh`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/tools/stage-demo-data.sh)
 builds every file from public sources.
 
@@ -213,8 +212,9 @@ builds every file from public sources.
 run(["aws", "s3", "sync", "--no-sign-request", "--only-show-errors", f"{DATA_URI}/", DATA_DIR])
 
 SAMPLESHEET = DATA_DIR / "samplesheet.csv"
+RESOURCE_LIST = DATA_DIR / "tranche_resources.txt"
 run(["python", PIPELINE / "bin" / "make_samplesheet.py",
-     "--data-dir", DATA_DIR, "--output", SAMPLESHEET])
+     "--data-dir", DATA_DIR, "--output", SAMPLESHEET, "--resources-output", RESOURCE_LIST])
 
 manifest = json.loads((DATA_DIR / "MANIFEST.json").read_text())
 print(f"\n{manifest['region']}   {manifest['platform']}   {manifest['truth_version']}")
@@ -223,13 +223,19 @@ for entry in manifest["samples"]:
     print(f"{entry['id']:<8}{entry['read_pairs']:>12,}")
 REFERENCE = DATA_DIR / manifest["reference"]["fasta"]
 KNOWN_SITES = DATA_DIR / manifest["known_sites"]["vcf"]
+# HapMap, 1000G and Mills, comma-separated, as main.nf's --tranche_resources takes them.
+TRANCHE_RESOURCES = RESOURCE_LIST.read_text().strip()
+if CNN and not TRANCHE_RESOURCES:
+    raise RuntimeError(f"{DATA_URI} lists no tranche resources; NF_CNN=false skips the CNN arm")
+print("tranche resources:", TRANCHE_RESOURCES.replace(",", ", ") or "none")
 ```
 
 ## Step 5: Call variants for the three samples
 
-The cell runs `main.nf` under `-profile ray` with the scale's preset region, interval count and GPU
-shard count. HaplotypeCaller runs per sample and interval, 72 tasks at `standard`, and at 6 CPUs and
-36 GB two fit on a worker, so four CPU workers run at most eight at a time.
+The cell runs `main.nf` under `-profile ray` with the scale's preset region and interval count.
+HaplotypeCaller runs per sample and interval, 72 tasks at `standard`, and at 6 CPUs and 36 GB two
+fit on a worker, so four CPU workers run at most eight at a time. With the CNN arm on, the three
+`NVSCOREVARIANTS` tasks, one per sample, start the L4 workers once calling is done.
 
 
 ```python
@@ -238,8 +244,9 @@ run(["nextflow", "run", PIPELINE / "main.nf", "-profile", "ray",
      "--samplesheet", SAMPLESHEET,
      "--reference", REFERENCE,
      "--known_sites", KNOWN_SITES,
-     "--annotate", str(ANNOTATE).lower(),
-     "--outdir", RESULTS])
+     "--cnn", str(CNN).lower(),
+     "--outdir", RESULTS]
+    + (["--tranche_resources", TRANCHE_RESOURCES] if CNN else []))
 ```
 
 The next cell joins the executor's placement record to `trace.txt` and draws a bar per task,
@@ -289,18 +296,21 @@ plt.show()
 span = max(float(p["finished"]) for p, _ in rows) - t0
 print(f"{len(rows)} tasks, {len(node_ids)} node(s), "
       f"{span / 60:.1f} min from first submit to last finish")
-if ANNOTATE:
-    gpu_nodes = {p["node_id"] for p, t in rows if t["process"].endswith("ANNOTATE_VARIANTS")}
+if CNN:
+    gpu_nodes = {p["node_id"] for p, t in rows if t["process"].endswith("NVSCOREVARIANTS")}
     cpu_nodes = {p["node_id"] for p, t in rows if t["process"].endswith("HAPLOTYPECALLER")}
     # GPU tasks fit only the L4 group, and HaplotypeCaller's 36 GB fits no L4 node.
     assert gpu_nodes and not gpu_nodes & cpu_nodes, (gpu_nodes, cpu_nodes)
     print(f"GPU tasks ran on {len(gpu_nodes)} node(s) of their own")
 ```
 
-## Step 6: Benchmark the callset against GIAB
+## Step 6: Benchmark the callsets against GIAB
 
-The cell prints `rtg vcfeval`'s unthresholded precision, recall and F1 for each sample and variant
-type. At `standard`, in the measured run:
+The cell prints `rtg vcfeval`'s unthresholded precision, recall and F1 for each sample, callset and
+variant type: `gatk_hard` is the hard-filtered joint callset and, with the CNN arm on, `gatk_cnn` the
+CNN-filtered single-sample calls. They differ in calling mode as well as filter, so not all of a
+recall difference is the filter's: joint genotyping keeps sites that one sample's calls alone leave
+below QUAL 30. At `standard`, in the measured run:
 
 | sample | SNP precision | SNP recall | SNP F1 | indel precision | indel recall | indel F1 |
 |---|---|---|---|---|---|---|
@@ -313,68 +323,18 @@ type. At `standard`, in the measured run:
 import pandas as pd
 
 bench = pd.read_csv(RESULTS / "benchmark" / "benchmark.tsv", sep="\t")
-# One row per sample and variant type.
-assert len(bench) == len(SAMPLES) * 2, bench
+CALLSETS = {"gatk_hard", "gatk_cnn"} if CNN else {"gatk_hard"}
+# One row per sample, callset and variant type.
+assert len(bench) == len(SAMPLES) * len(CALLSETS) * 2, bench
 assert set(bench["sample"]) == set(SAMPLES), bench["sample"].unique()
-assert set(bench["caller"]) == {"gatk"}, bench["caller"].unique()
+assert set(bench["caller"]) == CALLSETS, bench["caller"].unique()
 
-table = bench.pivot_table(index="sample", columns="variant_type",
+table = bench.pivot_table(index=["sample", "caller"], columns="variant_type",
                           values=["precision", "recall", "f1"])
 print(table.round(4).to_string())
 ```
 
-## Step 7: Run the GPU step again as a Ray Data job
-
-The cell reruns the GPU process's scorer over every PASS variant as one Ray Data job on the same
-L4s, checks that both paths scored the same variants, and prints the largest difference and the five
-highest scores; expect indels. At `standard` it scored 25,197 variants on two L4 actors in
-116 s, within 2.88e-05 of the pipeline's scores.
-
-
-```python
-if not ANNOTATE:
-    print("NF_ANNOTATE is off; skipping the GPU leg")
-else:
-    import sys
-
-    import ray
-
-    sys.path.insert(0, str(PIPELINE / "bin"))
-    import score_variants as sv
-
-    # By value, so workers don't need this file on their import path.
-    ray.cloudpickle.register_pickle_by_value(sv)
-
-    # The PASS set, as SHARD_VCF selects it, on shared storage: the head has CPU: 0, so the
-    # actors run on other nodes.
-    pass_vcf = WORK / "annotation" / "joint.pass.vcf"
-    pass_vcf.parent.mkdir(parents=True, exist_ok=True)
-    run(["bcftools", "view", "-f", "PASS,.", "-o", pass_vcf,
-         RESULTS / "variants" / "joint.filtered.vcf.gz"])
-    rows = [{"chrom": v.chrom, "pos": v.pos, "ref": v.ref, "alt": v.alt}
-            for v in sv.read_vcf(str(pass_vcf))]
-
-    # Two actors, one L4 each. Ray Data logs an error-level "constructor arguments in the
-    # object store" advisory as they start. It doesn't affect the result; max_restarts=0
-    # would silence it and lose restarts.
-    scored = ray.data.from_items(rows).map_batches(
-        sv.VariantScorer,
-        fn_constructor_kwargs={"reference": str(REFERENCE)},
-        batch_size=64, batch_format="numpy", num_gpus=1,
-        compute=ray.data.ActorPoolStrategy(size=2),
-    ).to_pandas()
-
-    nextflow = pd.read_csv(RESULTS / "annotation" / "variant_scores.tsv", sep="\t")
-    keys = ["chrom", "pos", "ref", "alt"]
-    both = scored.merge(nextflow, on=keys, suffixes=("_raydata", "_nextflow"))
-    assert len(both) == len(scored) == len(nextflow), (len(both), len(scored), len(nextflow))
-    diff = (both["embedding_distance_raydata"] - both["embedding_distance_nextflow"]).abs()
-    print(f"{len(scored):,} variants scored both ways; largest difference {diff.max():.2e}")
-    top = scored.nlargest(5, "embedding_distance")[keys + ["embedding_distance"]]
-    print(top.to_string(index=False))
-```
-
-## Step 8: Persist the outputs
+## Step 7: Persist the outputs
 
 `/mnt/cluster_storage` goes with the cluster, and a job's cluster goes when the job ends. The cell
 copies `--outdir`, which holds the published outputs and no intermediates, to `NF_RAY_RESULTS` or
@@ -402,8 +362,10 @@ job-level retry starts a new cluster with an empty work directory; retries happe
 ## Bring your own reads or pipeline
 
 The samplesheet takes `sample,fastq_1,fastq_2`, plus `truth_vcf,truth_bed` for a sample you want
-scored; a row without them is called and not scored. The reference, known sites and truth sets must
-agree on contig names (`chr20` or `20`), or GATK stops at BQSR and `RTG_VCFEVAL` fails. `--region`
+scored; a row without them is called and not scored. The CNN arm's tranche resources are
+`--tranche_resources`, comma-separated VCFs beside their indexes, and `--cnn false` runs without
+them. The reference, known sites, tranche resources and truth sets must agree on contig names
+(`chr20` or `20`), or GATK stops at BQSR or FilterVariantTranches and `RTG_VCFEVAL` fails. `--region`
 and `--intervals` override the scale presets, and nothing checks up front that your reads cover the
 region. If you change the compute configs, refit both ceilings to what the largest node schedules;
 `test_config_agreement.py` checks that the three agree.

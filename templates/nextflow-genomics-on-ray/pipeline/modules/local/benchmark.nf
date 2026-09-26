@@ -182,8 +182,9 @@ process COLLECT_BENCHMARK {
  * variant type) and one truth set to score them all against.
  *
  * `caller` is a label, carried into the output directory names and so into
- * benchmark.tsv. main.nf passes 'gatk'; calls from another caller, mixed into
- * ch_calls under their own label, would be scored the same way.
+ * benchmark.tsv. main.nf passes 'gatk_hard' for the hard-filtered joint callset
+ * and 'gatk_cnn' for the CNN-filtered single-sample ones; another callset, mixed
+ * into ch_calls under its own label, would be scored the same way.
  */
 workflow BENCHMARK {
     take:

@@ -24,11 +24,11 @@ uv pip install -q --system 'papermill==2.7.0'
 # max(75, timeout_in_sec/60 + 30) minutes, 90 for this template.
 export NF_DEMO_SCALE=quick
 
-# The GPU leg stays in the template and out of CI: ANNOTATE_VARIANTS asks for an L4, and a run
+# The CNN arm stays in the template and out of CI: NVSCOREVARIANTS asks for an L4, and a run
 # that waits on L4 capacity in the test cloud's zone is red for a reason the template cannot
-# fix. Stage 2 passes it to main.nf; the notebook reads it and skips the process and its Ray
-# Data step (Step 7).
-export NF_ANNOTATE=false
+# fix. Stage 2 passes it to main.nf; the notebook reads it and runs the hard-filtered callset
+# only.
+export NF_CNN=false
 
 # --- 1. unit checks: offline ---------------------------------------------------------------
 #
@@ -40,13 +40,13 @@ export NF_ANNOTATE=false
 #   test_config_agreement  the node ceiling, scale regions and plugin version, which live in
 #                          several files each (its compute-config checks skip here: rayapp
 #                          does not ship configs/ to the cluster)
-#   test_make_samplesheet  per-sample truth wiring, and a manifest that disagrees with disk
+#   test_make_samplesheet  per-sample truth wiring, tranche resources, and a manifest that
+#                          disagrees with disk
 #   test_collect_vcfeval   the vcfeval readout, against summaries captured from rtg itself
-#   test_score_variants    the reference and VCF plumbing around the scorer's model
 #
 # Each finds nf_ray/ and pipeline/ from the working directory.
 for check in test_nf_ray test_daemon test_config_agreement test_make_samplesheet \
-             test_collect_vcfeval test_score_variants; do
+             test_collect_vcfeval; do
   python "$here/$check.py"
 done
 
@@ -55,7 +55,8 @@ done
 # 200 kb, 657 planted variants, Mendelian by construction; synthetic_trio.py has the details.
 # The truth set is what was planted, so the only passing score is a perfect one, and `--check`
 # fails the build on anything else: precision, recall or F1 below 1.0000 for any sample and
-# type, or true positives that do not add up to each sample's planted set.
+# type of the hard-filtered callset, or true positives that do not add up to each sample's
+# planted set.
 #
 # `-profile ray`, as the notebook runs it: the executor, the plugin, the shared work directory
 # and the autoscaling workers, over the whole DAG from FASTQ to benchmark.tsv. --region and
@@ -80,7 +81,7 @@ nextflow run pipeline/main.nf -profile ray -ansi-log false \
   --reference "$synth/data/reference/chrS.fa" \
   --known_sites "$synth/data/known_sites.vcf.gz" \
   --region "$region" --intervals 4 \
-  --annotate "$NF_ANNOTATE" \
+  --cnn "$NF_CNN" \
   --outdir "$synth/results"
 python "$here/synthetic_trio.py" --check "$synth/data" "$synth/results/benchmark/benchmark.tsv"
 

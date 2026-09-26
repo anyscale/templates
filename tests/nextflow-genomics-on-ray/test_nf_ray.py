@@ -577,7 +577,7 @@ def _() -> None:
     # the smoke run in tests.sh, which asserts the shard count.
     for name, params in (
         ("pipeline/smoke.nf", ["shards"]),
-        ("pipeline/main.nf", ["intervals", "annotate_shards"]),
+        ("pipeline/main.nf", ["intervals"]),
     ):
         path = os.path.join(_TEMPLATE, name)
         with open(path) as handle:
@@ -592,14 +592,14 @@ def _() -> None:
 
 @check("nextflow: boolean params go through flag(), never straight into an if")
 def _() -> None:
-    # The same coercion rule, one type over, and also observed: `--annotate false`
-    # arrives as the String "false", which Groovy treats as true, so a local run
-    # printed "annotate yes" for exactly that command line.
+    # The same coercion rule, one type over, and also observed: a boolean given as
+    # `--<flag> false` arrives as the String "false", which Groovy treats as true, so
+    # a local run printed "yes" for exactly that command line.
     path = os.path.join(_TEMPLATE, "pipeline", "main.nf")
     with open(path) as handle:
         text = handle.read()
     coerced = re.findall(r"flag\(params\.(\w+)\)", text)
-    assert "annotate" in coerced, "main.nf: params.annotate is not coerced"
+    assert "cnn" in coerced, "main.nf: params.cnn is not coerced"
     for param in coerced:
         # Read anywhere else, raw, it is a truthiness test on a String.
         raw = re.findall(rf"params\.{param}\b", text)
