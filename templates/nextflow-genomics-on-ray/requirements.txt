@@ -19,31 +19,35 @@
 #
 # Checked against dependencies/images/ray-2.58.0-py312-cu128.freeze.txt with
 #   uv pip compile --python-version 3.12 --python-platform x86_64-manylinux_2_28 \
-#       -c <freeze> requirements.txt
+#       -c <freeze> requirements.txt <torch==2.9.1>
 # which resolves with every package the image already has left at its image
-# version. The additions are the four below plus regex and hf-xet.
+# version. The additions are torch's own dependencies and the five below.
 
-# --- the GPU annotation leg -------------------------------------------------
-# Runs in two places, on purpose: the ANNOTATE_VARIANTS process calls
-# bin/score_variants.py through Nextflow, and the notebook's Ray Data step calls
-# the same module over the whole callset. One implementation, seen twice.
+# --- the CNN arm: GATK's NVScoreVariants ------------------------------------
+# NVScoreVariants is a Java front end that runs GATK's Python package,
+# `scorevariants`, which imports torch, pytorch_lightning (and the lightning_fabric
+# it carries), pysam and Bio. The package itself is installed from the GATK
+# source by the Dockerfile; torch lives in tools/requirements.gpu.txt, which pins
+# it with its own --index-url, so nothing else here can be resolved from a
+# non-PyPI index.
 #
-# torch is not here: it needs the CUDA-12.8 wheel index and lives in
-# tools/requirements.gpu.txt, which pins it with its own --index-url. Splitting
-# it out keeps --extra-index-url off this file, so nothing else can be silently
-# resolved from a non-PyPI index.
+# GATK 4.6.2.0's own environment (scripts/gatkcondaenv.yml.template) is Python
+# 3.10 with torch 2.1 and pytorch-lightning 2.4.0, pysam 0.22.0 and biopython
+# 1.84. This image is Python 3.12 with torch 2.9.1, so:
 #
-# transformers 4.x, not 5.x. The scorer's model ships its own modelling code
-# (trust_remote_code), and that code imports `find_pruneable_heads_and_indices`
-# from transformers.pytorch_utils, which 5.x removed: on 5.15.0 the load fails
-# with ImportError. On 4.57.6, the last 4.x release, it loads and runs a forward
-# pass (checked on CPU with torch 2.9.1). The other three are the newest each of
-# 4.57.6's own ranges allows: hub <1.0, tokenizers <=0.23.0 (PyPI has no 0.23.0,
-# so 0.22.x), safetensors >=0.4.3.
-transformers==4.57.6
-huggingface-hub==0.36.2
-safetensors==0.8.0
-tokenizers==0.22.2
+#   pytorch-lightning 2.6, the line Lightning's compatibility matrix tests up to
+#   torch 2.10 (2.4 stops at 2.6); lightning-utilities and torchmetrics are its
+#   dependencies, at the versions it resolves to;
+#
+#   pysam 0.22.0 and biopython 1.84, GATK's own pins, which have cp312 wheels.
+#
+# tools/smoke-nvscorevariants.sh runs NVScoreVariants against exactly these, and
+# the image build runs it.
+pytorch-lightning==2.6.6
+lightning-utilities==0.15.3
+torchmetrics==1.9.0
+pysam==0.22.0
+biopython==1.84
 
 # --- notebook and staging ---------------------------------------------------
 # Nothing to add. The notebook fetches demo data with `aws s3 sync

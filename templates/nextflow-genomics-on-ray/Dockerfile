@@ -101,7 +101,7 @@ RUN bash /opt/nf-tools/src/tools/build_tools.sh /opt/nf-tools
 # Last, not first, because the env carries its own python (conda-forge 3.12.x,
 # which multiqc needs). Put first, it shadowed the image's: `python` became the
 # env's interpreter, `import ray` failed in the verification step below, and
-# `nf-ray` and score_variants.py would have picked it up at run time too.
+# `nf-ray` and GATK's NVScoreVariants would have picked it up at run time too.
 # Appended, `python` stays /home/ray/anaconda3/bin/python, and the tools still
 # resolve because nothing earlier on PATH carries their names -- the
 # verification step checks both.
@@ -121,47 +121,40 @@ ENV NXF_OPTS="-Xms512m -Xmx4g"
 ENV NXF_HOME=/opt/nf-tools/nextflow
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
-# GPU leg. torch first, from the CUDA-12.8 index, then everything else from PyPI.
-# Two commands rather than one because the torch requirements file carries an
-# --index-url that must not apply to anything else.
+# The GPU arm, GATK's NVScoreVariants: a Java front end that runs GATK's Python
+# package, `scorevariants`, on PyTorch, in the image's Python rather than a second
+# environment. torch first, from the CUDA-12.8 index, then Lightning, pysam and
+# Biopython from PyPI. Two commands rather than one because the torch requirements
+# file carries an --index-url that must not apply to anything else.
 COPY --chown=ray:users tools/requirements.gpu.txt /tmp/requirements.gpu.txt
 COPY --chown=ray:users requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.gpu.txt \
     && pip install --no-cache-dir -r /tmp/requirements.txt
+
+# `scorevariants` itself, from the GATK source at the version of the jar in the main
+# env. GATK publishes it only in its source tree and inside the 704 MB release zip;
+# the source tarball is the smaller download, and it is pinned by checksum. Its
+# setup.py declares no dependencies, so --no-deps; --no-build-isolation so pip builds
+# it with the image's setuptools instead of fetching an unpinned one.
+ARG GATK_VERSION=4.6.2.0
+ARG GATK_SRC_SHA256=ad5df0e5a390aea483336a4895ce67d687142ee448ae59b1c41ed9c7f523acee
+RUN curl -fsSL -o /tmp/gatk-src.tar.gz \
+        "https://github.com/broadinstitute/gatk/archive/refs/tags/${GATK_VERSION}.tar.gz" \
+    && echo "${GATK_SRC_SHA256}  /tmp/gatk-src.tar.gz" | sha256sum -c - \
+    && mkdir /tmp/gatk-python \
+    && tar -xzf /tmp/gatk-src.tar.gz -C /tmp/gatk-python --strip-components=7 \
+        "gatk-${GATK_VERSION}/src/main/python/org/broadinstitute/hellbender" \
+    && pip install --no-cache-dir --no-deps --no-build-isolation /tmp/gatk-python \
+    && rm -rf /tmp/gatk-src.tar.gz /tmp/gatk-python
+
+# The interpreter NVSCOREVARIANTS points GATK's `python` and `python3` lookups at.
+ENV NF_GATK_PYTHON=/home/ray/anaconda3/bin/python
 
 # The executor's Ray side. Installed (not merely staged) so the `nf-ray` console
 # script is on PATH for the plugin to call.
 COPY --chown=ray:users pyproject.toml /tmp/nf-ray/pyproject.toml
 COPY --chown=ray:users nf_ray/ /tmp/nf-ray/nf_ray/
 RUN pip install --no-cache-dir /tmp/nf-ray && rm -rf /tmp/nf-ray
-
-# The model the GPU process scores with, baked in. Downloading it per task would
-# have every node in a fan-out pull the same 200 MB from Hugging Face at once, and
-# would make the pipeline need egress it otherwise does not.
-#
-# `*.py` is not optional: the model runs its own modelling code (esm_config.py,
-# modeling_esm.py) via trust_remote_code, and ANNOTATE_VARIANTS sets
-# HF_HUB_OFFLINE=1, so code missing here cannot be fetched later. The revision is
-# pinned for the same reason -- remote code should be code someone read. The
-# second command loads it offline and runs one forward pass, so a transformers
-# upgrade that breaks the model's code fails here rather than on a GPU node.
-ENV HF_HOME=/opt/nf-tools/hf
-ENV NF_RAY_SCORER_MODEL=InstaDeepAI/nucleotide-transformer-v2-50m-multi-species
-ENV NF_RAY_SCORER_REVISION=81b29e5786726d891dbf929404ef20adca5b36f1
-RUN python -c "\
-from huggingface_hub import snapshot_download; \
-snapshot_download('${NF_RAY_SCORER_MODEL}', revision='${NF_RAY_SCORER_REVISION}', \
-                  allow_patterns=['*.json', '*.safetensors', '*.txt', '*.py'], \
-                  ignore_patterns=['jax_model/*'])" \
-    && HF_HUB_OFFLINE=1 python -c "\
-import os; \
-from transformers import AutoModelForMaskedLM, AutoTokenizer; \
-name, rev = os.environ['NF_RAY_SCORER_MODEL'], os.environ['NF_RAY_SCORER_REVISION']; \
-tok = AutoTokenizer.from_pretrained(name, revision=rev, trust_remote_code=True); \
-model = AutoModelForMaskedLM.from_pretrained(name, revision=rev, trust_remote_code=True).eval(); \
-out = model(**tok(['ACGTACGTACGTAAAAAA'], return_tensors='pt'), output_hidden_states=True); \
-print('scorer model loads offline; last hidden state', tuple(out.hidden_states[-1].shape))" \
-    && du -sh ${HF_HOME}
 
 # --- verification ------------------------------------------------------------
 #
@@ -182,7 +175,7 @@ RUN set -eux; \
     python -c "import ray; assert ray.__version__ == '2.58.0', ray.__version__"; \
     python -c "import numpy; assert numpy.__version__.startswith('2.2.'), numpy.__version__"; \
     python -c "import torch; print('torch', torch.__version__); assert torch.version.cuda.startswith('12.8'), torch.version.cuda"; \
-    python -c "import transformers; print('transformers', transformers.__version__)"; \
+    python -c "import pytorch_lightning, pysam, Bio, scorevariants.models.gatk_1d; print('lightning', pytorch_lightning.__version__, 'pysam', pysam.__version__, 'biopython', Bio.__version__)"; \
     java -version; \
     nextflow -version; \
     nf-ray --version; \
@@ -205,5 +198,15 @@ RUN set -eux; \
 RUN set -eux; \
     ls "${NXF_PLUGINS_DIR}"; \
     grep -rq "ray" "${NXF_PLUGINS_DIR}"/nf-ray-*/ || (echo 'nf-ray plugin looks empty' >&2; exit 1)
+
+# NVScoreVariants end to end, on the CPU, on two records: the Java front end, the
+# Python lookup, scorevariants, Lightning, and the model inside the jar, run the way
+# NVSCOREVARIANTS runs them. GATK exits 0 when its Python fails, so the script checks
+# that both records come back scored; a broken environment fails the build here
+# rather than on an L4 node.
+# Kept in the image, so `bash /opt/nf-tools/src/tools/smoke-nvscorevariants.sh gpu`
+# checks the CUDA path on a GPU node.
+COPY --chown=ray:users tools/smoke-nvscorevariants.sh /opt/nf-tools/src/tools/
+RUN bash /opt/nf-tools/src/tools/smoke-nvscorevariants.sh cpu
 
 WORKDIR /home/ray
