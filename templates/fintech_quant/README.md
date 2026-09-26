@@ -82,8 +82,8 @@ def price_option_chain(
         raise RuntimeError(f"{symbol}: could not fetch options chain — {chain['error']}")
     df = pd.DataFrame(chain['options'])
 
-    # Calculate base implied volatility
-    df["implied_volatility"] = df.apply(lambda row: get_iv(row), axis=1)
+    # Base implied vol from the bid/ask mid; adds iv_price, iv_source, implied_volatility
+    df = df.join(df.apply(get_iv, axis=1))
 
     # Apply shocks and calculate NPVs
     for i, (iv_shock, price_shock) in enumerate(zip(iv_shocks, price_shocks), start=1):
@@ -170,8 +170,8 @@ def parallel_price_option_chain(
         raise RuntimeError(f"{symbol}: could not fetch options chain — {chain['error']}")
     df = pd.DataFrame(chain['options'])
 
-    # Calculate base implied volatility
-    df["implied_volatility"] = df.apply(lambda row: get_iv(row), axis=1)
+    # Base implied vol from the bid/ask mid; adds iv_price, iv_source, implied_volatility
+    df = df.join(df.apply(get_iv, axis=1))
 
     # Apply shocks and calculate NPVs
     for i, (iv_shock, price_shock) in enumerate(zip(iv_shocks, price_shocks), start=1):
@@ -261,8 +261,8 @@ def more_parallel_price_option_chain(
         raise RuntimeError(f"{symbol}: could not fetch options chain — {chain['error']}")
     df = pd.DataFrame(chain['options'])
  
-    # Calculate base implied volatility
-    df["implied_volatility"] = df.apply(lambda row: get_iv(row), axis=1)
+    # Base implied vol from the bid/ask mid; adds iv_price, iv_source, implied_volatility
+    df = df.join(df.apply(get_iv, axis=1))
 
     @ray.remote
     def compute_stats(df: pd.DataFrame, iv_shock: float, price_shock, idx: int, shock_num: int):
