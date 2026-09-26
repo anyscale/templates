@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build and publish the template's demo data: chr20 Illumina reads for the GIAB
-# Ashkenazi trio, with the reference, a known-sites resource and each sample's own
+# Ashkenazi trio, with the reference, known-sites resources and each sample's own
 # GIAB v4.2.1 truth set.
 #
 #   s3://anyscale-public-materials/genomics/giab-trio-illumina-chr20/
@@ -13,7 +13,10 @@
 #     MANIFEST.json                          what bin/make_samplesheet.py reads
 #     HG00{2,3,4}_R{1,2}.fastq.gz            reads over the scale's region, ~30x
 #     reference/chr20.fa (.fai, .dict)       all of chr20, every scale
-#     known_sites/dbsnp138.chr20.vcf.gz (.tbi)
+#     known_sites/dbsnp138.chr20.vcf.gz (.tbi)                        BQSR
+#     known_sites/hapmap_3.3.chr20.vcf.gz (.tbi)                      FilterVariantTranches,
+#     known_sites/1000G_phase1.snps.high_confidence.chr20.vcf.gz (.tbi)   for the CNN arm
+#     known_sites/Mills_and_1000G_gold_standard.indels.chr20.vcf.gz (.tbi)
 #     truth/HG00{2,3,4}.vcf.gz (.tbi)        GIAB v4.2.1, chr20, one per sample
 #     truth/HG00{2,3,4}.bed                  its high-confidence regions
 #
@@ -29,7 +32,17 @@
 #   reference  chr20 of GCA_000001405.15_GRCh38_no_alt_analysis_set, the copy in
 #              ONT's open-data bucket
 #   known      the Broad hg38 bundle's dbSNP 138, sliced to chr20
+#   tranche    the Broad hg38 bundle's HapMap 3.3, 1000G phase 1 high-confidence SNPs
+#              and Mills/1000G gold-standard indels, sliced to chr20: the resources
+#              GATK's CNN workflow (gatk-workflows/gatk4-cnn-variant-filter) gives
+#              FilterVariantTranches
 #   truth      GIAB NISTv4.2.1 GRCh38 benchmark VCF + _noinconsistent BED, per sample
+#
+# The Broad files are read by range request, chr20's blocks only, and each object's
+# MD5 is pinned below and checked first, against the value GCS reports in
+# `x-goog-hash`: a re-cut upstream file stops the build instead of quietly moving
+# BQSR or every tranche cutoff. MANIFEST.json records the pinned MD5 beside the
+# sha256 of each published slice.
 #
 # The BAMs are indexed, so samtools reads only the region's blocks over HTTPS. Reads
 # are subsampled to ~30x by read name (`-s SEED.FRAC`, which keeps mates together),
@@ -43,12 +56,17 @@
 # on the numbers", has the rest.
 #
 # ---------------------------------------------------------------------------------
-# Needs samtools built with libcurl, bcftools, tabix, bgzip, python3 and (to
+# Needs samtools built with libcurl, bcftools, tabix, bgzip, python3, curl and (to
 # publish) aws -- all in the template image. Reading needs no credentials; writing
 # $DEST does. Run it inside the image, as a job:
 #
 #   bash tools/stage-demo-data.sh              # build every scale and upload
 #   bash tools/stage-demo-data.sh --dry-run    # build and verify, upload nothing
+#
+# A scale whose reads are already in $WORK/<scale>/ keeps them, so adding a resource to
+# the published data without re-deriving the reads is: sync each published scale into
+# $WORK, then run this with that WORK. The FASTQ checksums in the new MANIFEST.json come
+# out the same, and sync uploads the new files and the rewritten ones.
 #
 # A small local check of the whole derivation, a few MB of reads:
 #
@@ -57,7 +75,17 @@ set -euo pipefail
 
 GIAB="${GIAB:-https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab}"
 REF_URL="${REF_URL:-https://ont-open-data.s3.amazonaws.com/giab_2023.05/analysis/benchmarking/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna}"
-DBSNP_URL="${DBSNP_URL:-https://storage.googleapis.com/gcp-public-data--broad-references/hg38/v0/Homo_sapiens_assembly38.dbsnp138.vcf.gz}"
+BROAD="${BROAD:-https://storage.googleapis.com/gcp-public-data--broad-references/hg38/v0}"
+DBSNP_URL="${DBSNP_URL:-$BROAD/Homo_sapiens_assembly38.dbsnp138.vcf.gz}"
+DBSNP_MD5="${DBSNP_MD5:-110aaeb8130bf4edb544a72d2c7829f7}"
+
+# FilterVariantTranches' resources: published name, object in the Broad bundle, and the
+# object's MD5 (GCS metadata, 2019-12-06 uploads).
+RESOURCES=(
+  "hapmap_3.3 hapmap_3.3.hg38.vcf.gz d05ac6b9a247a21ce0030c7494194da9"
+  "1000G_phase1.snps.high_confidence 1000G_phase1.snps.high_confidence.hg38.vcf.gz b2979b47800b59b41920bf5432c4b2a0"
+  "Mills_and_1000G_gold_standard.indels Mills_and_1000G_gold_standard.indels.hg38.vcf.gz 2e02696032dcfe95ff0324f4a13508e3"
+)
 
 DEST="${DEST:-s3://anyscale-public-materials/genomics/giab-trio-illumina-chr20}"
 SCALES="${SCALES:-quick standard full}"
@@ -90,7 +118,7 @@ SAMPLES=(HG002 HG003 HG004)
 echo "work dir: $WORK"
 cd "$WORK"
 
-need=(samtools bcftools tabix bgzip python3)
+need=(samtools bcftools tabix bgzip python3 curl)
 [ -z "$DRY_RUN" ] && need+=(aws)
 for tool in "${need[@]}"; do
   command -v "$tool" > /dev/null || { echo "$tool not on PATH" >&2; exit 1; }
@@ -112,11 +140,41 @@ samtools faidx shared/reference/$CHROM.fa
 samtools dict shared/reference/$CHROM.fa -o shared/reference/$CHROM.dict
 echo "   $(cut -f2 shared/reference/$CHROM.fa.fai) bp"
 
+# Stop unless the object at $1 is the one pinned by MD5 $2. GCS reports an object's MD5,
+# base64-encoded, in an `x-goog-hash: md5=` header.
+check_md5() {
+  local got
+  got="$(curl -fsSI "$1" | tr -d '\r' | sed -n 's/^[Xx]-[Gg]oog-[Hh]ash: md5=//p' \
+    | python3 -c 'import base64, sys; print(base64.b64decode(sys.stdin.read().strip()).hex())')" \
+    || got=""
+  if [ "$got" != "$2" ]; then
+    echo "$1: MD5 is '$got', pinned $2. The upstream file changed; review it and re-pin." >&2
+    exit 1
+  fi
+}
+
+# chr20 of a Broad VCF, by range request, after its MD5 check.
+slice_broad() {  # url md5 out
+  check_md5 "$1" "$2"
+  tabix -h "$1" "$CHROM" | bgzip -@ "$THREADS" > "$3"
+}
+
 echo "== known sites: dbSNP 138, $CHROM"
 if [ ! -s shared/known_sites/dbsnp138.$CHROM.vcf.gz ]; then
-  tabix -h "$DBSNP_URL" "$CHROM" | bgzip -@ "$THREADS" > shared/known_sites/dbsnp138.$CHROM.vcf.gz
+  slice_broad "$DBSNP_URL" "$DBSNP_MD5" shared/known_sites/dbsnp138.$CHROM.vcf.gz
 fi
 tabix -f -p vcf shared/known_sites/dbsnp138.$CHROM.vcf.gz
+
+echo "== tranche resources, $CHROM"
+for entry in "${RESOURCES[@]}"; do
+  read -r name object md5 <<< "$entry"
+  slice=shared/known_sites/$name.$CHROM.vcf.gz
+  if [ ! -s "$slice" ]; then
+    slice_broad "$BROAD/$object" "$md5" "$slice"
+  fi
+  tabix -f -p vcf "$slice"
+  echo "   $name  $(bcftools view -H "$slice" | wc -l) records"
+done
 
 echo "== truth: GIAB v4.2.1, $CHROM"
 for s in "${SAMPLES[@]}"; do
@@ -156,9 +214,10 @@ build() {
   done
 
   SCALE="$scale" REGION="$region" OUT="$out" SEED="$SUBSAMPLE_SEED" FRACTION="$SUBSAMPLE_FRACTION" \
-  REF_URL="$REF_URL" DBSNP_URL="$DBSNP_URL" CHROM="$CHROM" \
+  REF_URL="$REF_URL" DBSNP_URL="$DBSNP_URL" DBSNP_MD5="$DBSNP_MD5" BROAD="$BROAD" CHROM="$CHROM" \
   BAMS="$(for s in "${SAMPLES[@]}"; do printf '%s=%s\n' "$s" "${BAM[$s]}"; done)" \
   TRUTHS="$(for s in "${SAMPLES[@]}"; do printf '%s=%s\n' "$s" "${TRUTH[$s]}"; done)" \
+  TRANCHE="$(printf '%s\n' "${RESOURCES[@]}")" \
   python3 - <<'PY'
 import gzip, hashlib, json, os
 
@@ -191,6 +250,17 @@ for s in sorted(bams):
         "truth_bed": f"truth/{s}.bed",
         "truth_source": truths[s] + ".vcf.gz",
     })
+resources = []
+for line in os.environ["TRANCHE"].splitlines():
+    name, obj, md5 = line.split()
+    vcf = f"known_sites/{name}.{chrom}.vcf.gz"
+    resources.append({
+        "name": name,
+        "vcf": vcf,
+        "sha256": sha256(os.path.join(out, vcf)),
+        "source": f"{os.environ['BROAD']}/{obj} ({chrom})",
+        "source_md5": md5,
+    })
 manifest = {
     "scale": os.environ["SCALE"],
     "region": os.environ["REGION"],
@@ -200,7 +270,11 @@ manifest = {
                   "sha256": sha256(os.path.join(out, "reference", f"{chrom}.fa")),
                   "source": os.environ["REF_URL"] + f" ({chrom})"},
     "known_sites": {"vcf": f"known_sites/dbsnp138.{chrom}.vcf.gz",
-                    "source": os.environ["DBSNP_URL"] + f" ({chrom})"},
+                    "source": os.environ["DBSNP_URL"] + f" ({chrom})",
+                    "source_md5": os.environ["DBSNP_MD5"]},
+    # FilterVariantTranches' resources, for the CNN arm (main.nf --tranche_resources).
+    # make_samplesheet.py checks each against its sha256.
+    "tranche_resources": resources,
     "truth_version": "GIAB NISTv4.2.1, GRCh38",
     "selection": ("Read pairs whose primary alignment in the GIAB novoalign GRCh38 BAM falls "
                   "in the region, subsampled by read name. Reference-selected: reads that "
