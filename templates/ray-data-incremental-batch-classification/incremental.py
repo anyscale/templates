@@ -151,7 +151,8 @@ def _key_hashes(batch: pd.DataFrame, cols: Sequence[str]) -> tuple[np.ndarray, n
     """
     keys = batch[list(cols)]
     valid = ~keys.isna().any(axis=1).to_numpy()
-    joined = keys.astype(str).agg("\x1f".join, axis=1)
+    # On a frame with no rows, agg returns the frame, which iterates as its column names.
+    joined = keys.astype(str).agg("\x1f".join, axis=1) if len(keys) else []
     hashes = np.array(
         [hashlib.blake2b(s.encode("utf-8"), digest_size=16).digest() for s in joined],
         dtype="S16",
