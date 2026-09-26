@@ -179,11 +179,12 @@ def anti_join_hash(today, prior, *, num_partitions: int, cols: Sequence[str] = K
 
 
 def prior_key_hashes(prior, cols: Sequence[str] = KEY_COLUMNS) -> np.ndarray:
-    """Hash the prior keys on the workers; bring back only the 16-byte hashes.
+    """Hash the prior keys on the workers; bring back only the 16-byte hashes, sorted.
 
     Hashing is a ``map_batches`` across the cluster. Draining the prior keys
     through the driver and hashing them in one Python loop gives the same set,
-    single-threaded, while every GPU waits.
+    single-threaded, while every GPU waits. ``np.unique`` sorts the set here,
+    once, into the order ``ProbeFilter`` searches.
     """
 
     def to_hashes(batch: pd.DataFrame) -> pd.DataFrame:
@@ -197,8 +198,37 @@ def prior_key_hashes(prior, cols: Sequence[str] = KEY_COLUMNS) -> np.ndarray:
     return np.unique(np.concatenate(parts))
 
 
+def _in_order(hashes: np.ndarray, chunk: int = 1 << 20) -> bool:
+    """Whether ``hashes`` is sorted. Compares ``chunk`` neighbours at a time, so the
+    check allocates about a megabyte rather than a byte per key."""
+    for i in range(0, len(hashes) - 1, chunk):
+        j = min(i + chunk, len(hashes) - 1)
+        if not (hashes[i:j] <= hashes[i + 1 : j + 1]).all():
+            return False
+    return True
+
+
+def _isin_sorted(hashes: np.ndarray, prior: np.ndarray) -> np.ndarray:
+    """``np.isin(hashes, prior)`` for a sorted ``prior``: a binary search, then an equality check.
+
+    Allocates only arrays the length of ``hashes``; ``np.isin`` copies and sorts
+    all of ``prior`` on every call.
+    """
+    if len(prior) == 0:
+        return np.zeros(len(hashes), dtype=bool)
+    at = np.searchsorted(prior, hashes)
+    np.minimum(at, len(prior) - 1, out=at)
+    return prior[at] == hashes
+
+
 class ProbeFilter:
     """Keep rows whose key hash is absent from the broadcast prior set.
+
+    The set from ``prior_key_hashes`` arrives sorted, and ``ray.get`` maps it
+    read-only from the object store, so the actors on a node share one copy.
+    Each call looks its batch up by binary search, allocating arrays the
+    batch's length and never copying the set. Given an unsorted set, the
+    constructor sorts a copy for this actor.
 
     Rows with any NULL key column are always kept: NULL never equals NULL in a
     join, so a NULL-key row can never have been "already classified". Folding
@@ -208,12 +238,14 @@ class ProbeFilter:
     """
 
     def __init__(self, prior_ref, cols: Sequence[str] = KEY_COLUMNS):
-        self.prior = ray.get(prior_ref) if isinstance(prior_ref, ray.ObjectRef) else prior_ref
+        prior = ray.get(prior_ref) if isinstance(prior_ref, ray.ObjectRef) else prior_ref
+        prior = np.asarray(prior, dtype="S16")
+        self.prior = prior if _in_order(prior) else np.sort(prior)
         self.cols = tuple(cols)
 
     def __call__(self, batch: pd.DataFrame) -> pd.DataFrame:
         hashes, valid = _key_hashes(batch, self.cols)
-        already = np.isin(hashes, self.prior) & valid
+        already = _isin_sorted(hashes, self.prior) & valid
         return batch.loc[~already]
 
 
@@ -222,7 +254,7 @@ def anti_join_probe(today, prior, *, cols: Sequence[str] = KEY_COLUMNS, concurre
 
     No shuffle and no aggregator actors, and the filter streams, so GPU work
     downstream starts as soon as the first filtered blocks exist. The broadcast
-    set is 16 bytes per prior key.
+    set is 16 bytes per prior key, one copy per node that runs a probe actor.
     """
     prior_ref = ray.put(prior_key_hashes(prior, cols))
     return today.map_batches(

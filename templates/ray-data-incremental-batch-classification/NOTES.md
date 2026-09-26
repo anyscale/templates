@@ -43,7 +43,14 @@ Leaving out `hypothesis_template` changed the top label on 681 of those 2,000 ro
 
 The digests are 128-bit because a new row falsely matches a prior key with probability about (prior keys) / 2^bits: at 10^9 prior keys and 10^9 new rows a day, a 64-bit digest silently drops about one row every 18 days, a 128-bit digest about 3 x 10^-21 rows a day. Both figures are arithmetic.
 
-Measured with numpy 2.2.6 outside Ray, on the laptop, 2026-09-25: `np.isin` on a 10,000-row batch took 0.03 s and 57 MiB of temporaries against 10^6 prior keys, and 0.31 s and 563 MiB against 10^7, 3.7 times the set (median of 7 for times). Collecting and deduplicating 10^7 digests as `prior_key_hashes` does peaked at 4.1 times the set. The README's 10^8 figures scale these linearly.
+Measured with numpy 2.2.6 and pandas 2.3.3 outside Ray, on the laptop, 2026-09-25, on a 10,000-row batch of the synthetic rows (3.3 MiB in pandas). Times are medians of 7; memory is tracemalloc's peak above where each call started.
+
+| Prior keys (set) | `ProbeFilter` per batch | With `np.isin` in place of `np.searchsorted` |
+|---|---|---|
+| 10^6 (15 MiB) | 0.027 s, 2.4 MiB | 0.043 s, 57 MiB |
+| 10^7 (153 MiB) | 0.037 s, 2.4 MiB | 0.34 s, 563 MiB |
+
+The lookup itself took 0.007 s at 10^6 keys and 0.022 s at 10^7, and allocated 25 bytes per batch row at both; `np.isin` copies and sorts the set on every call, using 3.7 times its size. Over the timed calls at 10^7 keys, the process's peak RSS rose about 1 MiB, against about 630 MiB with `np.isin` (three runs). Each probe actor checks the set's order once as it starts: 0.03 s and 1 MiB at 10^7 keys. In a local Ray 2.58.0 run, both probe actors held the 10^7-key set as a read-only view of the object store's copy. Collecting and deduplicating 10^7 digests as `prior_key_hashes` does peaked at 4.1 times the set. The README's 10^8 figures scale these linearly.
 
 ## From the originating workload
 
