@@ -6,13 +6,16 @@ Stand-ins replace the Ray calls, so this needs neither a cluster nor data and ru
 * a retried task's start is its own attempt's, not the previous attempt's
   (``ray_placement.json`` survives in the task directory miniwdl retries in);
 * the per-task ceiling comes from nodes that can run tasks, so a ``CPU: 0`` head neither sets
-  it nor, alone, clamps every task to one CPU; and miniwdl's own clamp reads it as intended.
+  it nor, alone, clamps every task to one CPU; and miniwdl's own clamp reads it as intended;
+* on a Ray cluster, found the way ``ray.init()`` finds one and without starting any, the task
+  pool is 200 whatever is up at startup, so it does not cap how far the autoscaler goes.
 
 Each check drives the backend's real code, and miniwdl's; only Ray itself is replaced.
 """
 
 from __future__ import annotations
 
+import io
 import json
 import logging
 import os
@@ -20,7 +23,7 @@ import sys
 import tempfile
 import traceback
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -40,7 +43,7 @@ import WDL  # noqa: E402  (also installs miniwdl's NOTICE log level)
 from WDL import Value  # noqa: E402
 from WDL.runtime.config import Loader  # noqa: E402
 
-from wdl_on_ray import backend, resources, runtimes  # noqa: E402
+from wdl_on_ray import backend, cli, resources, runtimes  # noqa: E402
 from wdl_on_ray import config as ray_config  # noqa: E402
 from wdl_on_ray import job as ray_job  # noqa: E402
 
@@ -304,6 +307,103 @@ def test_miniwdl_reads_no_ceiling_as_no_clamp() -> None:
         assert records.named("runtime.cpu adjusted to host limit")
 
 
+# ---------------------------------------------------------------------------- task pool size
+
+
+def _no_ray_init(*_: Any, **__: Any) -> None:
+    raise AssertionError("ray.init() called: deciding the task pool must not start or join Ray")
+
+
+def pool_for(*flags: str, address_file: str | None = None, **env: str | None) -> str | None:
+    """``MINIWDL__SCHEDULER__TASK_CONCURRENCY`` as ``wdl-on-ray run *flags`` leaves it, with
+    ``address_file`` as the content of the file ``ray start`` writes (None: no file)."""
+    with tempfile.TemporaryDirectory(prefix="wdl-units-ray-") as ray_tmpdir:
+        if address_file is not None:
+            os.makedirs(os.path.join(ray_tmpdir, "ray"))
+            Path(ray_tmpdir, "ray", "ray_current_cluster").write_text(address_file)
+        settings: dict[str, str | None] = {
+            # A workspace's real /tmp/ray/ray_current_cluster must not leak in, so always this.
+            "RAY_TMPDIR": ray_tmpdir,
+            "RAY_ADDRESS": None,
+            "MINIWDL__RAY__ADDRESS": None,
+            "MINIWDL__SCHEDULER__TASK_CONCURRENCY": None,
+            "MINIWDL__SCHEDULER__CONTAINER_BACKEND": None,
+            **env,
+        }
+        with environ(**settings), patched(ray, init=_no_ray_init):
+            args, passthrough = cli.build_parser().parse_known_args(["run", *flags, "x.wdl"])
+            cli._apply_run_defaults(args, passthrough)
+            return os.environ.get("MINIWDL__SCHEDULER__TASK_CONCURRENCY")
+
+
+def test_pool_without_a_cluster_is_miniwdls_default() -> None:
+    """No cluster to join (a laptop): leave miniwdl's default, the driver's nproc."""
+    assert pool_for() is None
+    assert pool_for(address_file="") is None  # an empty file names no cluster
+    assert pool_for(MINIWDL__RAY__ADDRESS="local") is None  # ray.init starts one
+
+
+def test_pool_on_a_cluster_is_200_however_small_it_is_now() -> None:
+    """Ray queues what does not fit, and the autoscaler scales on that queue. Before the fix a
+    workspace (no RAY_ADDRESS) got miniwdl's nproc, and a job the CPUs up at startup, 0 while
+    only the CPU:0 head was up, so nproc again."""
+    full = str(cli.MAX_TASK_CONCURRENCY)
+    assert full == "200"
+    assert pool_for(RAY_ADDRESS="10.0.0.1:6379") == full  # a job
+    assert pool_for(address_file="10.0.0.1:6379\n") == full  # a workspace
+    assert pool_for("--ray-address", "10.0.0.1:6379") == full
+    connected = {
+        "is_initialized": lambda: True,
+        "get_runtime_context": lambda: SimpleNamespace(gcs_address="10.0.0.1:6379"),
+    }
+    with patched(ray, **connected):
+        assert pool_for() == full  # already connected, in this process
+
+
+def test_task_concurrency_flag_and_env_still_win() -> None:
+    """``--task-concurrency`` overrides the default, with or without a cluster, and a caller's
+    own ``MINIWDL__SCHEDULER__TASK_CONCURRENCY`` is left as it is."""
+    assert pool_for("--task-concurrency", "7") == "7"
+    assert pool_for("--task-concurrency", "7", RAY_ADDRESS="10.0.0.1:6379") == "7"
+    assert pool_for(RAY_ADDRESS="10.0.0.1:6379", MINIWDL__SCHEDULER__TASK_CONCURRENCY="50") == "50"
+    assert pool_for("--task-concurrency", "7", MINIWDL__SCHEDULER__TASK_CONCURRENCY="50") == "7"
+
+
+def test_doctor_reports_the_cluster_a_run_would_join() -> None:
+    """``doctor`` names the cluster found without starting one, the pool a run would use, and,
+    with only the CPU:0 head up, that nothing clamps a task, instead of "cluster CPUs unknown"."""
+    resolved = ray_config.load(Loader(logging.getLogger("test_backend_units.cfg")))
+    # Ray as seen from a driver whose cluster has only the CPU:0 head up.
+    head_only = {
+        "nodes": lambda: [HEAD],
+        "cluster_resources": lambda: {"memory": 64.0 * GiB},
+        "get_runtime_context": lambda: SimpleNamespace(gcs_address="10.0.0.1:6379"),
+    }
+
+    connects: list[object] = []
+
+    def report(**env: str | None) -> str:
+        out = io.StringIO()
+        with (
+            tempfile.TemporaryDirectory(prefix="wdl-units-ray-") as ray_tmpdir,
+            environ(RAY_TMPDIR=ray_tmpdir, MINIWDL__SCHEDULER__TASK_CONCURRENCY=None, **env),
+            patched(backend, connect=lambda *a: connects.append(a)),
+            patched(ray, init=_no_ray_init, **head_only),
+            redirect_stdout(out),
+        ):
+            cli._print_cluster(resolved)
+        return out.getvalue()
+
+    alone = report(RAY_ADDRESS=None)
+    assert "none found" in alone and "miniwdl's default" in alone, alone
+    assert not connects, "doctor connected with no cluster to join, which starts one"
+
+    joined = report(RAY_ADDRESS="10.0.0.1:6379")
+    assert "10.0.0.1:6379" in joined and "CPUs           0" in joined, joined
+    assert "CPU unclamped, memory unclamped" in joined, joined
+    assert f"task pool      {cli.MAX_TASK_CONCURRENCY}" in joined, joined
+
+
 # ------------------------------------------------------------------------------------ runner
 
 TESTS = [
@@ -312,6 +412,10 @@ TESTS = [
     test_head_without_cpus_does_not_set_the_ceiling,
     test_overrides_still_set_the_ceiling,
     test_miniwdl_reads_no_ceiling_as_no_clamp,
+    test_pool_without_a_cluster_is_miniwdls_default,
+    test_pool_on_a_cluster_is_200_however_small_it_is_now,
+    test_task_concurrency_flag_and_env_still_win,
+    test_doctor_reports_the_cluster_a_run_would_join,
 ]
 
 

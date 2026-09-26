@@ -9,10 +9,11 @@ to get wrong quietly:
 * selecting the ``ray`` backend;
 * putting the run directory on shared storage, because the backend's filesystem
   contract requires it (see :mod:`wdl_on_ray.backend`);
-* raising miniwdl's task concurrency to suit the *cluster*, not the driver node,
-  when ``RAY_ADDRESS`` lets the wrapper ask the cluster at startup. miniwdl's
-  default is the driver's ``nproc``, which silently caps a 500-core cluster at
-  however many cores the head node happens to have.
+* raising miniwdl's task concurrency to 200 whenever there is a Ray cluster to
+  join, however few nodes are up yet: Ray queues the tasks that do not fit, and
+  the autoscaler scales on that queue. miniwdl's default is the driver's
+  ``nproc``, which silently caps a 500-core cluster at however many cores the
+  head node happens to have.
 
 Unrecognized arguments are forwarded to miniwdl verbatim, so
 ``wdl-on-ray run pipeline.wdl -i inputs.json --verbose`` works as expected.
@@ -34,7 +35,8 @@ from wdl_on_ray._version import __version__
 from wdl_on_ray.backend import SHARED_STORAGE_PREFIXES
 
 #: miniwdl's guideline ceiling for its own thread pool; beyond roughly this many
-#: concurrent tasks the driver's Python process becomes the bottleneck.
+#: concurrent tasks the driver's Python process becomes the bottleneck. Each task
+#: holds one thread while it is queued or running, waking once a second to poll Ray.
 MAX_TASK_CONCURRENCY = 200
 
 
@@ -55,31 +57,19 @@ def _setenv(key: str, value: str, *, force: bool = False) -> None:
         os.environ[key] = value
 
 
-def _cluster_cpus() -> int:
-    """Total cluster CPUs, or 0 if we can't ask without unwanted side effects.
+def _find_cluster() -> str | None:
+    """The Ray cluster a run would join, or None if it would start a local instance.
 
-    Goes through :func:`wdl_on_ray.backend.connect` instead of calling
-    ``ray.init()`` here, so the connection is made once, with ``connect``'s settings.
-    An independent ``ray.init()`` at this point would win, and ``connect`` would then
-    keep that connection as it found it.
+    Only looks, through :func:`wdl_on_ray.backend.find_cluster`: sizing a thread pool is no
+    reason to start a local Ray instance, or to join the cluster before the backend does.
     """
     import logging
 
-    import ray
     from WDL.runtime.config import Loader
 
-    from wdl_on_ray.backend import connect
+    from wdl_on_ray.backend import find_cluster
 
-    if not ray.is_initialized() and not os.environ.get("RAY_ADDRESS"):
-        # No cluster to ask. Starting a local Ray instance merely to size a thread
-        # pool would be a surprising side effect, and miniwdl's own default (the
-        # driver's nproc) is already right for a single-node run.
-        return 0
-    try:
-        connect(ray_config.load(Loader(logging.getLogger("wdl-on-ray"))), _quiet_logger())
-        return int(ray.cluster_resources().get("CPU", 0))
-    except Exception:
-        return 0
+    return find_cluster(ray_config.load(Loader(logging.getLogger("wdl-on-ray"))))
 
 
 def _quiet_logger() -> Any:
@@ -117,13 +107,14 @@ def _apply_run_defaults(args: argparse.Namespace, passthrough: list[str]) -> lis
         _setenv("MINIWDL__CALL_CACHE__GET", "true", force=True)
 
     if args.task_concurrency:
-        concurrency = args.task_concurrency
-    else:
-        # 0 leaves miniwdl's own default (driver nproc) in place, which is right
-        # for a single-node run and wrong for anything larger.
-        concurrency = min(MAX_TASK_CONCURRENCY, _cluster_cpus())
-    if concurrency > 0:
-        _setenv("MINIWDL__SCHEDULER__TASK_CONCURRENCY", str(concurrency))
+        _setenv("MINIWDL__SCHEDULER__TASK_CONCURRENCY", str(args.task_concurrency), force=True)
+    elif _find_cluster():
+        # Not sized to the nodes up now: Ray queues the tasks that do not fit, and the queue
+        # is what the autoscaler scales on, so a smaller pool caps how far the cluster grows.
+        # Not forced either, so a MINIWDL__SCHEDULER__TASK_CONCURRENCY of the caller's stays.
+        _setenv("MINIWDL__SCHEDULER__TASK_CONCURRENCY", str(MAX_TASK_CONCURRENCY))
+    # With no cluster to join, miniwdl's own default, the driver's nproc, is right: the run
+    # starts a local Ray instance on this one machine.
 
     argv = list(passthrough)
     if not any(a == "--dir" or a.startswith("--dir=") for a in argv):
@@ -292,34 +283,45 @@ def _cmd_doctor(args: argparse.Namespace, passthrough: list[str]) -> int:
         print(f"  dir            {cache_dir}")
         print(f"  on shared storage: {'yes' if on_shared else 'NO (other nodes will miss it)'}")
 
-    try:
-        import ray
-
-        if ray.is_initialized() or os.environ.get("RAY_ADDRESS"):
-            _print_cluster(resolved)
-        else:
-            print("\ncluster          not connected (RAY_ADDRESS unset; a local Ray")
-            print("                 instance will be started on demand)")
-    except ImportError:
-        pass
+    _print_cluster(resolved)
     return 0
 
 
 def _print_cluster(resolved: ray_config.RayConfig) -> None:
-    """The cluster a run would join: its CPUs, and the per-task ceiling the backend would set."""
-    import ray
+    """The cluster a run would join, and what the backend would decide on it.
 
-    from wdl_on_ray.backend import RayContainer, connect, limits_from
+    Found the way a run finds it, so a workspace, which sets no ``RAY_ADDRESS``, reports its
+    cluster too. Joined only when there is one: joining nothing would start a local instance.
+    """
+    from wdl_on_ray import backend
 
-    try:
-        connect(resolved, _quiet_logger())
-        found = RayContainer._probe_limits(resolved, _quiet_logger())
-    except Exception as exn:  # noqa: BLE001 - the failure itself is the report
-        print(f"\ncluster          not reachable: {type(exn).__name__}: {exn}")
+    address = backend.find_cluster(resolved)
+    own = os.environ.get("MINIWDL__SCHEDULER__TASK_CONCURRENCY")
+    if own:
+        pool = f"{own} (MINIWDL__SCHEDULER__TASK_CONCURRENCY)"
+    elif address:
+        pool = f"{MAX_TASK_CONCURRENCY} (--task-concurrency N changes it)"
+    else:
+        pool = f"miniwdl's default, this node's {os.cpu_count()} cores"
+    if address is None:
+        print("\ncluster          none found: a run starts a local Ray instance on this node")
+        print("                 (looked for [ray] address, RAY_ADDRESS, then")
+        print(f"                 {backend._ray_address_file()})")
+        print(f"  task pool      {pool}")
         return
-    print(f"\ncluster          {ray.get_runtime_context().gcs_address}")
+
+    print(f"\ncluster          {address}")
+    try:
+        import ray
+
+        backend.connect(resolved, _quiet_logger())
+        found = backend.RayContainer._probe_limits(resolved, _quiet_logger())
+    except Exception as exn:  # noqa: BLE001 - the failure itself is the report
+        print(f"  not reachable  {type(exn).__name__}: {exn}")
+        return
     print(f"  CPUs           {int(ray.cluster_resources().get('CPU', 0))}")
-    print(f"  task ceiling   {_describe_ceiling(limits_from(found, resolved), found)}")
+    print(f"  task ceiling   {_describe_ceiling(backend.limits_from(found, resolved), found)}")
+    print(f"  task pool      {pool}")
 
 
 def _describe_ceiling(limits: dict[str, int], found: tuple[float, float] | None) -> str:
@@ -446,7 +448,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--task-concurrency",
         type=int,
         metavar="N",
-        help=f"max WDL tasks in flight (default: min(cluster CPUs, {MAX_TASK_CONCURRENCY}))",
+        help=f"max WDL tasks in flight (default: {MAX_TASK_CONCURRENCY} on a Ray cluster, which"
+        " queues what does not fit; with none to join, miniwdl's default, this node's cores)",
     )
     run.add_argument(
         "--max-cpu",

@@ -712,7 +712,7 @@ polishing, ONT now points to `dorado polish` rather than medaka.
   GPU worker group, waits forever without an error.
 - Call caching is off by default and miniwdl's default cache directory is node-local;
   `--call-cache DIR` turns it on, and DIR must be on shared storage.
-- The task pool is sized once, at startup (the cluster's CPUs, at most 200, in a job; the head's
-  cores in a workspace), capping what the autoscaler sees. For a bigger cohort, raise `max_nodes`
-  and pass `--task-concurrency`.
+- On a cluster, miniwdl submits up to 200 tasks at once, its guideline for one driver process; Ray
+  queues those that do not fit, and the autoscaler adds workers for them, up to `max_nodes`.
+  `--task-concurrency` changes the 200.
 - A task with `preemptible` and `maxRetries` both at 0 fails the workflow on its first reclaim.

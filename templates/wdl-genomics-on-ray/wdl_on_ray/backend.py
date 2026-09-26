@@ -42,6 +42,7 @@ import logging
 import os
 import shlex
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -194,6 +195,42 @@ def connect(ray_cfg: ray_config.RayConfig, logger: logging.Logger) -> None:
             cluster_gpus=int(ray.cluster_resources().get("GPU", 0)),
         )
     )
+
+
+def find_cluster(ray_cfg: ray_config.RayConfig) -> str | None:
+    """The address of the cluster :func:`connect` would join, found without joining it.
+
+    None means ``connect`` would start a new local instance instead. The lookup is the one
+    ``ray.init()`` makes: ``[ray] address``, then ``RAY_ADDRESS``, which a job sets, then the
+    address file ``ray start`` leaves under the Ray temp dir, which is how a workspace, with no
+    ``RAY_ADDRESS``, finds its cluster.
+    """
+    ray = sys.modules.get("ray")  # not imported, then not initialized either
+    if ray is not None and ray.is_initialized():
+        return str(ray.get_runtime_context().gcs_address)
+    for address in (ray_cfg.address, os.environ.get("RAY_ADDRESS", "")):
+        if address and address != "auto":
+            return None if address == "local" else address
+    try:
+        with open(_ray_address_file()) as src:
+            return src.read().strip() or None
+    except OSError:
+        return None
+
+
+def _ray_address_file() -> str:
+    """Where ``ray start`` records the cluster address, by Ray's rule for its temp dir
+    (``ray._common.utils.get_default_system_temp_dir``): ``RAY_TMPDIR``, else ``TMPDIR`` on
+    Linux only, else ``/tmp``."""
+    if "RAY_TMPDIR" in os.environ:
+        base = os.environ["RAY_TMPDIR"]
+    elif sys.platform.startswith("linux") and "TMPDIR" in os.environ:
+        base = os.environ["TMPDIR"]
+    elif sys.platform.startswith(("darwin", "linux")):
+        base = "/tmp"
+    else:
+        base = tempfile.gettempdir()
+    return os.path.join(base, "ray", "ray_current_cluster")
 
 
 def task_ceiling(nodes: list[dict[str, Any]], limit_source: str) -> tuple[float, float] | None:
