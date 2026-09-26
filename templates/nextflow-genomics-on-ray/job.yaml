@@ -11,11 +11,13 @@
 # callset with GATK's hard filters, and each sample's own calls filtered by GATK's CNN on the
 # L4 workers.
 #
-# Measured on Anyscale, 2026-09-25, with this file as committed: the pipeline ran 299 tasks in
-# 44m07s, 25.1 CPU hours by Nextflow's count, and the job took about 47 minutes from submission
-# to persisted results. SNP F1 was 0.9920-0.9922 across the three samples and indel F1
-# 0.9446-0.9503. The reads are reference-selected, so precision reads high against a
-# whole-genome run (README, "Measured runs"). Cost was not measured.
+# Measured on Anyscale, 2026-09-25, with this file as committed: the pipeline ran 309 tasks in
+# 29m52s, 24.1 CPU hours by Nextflow's count, and the job took about 35 minutes from submission
+# to persisted results. Across the three samples SNP F1 was 0.9920-0.9923 hard-filtered and
+# 0.9939-0.9945 CNN-filtered, and indel F1 0.9460-0.9513 and 0.9455-0.9489. The run lost a CPU
+# worker, and the three GenotypeGVCFs tasks on it passed on retry. The reads are
+# reference-selected, so precision reads high against a whole-genome run (README, "Measured
+# runs"). Cost was not measured.
 name: nextflow-genomics-on-ray-chr20-trio
 
 # The template's image, with the toolchain, the nf-ray plugin and the Python NVScoreVariants runs
@@ -69,8 +71,7 @@ entrypoint: |
 # Inline, with the instance types of configs/nextflow-genomics-on-ray/aws.yaml: the pipeline's
 # resource ceiling (pipeline/conf/base.config, conf/ray.config) is sized to these nodes, and a
 # request no node can satisfy pends forever on Ray. max_nodes is higher than the notebook's
-# config because `full` has six times `quick`'s calling tasks. It is a cost bound: the measured
-# run asked for at most 6 cpu-workers and 2 gpu-workers at a time.
+# config because `full` has six times `quick`'s calling tasks. It is a cost bound.
 compute_config:
   head_node:
     instance_type: m5.2xlarge
@@ -87,7 +88,7 @@ compute_config:
       max_nodes: 2
   enable_cross_zone_scaling: true
 
-# 3 h, about four times the measured run's 47 minutes, so a slow capacity day still fits. The
+# 3 h, about five times the measured run's 35 minutes, so a slow capacity day still fits. The
 # failure it guards against is a stall, such as an L4 that never arrives or a request no node
 # can place, and a stalled run should stop within hours instead of holding a cluster.
 timeout_s: 10800

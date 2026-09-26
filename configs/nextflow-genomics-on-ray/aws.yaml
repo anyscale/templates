@@ -16,8 +16,8 @@ worker_nodes:
 #
 # min_nodes: 1 so the first task does not wait on a cold autoscale. max_nodes: 4 bounds the cost
 # of the scatter rather than matching it: HaplotypeCaller asks for 6 CPU / 36 GB, so two fit a
-# node and `quick`'s 24 calling tasks run in three waves of eight. The quick and standard prod
-# runs (2026-09-25) both used all four.
+# node and `quick`'s 24 calling tasks run in three waves of eight. In the 2026-09-25 prod runs,
+# `quick` used all four, and `standard` all four plus 2 L4 workers, 6 nodes.
 - name: cpu-worker
   instance_type: r6i.4xlarge
   min_nodes: 1

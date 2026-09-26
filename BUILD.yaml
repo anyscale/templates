@@ -834,8 +834,8 @@
   test:
     # Unit checks, then the gate (main.nf under -profile ray on a generated synthetic trio, which
     # must score 1.0), then the notebook at NF_DEMO_SCALE=quick on the staged data, all with
-    # NF_CNN=false. Prod, 2026-09-25, AWS config: 12m42s in all (workspace start 1m53s, gate
-    # 3m02s, the notebook's pipeline 4m47s). 3600 is headroom; Buildkite caps the step at 90 min.
+    # NF_CNN=false. Prod, 2026-09-25, AWS config: 12m47s in all (workspace start 1m48s, the
+    # notebook's pipeline 4m57s). 3600 is headroom; Buildkite caps the step at 90 min.
     tests_path: tests/nextflow-genomics-on-ray/
     command: bash tests.sh
     timeout_in_sec: 3600

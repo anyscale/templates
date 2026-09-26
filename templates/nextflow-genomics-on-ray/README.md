@@ -5,7 +5,7 @@
   <a href="https://github.com/anyscale/templates/tree/main/templates/nextflow-genomics-on-ray" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
 </div>
 
-**⏱️ Time to complete**: about 20 min at the default `standard` scale, 10 min at `quick` (derived from the measured step times, not timed end to end)
+**⏱️ Time to complete**: about 15 min at the default `standard` scale, 10 min at `quick` (derived from the measured step times, not timed end to end)
 
 This template runs a Nextflow pipeline on an autoscaling Anyscale cluster through a Ray executor,
 `executor 'ray'`. The pipeline is GATK germline short-variant calling in the shape of
@@ -66,17 +66,18 @@ refuses a task image whose Ray or Python version differs from the cluster's;
 
 ## Measured runs, and what differs from sarek
 
-| Scale | Region of chr20 | Intervals | Run by | Tasks | Wall time | CPU h | Workers | SNP F1 | Indel F1 |
+| Scale | Region of chr20 | Intervals | Run by | Tasks | Wall time | CPU h | Workers | SNP F1, hard / CNN | Indel F1, hard / CNN |
 |---|---|---|---|---|---|---|---|---|---|
-| `quick` | 1-3 Mb | 8 | CI, GPU off | 81 | 4m47s, 4m52s (2 runs) | 1.4 | 4 CPU | 0.9843-0.9930 | 0.9441-0.9514 |
-| `standard` | 1-11 Mb | 24 | this notebook | 171 | 13m22s | 4.6 | 4 CPU, 2 L4 | 0.9932-0.9943 | 0.9411-0.9501 |
-| `full` | all | 48 | `job.yaml` | 299 | 44m07s | 25.1 | up to 6 CPU, 2 L4 | 0.9920-0.9922 | 0.9446-0.9503 |
+| `quick` | 1-3 Mb | 8 | CI, CNN off | 85 | 4m57s | 1.3 | 4 CPU | 0.9843-0.9930 | 0.9441-0.9515 |
+| `standard` | 1-11 Mb | 24 | this notebook | 189 | 9m37s | 4.5 | 4 CPU, 2 L4 | 0.9932-0.9943 / 0.9938-0.9954 | 0.9423-0.9522 / 0.9399-0.9489 |
+| `full` | all | 48 | `job.yaml` | 309 | 29m52s | 24.1 | up to 8 CPU, 2 L4 | 0.9920-0.9923 / 0.9939-0.9945 | 0.9460-0.9513 / 0.9455-0.9489 |
 
 Measured on Anyscale on AWS, 2026-09-25: an m5.2xlarge head with `CPU: 0`, r6i.4xlarge CPU workers and
-g6.2xlarge L4 workers. Wall time is the pipeline's, CPU hours are Nextflow's count, and F1 is the
-hard-filtered callset's range over the three samples, each against its own GIAB v4.2.1 benchmark;
-Step 6 has both callsets. Cost was not measured. Set `NF_DEMO_SCALE` before Jupyter starts to pick a
-scale, and `NF_CNN=false` to skip the CNN arm and its GPU process.
+g6.2xlarge L4 workers. Wall time is the pipeline's and CPU hours are Nextflow's count; for `full`,
+Workers is the job's cap, since the peak wasn't measured. F1 is the range over the three samples,
+each against its own GIAB v4.2.1 benchmark, hard-filtered joint callset first and CNN-filtered
+calls second; Step 6 has each sample at `standard`. Cost was not measured. Set `NF_DEMO_SCALE`
+before Jupyter starts to pick a scale, and `NF_CNN=false` to skip the CNN arm and its GPU process.
 
 The scores show the pipeline working end to end against GIAB's truth sets, within these limits:
 
@@ -255,9 +256,9 @@ run(["nextflow", "run", PIPELINE / "main.nf", "-profile", "ray",
 ```
 
 The next cell joins the executor's placement record to `trace.txt` and draws a bar per task,
-coloured by node, with queue time, node boot included, in grey. At `standard` it drew 170
-tasks on 6 nodes, the GPU tasks on 2 of their own: one fewer than Nextflow's count, because
-`COLLECT_PLACEMENT`, which copies the record, is left out.
+coloured by node, with queue time, node boot included, in grey. At `standard` it drew 188 tasks on
+6 nodes, 9.3 min from first submit to last finish, with the GPU tasks on 2 nodes of their own.
+Nextflow counted 189; the chart leaves out `COLLECT_PLACEMENT`, which copies the record.
 
 
 ```python
@@ -317,11 +318,17 @@ CNN-filtered single-sample calls. They differ in calling mode as well as filter,
 recall difference is the filter's: joint genotyping keeps sites that one sample's calls alone leave
 below QUAL 30. At `standard`, in the measured run:
 
-| sample | SNP precision | SNP recall | SNP F1 | indel precision | indel recall | indel F1 |
-|---|---|---|---|---|---|---|
-| HG002 | 0.9965 | 0.9904 | 0.9934 | 0.9590 | 0.9414 | 0.9501 |
-| HG003 | 0.9972 | 0.9914 | 0.9943 | 0.9498 | 0.9326 | 0.9411 |
-| HG004 | 0.9980 | 0.9884 | 0.9932 | 0.9563 | 0.9439 | 0.9501 |
+| sample | callset | SNP precision | SNP recall | SNP F1 | indel precision | indel recall | indel F1 |
+|---|---|---|---|---|---|---|---|
+| HG002 | `gatk_hard` | 0.9965 | 0.9904 | 0.9934 | 0.9588 | 0.9458 | 0.9522 |
+| HG002 | `gatk_cnn` | 0.9966 | 0.9913 | 0.9940 | 0.9584 | 0.9383 | 0.9483 |
+| HG003 | `gatk_hard` | 0.9972 | 0.9914 | 0.9943 | 0.9499 | 0.9348 | 0.9423 |
+| HG003 | `gatk_cnn` | 0.9967 | 0.9940 | 0.9954 | 0.9505 | 0.9295 | 0.9399 |
+| HG004 | `gatk_hard` | 0.9980 | 0.9884 | 0.9932 | 0.9561 | 0.9484 | 0.9522 |
+| HG004 | `gatk_cnn` | 0.9971 | 0.9906 | 0.9938 | 0.9562 | 0.9416 | 0.9489 |
+
+In all three samples, here and in the `full` run, `gatk_cnn` has the higher SNP recall and F1 and
+the lower indel recall and F1.
 
 
 ```python
@@ -359,10 +366,12 @@ runs the pipeline at `full` and persists the results. Submit it from the templat
 anyscale job submit --config-file job.yaml
 ```
 
-Its inline compute config allows up to 8 CPU and 2 L4 workers. In the measured run the job took about 47 min
-from submission to persisted results and copied 173 files to
-`/mnt/user_storage/nextflow-genomics-on-ray/results/chr20-trio`. `max_retries` is 0 because a
-job-level retry starts a new cluster with an empty work directory; retries happen per task.
+Its inline compute config allows up to 8 CPU and 2 L4 workers. In the measured run the job took about 35 min
+from submission to persisted results and copied 260 files to
+`/mnt/user_storage/nextflow-genomics-on-ray/results/chr20-trio`. The run lost an on-demand CPU
+worker: its three GenotypeGVCFs tasks got exit status 175 and passed on retry, and the failed
+attempts took 1.9% of the run's CPU hours. `max_retries` is 0 because a job-level retry starts a
+new cluster with an empty work directory; retries happen per task.
 
 ## Bring your own reads or pipeline
 
