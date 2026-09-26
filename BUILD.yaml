@@ -432,6 +432,22 @@
     timeout_in_sec: 3600
 
 # owner: @aydin
+- name: skyrl-opd-template
+  owner_team: llm
+  dir: templates/skyrl-opd-template
+  cluster_env:
+    byod:
+      docker_image: novaskyai/skyrl-train-ray-2.57.0-py3.12-cu13.0
+      ray_version: 2.57.0
+  compute_config:
+    GCP: configs/skyrl-opd-template/gce.yaml
+    AWS: configs/skyrl-opd-template/aws.yaml
+  test:
+    tests_path: tests/skyrl-opd-template/
+    command: bash tests.sh
+    timeout_in_sec: 3600
+
+# owner: @aydin
 - name: groot-ray-serve
   owner_team: ray-serve
   dir: templates/groot-ray-serve
