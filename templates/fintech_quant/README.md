@@ -51,7 +51,9 @@ ray.init(
 - This baseline is useful for correctness checks and side-by-side timing.
 - Limitation: symbols are processed one at a time, so runtime grows roughly linearly with universe size.
 - Ray Core value: we keep the pricing logic and parallelize with minimal structural changes.
-- A contract counts as *priced* when QuantLib solves its implied vol from the last trade price and returns an NPV in every shock scenario. If either step fails, `get_iv`/`get_npv` log the contract and return `NaN` rather than `0.0`, which would pass for a real vol or NPV. Each symbol's summary line reports **N of M options priced**. Check it before aggregating: pandas `sum()` and `mean()` skip `NaN` by default.
+- `get_iv` solves each contract's base implied vol as an American option (flat 4.25% rate, trailing dividend yield) from the bid/ask mid when bid > 0, ask > 0 and ask ≥ bid, and from `last_price` otherwise. The `iv_source` column holds `mid` or `last`.
+- Scenarios are sticky-strike: each reprices the contract at spot × (1 − `price_shock`) with its own base vol plus `iv_shock`, re-solving nothing at the shocked spot.
+- A contract is *priced* when its base vol and every scenario NPV solve. `get_iv` skips it (`iv_source` `no_quote` or `below_bound`) when it has no usable price, or when the price is below the no-arbitrage lower bound under the model's r and q, which no vol reproduces: $\max(S-K, S e^{-qT}-K e^{-rT})$ for a call, $\max(K-S, K e^{-rT}-S e^{-qT})$ for a put. Those are typically stale trades or quotes on deep-ITM strikes. If QuantLib fails anyway, `get_iv`/`get_npv` log the contract and return `NaN` rather than `0.0`, which would pass for a real vol or NPV. Each symbol's summary line reports **N of M options priced**, with any `last_price`, skipped and FAILED counts in parentheses. Check it before aggregating: pandas `sum()` and `mean()` skip `NaN` by default.
 
 
 
@@ -138,7 +140,7 @@ else:
 - Best practice: submit all tasks first, then call `ray.get(futures)` once to preserve parallelism.
 - For uneven symbol workloads, `ray.wait(...)` helps process completed work early and keep workers busy.
 - Operational benefit: unfinished tasks can be rescheduled if a worker fails, reducing rerun risk for long pricing jobs.
-- Report from the driver: each task below returns its CSV path and priced/total counts, and the driver prints the **N of M options priced** lines after `ray.get`. A `print()` inside a task reaches the notebook through Ray's log forwarding, which can deliver it late or not at all.
+- Report from the driver: each task below returns its CSV path and pricing counts, and the driver prints the **N of M options priced** lines after `ray.get`. A `print()` inside a task reaches the notebook through Ray's log forwarding, which can deliver it late or not at all.
 
 
 
