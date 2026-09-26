@@ -706,10 +706,10 @@ polishing, ONT now points to `dorado polish` rather than medaka.
 
 ## Limits
 
-- miniwdl clamps `runtime.cpu` and `runtime.memory` to the largest node up when the run starts, with
-  a warning; pass `--max-cpu` and set `[ray] max_memory_bytes` if the big workers are not up yet. A
-  request no node can serve, past a ceiling raised by hand or for a GPU with no GPU worker group,
-  waits forever without an error.
+- miniwdl clamps `runtime.cpu` and `runtime.memory` to the largest worker up when the run starts,
+  with a warning, and clamps nothing if no worker is up yet; pass `--max-cpu` and set
+  `[ray] max_memory_bytes` to the worker shape. A request no node can serve, such as a GPU with no
+  GPU worker group, waits forever without an error.
 - Call caching is off by default and miniwdl's default cache directory is node-local;
   `--call-cache DIR` turns it on, and DIR must be on shared storage.
 - The task pool is sized once, at startup (the cluster's CPUs, at most 200, in a job; the head's

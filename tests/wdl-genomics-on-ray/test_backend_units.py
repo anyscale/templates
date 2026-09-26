@@ -4,9 +4,11 @@
 Stand-ins replace the Ray calls, so this needs neither a cluster nor data and runs in seconds:
 
 * a retried task's start is its own attempt's, not the previous attempt's
-  (``ray_placement.json`` survives in the task directory miniwdl retries in).
+  (``ray_placement.json`` survives in the task directory miniwdl retries in);
+* the per-task ceiling comes from nodes that can run tasks, so a ``CPU: 0`` head neither sets
+  it nor, alone, clamps every task to one CPU; and miniwdl's own clamp reads it as intended.
 
-Each check drives the backend's real code; only Ray itself is replaced.
+Each check drives the backend's real code, and miniwdl's; only Ray itself is replaced.
 """
 
 from __future__ import annotations
@@ -34,12 +36,15 @@ if TEMPLATE is None:
 sys.path.insert(0, str(TEMPLATE))
 
 import ray  # noqa: E402
-import WDL  # noqa: E402,F401  (installs miniwdl's NOTICE log level)
+import WDL  # noqa: E402  (also installs miniwdl's NOTICE log level)
+from WDL import Value  # noqa: E402
 from WDL.runtime.config import Loader  # noqa: E402
 
-from wdl_on_ray import backend, runtimes  # noqa: E402
+from wdl_on_ray import backend, resources, runtimes  # noqa: E402
 from wdl_on_ray import config as ray_config  # noqa: E402
 from wdl_on_ray import job as ray_job  # noqa: E402
+
+GiB = 2**30
 
 
 class Records(logging.Handler):
@@ -88,6 +93,25 @@ def patched(target: Any, **attrs: Any) -> Iterator[None]:
                 setattr(target, name, value)
 
 
+@contextmanager
+def environ(**values: str | None) -> Iterator[None]:
+    """Set (or, with None, unset) environment variables for the duration."""
+    saved = {key: os.environ.get(key) for key in values}
+    for key, value in values.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+    try:
+        yield
+    finally:
+        for key, value in saved.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
 # --------------------------------------------------------------------------- stale placement
 
 
@@ -126,8 +150,9 @@ class FakeTask:
         return ray_job.JobResult(exit_code=0, node_id=self.node_id, node_ip="10.0.0.2")
 
 
-def _container(run_dir: str) -> backend.RayContainer:
-    """A RayContainer as miniwdl would hold it, under ``--container-runtime none``."""
+def _container(run_dir: str, runtime_values: dict[str, Any] | None = None) -> backend.RayContainer:
+    """A RayContainer as miniwdl would hold it, under ``--container-runtime none``, with
+    ``runtime_values`` as miniwdl's ``process_runtime`` would have left them."""
     cfg = Loader(logging.getLogger("test_backend_units.cfg"))
     backend.RayContainer._ray_cfg = ray_config.load(cfg)
     backend.RayContainer._runtime = runtimes.get("none")
@@ -135,7 +160,7 @@ def _container(run_dir: str) -> backend.RayContainer:
     # Skips warn_if_not_shared, which would ask a real cluster how many nodes it has.
     backend.RayContainer._checked_shared_run_dir = True
     container = backend.RayContainer(cfg, "call-Shard", run_dir)
-    container.runtime_values = {"cpu": 2, "memory_reservation": 2**30, "docker": "debian:12"}
+    container.runtime_values = dict(runtime_values or {})
     return container
 
 
@@ -146,7 +171,7 @@ def test_retry_does_not_inherit_placement() -> None:
     logger, records = _logger("placement")
     with tempfile.TemporaryDirectory(prefix="wdl-units-") as tmp:
         run_dir = os.path.join(tmp, "call-Shard")
-        container = _container(run_dir)
+        container = _container(run_dir, {"cpu": 2, "memory_reservation": GiB, "docker": "x"})
         placement = Path(run_dir, "ray_placement.json")
 
         # Attempt 1 ran on node OLD and was interrupted; miniwdl resets into work2 and retries.
@@ -168,10 +193,125 @@ def test_retry_does_not_inherit_placement() -> None:
         assert json.loads(placement.read_text())["node_id"] == "NEW"
 
 
+# ------------------------------------------------------------------------------ task ceiling
+
+
+def node(cpu: float, memory_gib: float, alive: bool = True) -> dict[str, Any]:
+    """One entry of ``ray.nodes()``, reduced to what the backend reads. Like Ray, a node started
+    with no CPUs has no ``CPU`` key at all."""
+    resources: dict[str, float] = {"memory": memory_gib * GiB, "object_store_memory": GiB}
+    if cpu:
+        resources["CPU"] = float(cpu)
+    return {"Alive": alive, "Resources": resources}
+
+
+#: The template's head (`CPU: 0` in its compute configs), with more memory than the worker below,
+#: so a ceiling that took memory from every node would visibly take the head's.
+HEAD = node(0, 64)
+WORKER = node(4, 8)
+
+
+def limits_for(nodes: list[dict[str, Any]], **settings: str) -> tuple[dict[str, int], Records]:
+    """detect_resource_limits against a cluster of ``nodes``, under ``[ray]`` ``settings``."""
+    logger, records = _logger("limits")
+    env = {f"MINIWDL__RAY__{key.upper()}": value for key, value in settings.items()}
+    with environ(**env), patched(backend, connect=lambda *_: None), patched(
+        ray, nodes=lambda: nodes
+    ):
+        cfg = Loader(logging.getLogger("test_backend_units.cfg"))
+        backend.RayContainer._ray_cfg = ray_config.load(cfg)
+        backend.RayContainer._limits = None
+        return backend.RayContainer.detect_resource_limits(cfg, logger), records
+
+
+def test_no_node_that_can_run_tasks_means_no_ceiling() -> None:
+    """A job's entrypoint can start before its first worker joins. Before the fix, the CPU:0 head
+    alone gave a ceiling of one CPU and the head's memory, and miniwdl clamped every task to it."""
+    no_worker = [
+        [HEAD],
+        [],
+        [HEAD, node(32, 128, alive=False)],  # a worker that has since gone
+        [{"Alive": True, "Resources": {"CPU": 0.0, "memory": GiB}}],  # CPU reported, as 0
+    ]
+    for nodes in no_worker:
+        limits, records = limits_for(nodes)
+        assert limits == {"cpu": backend.NO_LIMIT, "mem_bytes": backend.NO_LIMIT}, (nodes, limits)
+        [warning] = [r for r in records.records if r.levelno == logging.WARNING]
+        assert set(warning.msg.kwargs["set_to_clamp"]) == {"--max-cpu", "[ray] max_memory_bytes"}
+
+
+def test_head_without_cpus_does_not_set_the_ceiling() -> None:
+    """With a worker up, the ceiling is the worker's: its CPUs and its memory, not the head's."""
+    limits, records = limits_for([HEAD, WORKER, node(64, 256, alive=False)])
+    assert limits == {"cpu": 4, "mem_bytes": 8 * GiB}, limits
+    assert not [r for r in records.records if r.levelno == logging.WARNING]
+
+    # `cluster` sums the nodes that can run tasks, and likewise leaves the head out.
+    limits, _ = limits_for([HEAD, WORKER, node(8, 16)], limit_source="cluster")
+    assert limits == {"cpu": 12, "mem_bytes": 24 * GiB}, limits
+    limits, _ = limits_for([HEAD], limit_source="cluster")
+    assert limits == {"cpu": backend.NO_LIMIT, "mem_bytes": backend.NO_LIMIT}, limits
+
+
+def test_overrides_still_set_the_ceiling() -> None:
+    """``[ray] max_cpu`` / ``max_memory_bytes`` win whether or not a worker is up, each on its
+    own, and the warning names only what is still unclamped."""
+    both = {"max_cpu": "16", "max_memory_bytes": str(64 * GiB)}
+    for nodes in ([HEAD], [HEAD, WORKER]):
+        limits, records = limits_for(nodes, **both)
+        assert limits == {"cpu": 16, "mem_bytes": 64 * GiB}, (nodes, limits)
+        assert not [r for r in records.records if r.levelno == logging.WARNING]
+
+    limits, records = limits_for([HEAD], max_cpu="16")
+    assert limits == {"cpu": 16, "mem_bytes": backend.NO_LIMIT}, limits
+    [warning] = [r for r in records.records if r.levelno == logging.WARNING]
+    assert warning.msg.kwargs["set_to_clamp"] == ["[ray] max_memory_bytes"], warning.msg.kwargs
+
+    limits, _ = limits_for([HEAD, WORKER], max_memory_bytes=str(6 * GiB))
+    assert limits == {"cpu": 4, "mem_bytes": 6 * GiB}, limits
+
+
+def test_miniwdl_reads_no_ceiling_as_no_clamp() -> None:
+    """miniwdl 1.15.0's own code, fed the reported limits. NO_LIMIT leaves Flye's 30 CPUs and
+    32 GiB alone; a measured ceiling clamps them. And for a WDL 1.2 task that sets no cpu, the
+    ``task.cpu`` miniwdl derives from the limit is the 1 CPU the backend reserves for it, where a
+    large "no limit" number would reach the command as a thread count."""
+    logger, records = _logger("clamp")
+    flye = {"cpu": Value.Int(30), "memory": Value.String("32 GiB"), "docker": Value.String("x")}
+    with tempfile.TemporaryDirectory(prefix="wdl-units-") as tmp:
+        backend.RayContainer._limits = {"cpu": backend.NO_LIMIT, "mem_bytes": backend.NO_LIMIT}
+        container = _container(os.path.join(tmp, "unclamped"))
+        container.process_runtime(logger, dict(flye))
+        assert container.runtime_values["cpu"] == 30, container.runtime_values
+        assert container.runtime_values["memory_reservation"] == 32 * GiB
+        assert not records.named("runtime.cpu adjusted to host limit")
+
+        doc = WDL.parse_document("version 1.2\n\ntask t {\n  command <<<\n    true\n  >>>\n}\n")
+        doc.typecheck()
+        container = _container(os.path.join(tmp, "wdl12"))
+        container.process_runtime(logger, {"docker": Value.String("x")})
+        container.build_task_runtime_info_struct(logger, "t", doc.tasks[0])
+        assert container.task_runtime_info_struct is not None
+        task_cpu = container.task_runtime_info_struct.value["cpu"].value
+        reserved = resources.build_request(container.runtime_values).num_cpus
+        assert task_cpu == reserved == 1.0, (task_cpu, reserved)
+
+        backend.RayContainer._limits = {"cpu": 4, "mem_bytes": 8 * GiB}
+        container = _container(os.path.join(tmp, "clamped"))
+        container.process_runtime(logger, dict(flye))
+        assert container.runtime_values["cpu"] == 4, container.runtime_values
+        assert container.runtime_values["memory_reservation"] == 8 * GiB
+        assert records.named("runtime.cpu adjusted to host limit")
+
+
 # ------------------------------------------------------------------------------------ runner
 
 TESTS = [
     test_retry_does_not_inherit_placement,
+    test_no_node_that_can_run_tasks_means_no_ceiling,
+    test_head_without_cpus_does_not_set_the_ceiling,
+    test_overrides_still_set_the_ceiling,
+    test_miniwdl_reads_no_ceiling_as_no_clamp,
 ]
 
 

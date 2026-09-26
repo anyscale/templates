@@ -75,6 +75,14 @@ SHARED_STORAGE_PREFIXES = (
 #: Grace period between a polite and a forced ``ray.cancel``.
 _CANCEL_GRACE_SECONDS = 15.0
 
+#: What :meth:`RayContainer.detect_resource_limits` reports for a dimension with no ceiling.
+#: It is miniwdl's own "do not apply a limit" (``[task_runtime] cpu_max = -1``), and miniwdl's
+#: clamp (``TaskContainer.process_runtime``) reads a negative limit the same way. Not a large
+#: number: for a WDL 1.2 task that sets no ``cpu``, miniwdl reports the limit as ``task.cpu``
+#: (``build_task_runtime_info_struct``), where a huge value would reach the command, as a thread
+#: count say. It floors -1 there to 1, which is the one CPU this backend reserves for that task.
+NO_LIMIT = -1
+
 #: Ray errors that mean "the node or worker went away", not "the task failed".
 _INTERRUPTION_ERRORS = (
     "NodeDiedError",
@@ -188,6 +196,45 @@ def connect(ray_cfg: ray_config.RayConfig, logger: logging.Logger) -> None:
     )
 
 
+def task_ceiling(nodes: list[dict[str, Any]], limit_source: str) -> tuple[float, float] | None:
+    """The CPUs and memory one task can have, from ``ray.nodes()``; None if no node can run one.
+
+    Only alive nodes with CPUs count. Every task this backend submits asks for at least one CPU,
+    so a node without any, such as a head started with ``CPU: 0``, runs none of them, and its
+    memory is no task's to have. ``max_node`` takes the most CPUs and, separately, the most memory
+    of any such node; ``cluster`` sums them.
+    """
+    usable = [
+        resources
+        for resources in (n.get("Resources", {}) for n in nodes if n.get("Alive"))
+        if resources.get("CPU", 0) > 0
+    ]
+    if not usable:
+        return None
+    combine = sum if limit_source == "cluster" else max
+    return combine(r["CPU"] for r in usable), combine(r.get("memory", 0.0) for r in usable)
+
+
+def limits_from(
+    found: tuple[float, float] | None, ray_cfg: ray_config.RayConfig
+) -> dict[str, int]:
+    """miniwdl's resource limits from a measured ``(cpu, memory)`` ceiling, or from none.
+
+    ``[ray] max_cpu`` / ``max_memory_bytes`` win. A dimension with neither a setting nor a
+    measurement gets :data:`NO_LIMIT`, never a guess: guessing one CPU clamps every task to one.
+    """
+    cpu, mem = found or (0.0, 0.0)
+    limits = {
+        "cpu": max(1, int(cpu)) if cpu > 0 else NO_LIMIT,
+        "mem_bytes": int(mem) if mem >= 1 else NO_LIMIT,
+    }
+    if ray_cfg.max_cpu > 0:
+        limits["cpu"] = ray_cfg.max_cpu
+    if ray_cfg.max_memory_bytes > 0:
+        limits["mem_bytes"] = ray_cfg.max_memory_bytes
+    return limits
+
+
 class RayContainer(SubprocessBase):
     """Dispatch WDL task containers onto a Ray cluster.
 
@@ -219,14 +266,15 @@ class RayContainer(SubprocessBase):
 
         cls._init_ray(logger)
         limits = cls.detect_resource_limits(cfg, logger)
+        shown = {key: "none" if value == NO_LIMIT else value for key, value in limits.items()}
 
         logger.notice(  # type: ignore[attr-defined]
             _(
                 "Ray container backend initialized",
                 container_runtime=cls._runtime.name,
                 exe=" ".join(cls._exe) or "(none)",
-                task_cpu_limit=limits["cpu"],
-                task_mem_bytes_limit=limits["mem_bytes"],
+                task_cpu_limit=shown["cpu"],
+                task_mem_bytes_limit=shown["mem_bytes"],
                 limit_source=cls._ray_cfg.limit_source,
             )
         )
@@ -430,32 +478,48 @@ class RayContainer(SubprocessBase):
         Deliberately *not* the cluster total. A WDL task runs as a single
         container on a single node, so admitting a request larger than any node
         can satisfy produces a task that Ray will never schedule. ``max_node``
-        (the default) therefore reports the largest live node.
+        (the default) therefore reports the largest live node that can run a
+        task, which means one with CPUs: a head started with ``CPU: 0`` is not.
 
-        The one case that needs an operator override is an autoscaling cluster
-        that starts with only a small head node: the big workers don't exist yet,
-        so ``max_node`` under-reports. Set ``[ray] max_cpu`` /
-        ``[ray] max_memory_bytes`` to the shape of the worker group in that case.
+        Until such a node is up, as when a job's entrypoint starts before its
+        first worker joins, there is nothing to measure, so there is no ceiling
+        (:data:`NO_LIMIT`) rather than a guess. ``[ray] max_cpu`` /
+        ``[ray] max_memory_bytes`` set it by hand, for that case and for an
+        autoscaling cluster whose big workers are not up yet.
         """
         with cls._limits_lock:
             if cls._limits is not None:
                 return cls._limits
 
             ray_cfg = getattr(cls, "_ray_cfg", None) or ray_config.load(cfg)
-            cpu, mem = cls._probe_limits(ray_cfg, logger)
+            found = cls._probe_limits(ray_cfg, logger)
+            cls._limits = limits_from(found, ray_cfg)
 
-            if ray_cfg.max_cpu > 0:
-                cpu = ray_cfg.max_cpu
-            if ray_cfg.max_memory_bytes > 0:
-                mem = ray_cfg.max_memory_bytes
-
-            cls._limits = {"cpu": max(1, int(cpu)), "mem_bytes": max(1, int(mem))}
+            unset = [
+                (field, setting)
+                for field, setting, key in (
+                    ("runtime.cpu", "--max-cpu", "cpu"),
+                    ("runtime.memory", "[ray] max_memory_bytes", "mem_bytes"),
+                )
+                if cls._limits[key] == NO_LIMIT
+            ]
+            if found is None and unset:
+                logger.warning(
+                    _(
+                        "no node that can run tasks is up yet, so there is no per-task ceiling:"
+                        " a task asking for more than any worker has waits without an error."
+                        " Set the worker shape to clamp",
+                        unclamped=[field for field, _setting in unset],
+                        set_to_clamp=[setting for _field, setting in unset],
+                    )
+                )
             return cls._limits
 
     @classmethod
     def _probe_limits(
         cls, ray_cfg: ray_config.RayConfig, logger: logging.Logger
-    ) -> tuple[float, float]:
+    ) -> tuple[float, float] | None:
+        """The measured ceiling, before any ``[ray]`` override; None if nothing can run a task."""
         if ray_cfg.limit_source == "local":
             import multiprocessing
 
@@ -465,20 +529,8 @@ class RayContainer(SubprocessBase):
 
         import ray
 
-        cls._init_ray(logger)
-        if ray_cfg.limit_source == "cluster":
-            total = ray.cluster_resources()
-            return total.get("CPU", 1.0), total.get("memory", 0.0)
-
-        nodes = [n for n in ray.nodes() if n.get("Alive")]
-        cpu = max((n.get("Resources", {}).get("CPU", 0.0) for n in nodes), default=0.0)
-        mem = max((n.get("Resources", {}).get("memory", 0.0) for n in nodes), default=0.0)
-        if not cpu:
-            # A cluster with no CPU-bearing node is either mid-scale-up or
-            # GPU-only; fall back to the totals instead of clamping to 1.
-            total = ray.cluster_resources()
-            cpu, mem = total.get("CPU", 1.0), total.get("memory", 0.0)
-        return cpu, mem
+        connect(ray_cfg, logger)
+        return task_ceiling(ray.nodes(), ray_cfg.limit_source)
 
     # ------------------------------------------------------------- per-instance
 

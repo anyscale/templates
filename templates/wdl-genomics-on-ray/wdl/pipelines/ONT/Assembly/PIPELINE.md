@@ -118,9 +118,9 @@ inputs file that [`job.yaml`](../../../../job.yaml) submits as an Anyscale Job, 
 [`inputs.chr20.json`](inputs.chr20.json) is its single-sample counterpart for this
 workflow. The `runtime_attr_*` entries in all three are sized to the template's
 32-vCPU / 128 GiB workers. On Ray these decide placement, not just speed: a WDL task is
-one process on one node, so miniwdl clamps a request to the largest node that is up when
-the run starts, and a request above every node the cluster can provide waits
-indefinitely rather than failing.
+one process on one node, so miniwdl clamps a request to the largest worker that is up when
+the run starts (to nothing, if none is up yet), and a request above every node the
+cluster can provide waits indefinitely rather than failing.
 
 ## Real data
 

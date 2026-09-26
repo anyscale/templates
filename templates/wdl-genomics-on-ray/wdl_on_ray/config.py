@@ -125,12 +125,15 @@ class RayConfig:
     that's generally correct: a single WDL task runs inside a single container on
     a single node, so the ceiling that matters is the *largest node*, not the sum
     across the cluster (a 64-CPU request is unschedulable on 8 x 8-CPU nodes no
-    matter what the cluster total says)."""
+    matter what the cluster total says). ``max_node`` and ``cluster`` count only
+    nodes with CPUs, the ones that run tasks, so a ``CPU: 0`` head is left out;
+    with no such node up there is no ceiling."""
 
     max_cpu: int
     """Hard override for the per-task CPU ceiling; 0 means "derive it from
-    ``limit_source``". Set this when the cluster autoscales from a small head
-    node to large workers, since the workers don't exist yet at startup."""
+    ``limit_source``". Set this to the worker shape when the workers may not be
+    up at startup: with none up there is no ceiling, and with only smaller ones
+    up it is too low."""
 
     max_memory_bytes: int
     """Hard override for the per-task memory ceiling; 0 means "derive it"."""

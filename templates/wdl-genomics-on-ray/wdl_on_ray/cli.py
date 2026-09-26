@@ -296,14 +296,46 @@ def _cmd_doctor(args: argparse.Namespace, passthrough: list[str]) -> int:
         import ray
 
         if ray.is_initialized() or os.environ.get("RAY_ADDRESS"):
-            cpus = _cluster_cpus()
-            print(f"\ncluster CPUs     {cpus or 'unknown'}")
+            _print_cluster(resolved)
         else:
             print("\ncluster          not connected (RAY_ADDRESS unset; a local Ray")
             print("                 instance will be started on demand)")
     except ImportError:
         pass
     return 0
+
+
+def _print_cluster(resolved: ray_config.RayConfig) -> None:
+    """The cluster a run would join: its CPUs, and the per-task ceiling the backend would set."""
+    import ray
+
+    from wdl_on_ray.backend import RayContainer, connect, limits_from
+
+    try:
+        connect(resolved, _quiet_logger())
+        found = RayContainer._probe_limits(resolved, _quiet_logger())
+    except Exception as exn:  # noqa: BLE001 - the failure itself is the report
+        print(f"\ncluster          not reachable: {type(exn).__name__}: {exn}")
+        return
+    print(f"\ncluster          {ray.get_runtime_context().gcs_address}")
+    print(f"  CPUs           {int(ray.cluster_resources().get('CPU', 0))}")
+    print(f"  task ceiling   {_describe_ceiling(limits_from(found, resolved), found)}")
+
+
+def _describe_ceiling(limits: dict[str, int], found: tuple[float, float] | None) -> str:
+    """The ceiling miniwdl would clamp ``runtime.cpu`` and ``runtime.memory`` to, in words."""
+    from wdl_on_ray.backend import NO_LIMIT
+
+    cpu, mem = limits["cpu"], limits["mem_bytes"]
+    text = ", ".join(
+        (
+            "CPU unclamped" if cpu == NO_LIMIT else f"{cpu} CPU",
+            "memory unclamped" if mem == NO_LIMIT else f"{mem / 2**30:.1f} GiB",
+        )
+    )
+    if found is None:
+        text += " (no node that can run tasks is up to measure)"
+    return text
 
 
 def _cmd_probe_image(args: argparse.Namespace, passthrough: list[str]) -> int:
@@ -420,8 +452,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--max-cpu",
         type=int,
         metavar="N",
-        help="per-task CPU ceiling; set this when the cluster autoscales to nodes"
-        " larger than any currently running",
+        help="per-task CPU ceiling (default: the largest worker up at startup, and none"
+        " if no worker is up yet); set it to the worker shape if they may not be up",
     )
     run.add_argument(
         "--tool-wheel-dir",
