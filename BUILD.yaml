@@ -832,3 +832,24 @@
     tests_path: tests/ecommerce_end_to_end/
     command: bash tests.sh
     timeout_in_sec: 1800
+
+# owner_team ray-data: fractional-GPU packing across Ray Data stages, no Train, Serve or LLM.
+# CI runs the 9 ungated code cells. The 5 skip-in-ci cells need a per-account HF token for
+# SAM 3 and DINOv3 and have not run anywhere: share no token (no org secret, no
+# anyscale_hf_token), and paste no outputs in to fill the gap. tests.sh says what CI covers.
+# owner: @em-anyscale
+- name: ray-data-multimodel-frame-enrichment
+  owner_team: ray-data
+  dir: templates/ray-data-multimodel-frame-enrichment
+  cluster_env:
+    image_uri: anyscale/ray:2.58.0-py312-cu129
+  compute_config:
+    AWS: configs/ray-data-multimodel-frame-enrichment/aws.yaml
+    GCP: configs/ray-data-multimodel-frame-enrichment/gce.yaml
+  test:
+    tests_path: tests/ray-data-multimodel-frame-enrichment/
+    command: bash tests.sh
+    # tests.sh took 228 s once on 2.57.0 (prodjob_7vlhzuirl3p8wt7jp2tcnyfhuk, one g6.4xlarge,
+    # cold SigLIP2 download); 900 is ~4x, for a slow runtime-env build or cold image cache. Not
+    # re-timed on 2.58.0, where staging rayapp test expwrk_t7443rhiucgkrd6ka9lcxr45de passed.
+    timeout_in_sec: 900
