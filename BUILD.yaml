@@ -854,6 +854,33 @@
     # re-timed on 2.58.0, where staging rayapp test expwrk_t7443rhiucgkrd6ka9lcxr45de passed.
     timeout_in_sec: 900
 
+# owner_team ray-data: Parquet read path, no Train/Serve/LLM surface.
+# Teaches the Parquet layout for multi-MB sensor frames: binary(N) required, dictionary off,
+# over list<uint8>. The README holds the measured results with Ray version and run counts;
+# tests.sh asserts two signs only, write side and end to end.
+# Run IDs: prodjob_mnm3w6i1azkcfq22q8radiaxt5 (sweeps), prodjob_ahrqy85kid81ttws4eq6wi7uge
+# (tests.sh), prodjob_l6gmktnb38knsk1s7ag8djjg3i and prodjob_plvai31pc9sh7fvyia2sddsqdz
+# (storage); Ray 2.58.0 test runs expwrk_myl4k381ppkr7m3qqwneji6dn5 and
+# expwrk_vj5mavktt6myffgvc3xcsgkryz (prod), expwrk_ftbzk4kw754vmqmrrw42hrz4lr (staging).
+# owner: @em-anyscale
+- name: ray-data-sensor-frame-extraction
+  owner_team: ray-data
+  dir: templates/ray-data-sensor-frame-extraction
+  cluster_env:
+    image_uri: anyscale/ray:2.58.0-py312-cu129
+  compute_config:
+    AWS: configs/ray-data-sensor-frame-extraction/aws.yaml
+    GCP: configs/ray-data-sensor-frame-extraction/gce.yaml
+  test:
+    tests_path: tests/ray-data-sensor-frame-extraction/
+    command: bash tests.sh
+    # tests.sh took 335s to 354s over 6 runs on Ray 2.57.0, including the driver's lock install
+    # and the worker's runtime_env build; 1200 leaves 3.4x headroom over the slowest. Cluster
+    # start and image pull sit outside the timeout. On Ray 2.58.0 the whole test run, workspace
+    # start and teardown included, took 8m58s to 9m26s over 3 runs. One run failed on a
+    # transient PyPI 502 during the install.
+    timeout_in_sec: 1200
+
 # owner: @em-anyscale
 - name: nextflow-genomics-on-ray
   owner_team: general
