@@ -65,8 +65,18 @@ for t in $TEMPLATES; do
         export ANYSCALE_CLI_TOKEN="\$\$(aws --region=us-west-2 secretsmanager get-secret-value --secret-id \$\$ANYSCALE_CLI_TOKEN_SECRET_NAME | jq -r .SecretString)"
         export ANYSCALE_HOST="https://console.anyscale.com"
         bash download_rayapp.sh
-        sudo apt-get update && sudo apt-get install -y rsync ca-certificates && sudo update-ca-certificates
+        # TODO(elliot-barn): bump forge to a bookworm tag (product's forge Dockerfile is already
+        # python:3.13-bookworm) and drop the -t pin and the SSL_CERT_FILE export below.
+        # forge:241125 is Debian 11, past end of life, and its security pool is being pruned:
+        # the rsync and ca-certificates updates there can return 404, and one failed fetch
+        # aborts the whole install. -t <codename> takes rsync from the main suite instead.
+        # Separate lines, so set -e stops here rather than at push with "no rsync".
+        sudo apt-get update
+        sudo apt-get install -y -t "\$\$(. /etc/os-release && echo "\$\$VERSION_CODENAME")" rsync
         sudo pip install anyscale==${ANYSCALE_VERSION}
+        # The wss ProxyCommand behind workspace push/run_command needs a current CA bundle;
+        # take certifi's (an anyscale dependency) instead of the image's stale system store.
+        export SSL_CERT_FILE="\$\$(python3 -c 'import certifi; print(certifi.where())')"
         LOG=/tmp/rayapp-\$\$TEMPLATE_NAME.log
         : > "\$\$LOG"
         # Watch for "Workspace created successfully id: expwrk_..." (always
