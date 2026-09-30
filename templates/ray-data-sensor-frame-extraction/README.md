@@ -36,9 +36,7 @@ an `m5.2xlarge` head, with 96 frames per layout.
 | Size on disk, zstd | within 1%: 831.7 MB against 836.0 MB | cluster, every run |
 
 End to end, only the decode share of your pipeline's time speeds up. Here the GPU stage was closer
-to its limit than the read, so most of the decode gain didn't reach the wall clock. Per-run figures,
-the size and storage grids and the source workload's numbers are in
-[NOTES.md](https://github.com/anyscale/templates/blob/main/templates/ray-data-sensor-frame-extraction/NOTES.md).
+to its limit than the read, so most of the decode gain didn't reach the wall clock.
 
 ## Get the code
 
