@@ -153,28 +153,12 @@ task Paftools {
     Int num_cpus = 1
 
     command <<<
-        # `set -euo pipefail` is a divergence from upstream, and the only one in this
-        # task. Without it the pipeline's exit status is `paftools.js`'s alone: a zcat
-        # on a truncated PAF, or a sort that runs out of temp space, leaves a short or
-        # empty VCF behind and the task still succeeds. That is the same silent
-        # wrong-answer failure the Quast task guards against, and a VCF is a worse
-        # thing to be quietly wrong about than a report.
+        # set -euo pipefail (not in upstream): otherwise a truncated PAF still exits 0.
         set -euo pipefail
 
-        # LC_ALL=C because `sort -k6,6` is a lexical sort on contig names and the
-        # collation order is locale-dependent. paftools.js needs the PAF grouped by
-        # target and ascending by target start; which grouping you get should not
-        # depend on the worker's LANG.
-        # -l and -L are paftools' own defaults, stated rather than inherited. -L in
-        # particular decides the callset: alignment blocks under it are aligned, counted
-        # and then called on not at all, so a region whose blocks are shorter than 50 kb
-        # yields an empty VCF and a zero exit. Upstream leaves both implicit, which is
-        # how a legitimately empty callset and a silently filtered one look identical.
-        #
-        # The VCF this writes is NOT normalized. paftools places an indel wherever the
-        # `cs` tag put it, and inside a homopolymer that position is arbitrary, so two
-        # independently aligned assemblies can spell one variant two ways. Normalize
-        # (`bcftools norm -f <ref> -m -any`) before comparing callsets across samples.
+        # LC_ALL=C so sort -k6,6 doesn't depend on the worker's locale. -l/-L are paftools' defaults,
+        # stated because blocks under -L (50 kb) are never called. Output isn't normalized; run
+        # bcftools norm before comparing samples.
         zcat ~{paf} | \
             LC_ALL=C sort -k6,6 -k8,8n | \
             paftools.js call -f ~{ref_fasta} -s ~{participant_name} \

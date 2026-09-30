@@ -47,17 +47,7 @@ task Quast {
 
         tree -h quast_results/ || true
 
-        # Fail loudly when QUAST evaluated against a reference but produced no alignment.
-        #
-        # Everything QUAST reports splits in two: metrics computable from the contigs plus the
-        # reference's *length* (N50, NG50, auN, GC) and metrics that need the contigs actually
-        # *aligned* to it (misassemblies, mismatch and indel rates, genome fraction, NGA50).
-        # Losing the second set is the difference between knowing an assembly is contiguous and
-        # knowing it is correct, and QUAST drops it silently, because the bundled minimap2 it
-        # compiles at install time is optional to the install succeeding. The `contigs_reports`
-        # guard below is upstream already knowing this can happen; it just treats it as normal.
-        #
-        # `Genome fraction` is the check because it appears if and only if alignment ran.
+        # Fail if QUAST ran no alignment: `Genome fraction` appears only when it did.
         if ~{true='true' false='false' defined(ref)}; then
             grep -q 'Genome fraction' quast_results/latest/report.txt || {
                 echo "QUAST ran with a reference but reported no alignment-based metrics." >&2

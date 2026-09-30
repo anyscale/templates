@@ -27,34 +27,18 @@ task FastqStats {
     command <<<
         set -euxo pipefail
 
-        # One pass for the length distribution; everything below is derived from it
-        # instead of from the FASTQ, so the compressed file is read exactly once.
+        # One pass over the FASTQ; everything below derives from it.
         gzip -dcf ~{fastq} | awk 'NR % 4 == 2 { print length($0) }' > lengths.txt
 
-        # printf "%.0f", and neither `print` nor "%d". mawk is /usr/bin/awk on Debian and
-        # Ubuntu, so on the cluster image, and it gets large integers wrong in two different
-        # ways. `print` routes anything above INT_MAX through OFMT, turning 3,519,431,361 bases
-        # into "3.51943e+09", which read_int() rejects and the task fails loudly. "%d" is worse:
-        # mawk 1.3.4-20200120 converts through a 32-bit int, so 6,150,000,000 comes back as
-        # exactly 2147483647 and the task *succeeds* with a wrong number. Verified in the
-        # template's own image; a 6.1 Gbp chr20 read set is above the clamp and this demo's
-        # 178 Mbp one is not, so only a full-scale run shows it. "%.0f" formats the double
-        # directly and is exact to 2^53. BSD awk gets all three right, so a local test cannot
-        # see any of this.
+        # printf "%.0f", not print or "%d": mawk (Debian's awk) mangles integers above INT_MAX.
         awk 'END { printf "%.0f\n", NR }' lengths.txt > num_reads.txt
         awk '{ b += $1 } END { printf "%.0f\n", b }' lengths.txt > total_bases.txt
 
-        # N50: the length L at which reads of at least L account for half the bases.
-        # `sort -rn` puts the longest first, so the running total first crosses the
-        # halfway mark at exactly that read; every line after it also satisfies the
-        # condition but is shorter, hence taking the first. %.0f and not %d because half
-        # a base count is not integral, and OFMT would round it to six significant figures.
+        # N50: the first read, longest first, where the running total crosses half the bases.
         sort -rn lengths.txt > sorted_lengths.txt
         awk -v half="$(awk '{ b += $1 } END { printf "%.0f\n", b / 2 }' lengths.txt)" '{ acc += $1 } acc >= half { print $1 }' sorted_lengths.txt > n50_candidates.txt
 
-        # An empty read set would otherwise leave read_int() with nothing to parse. A
-        # trailing fallback is cheaper than branching, and is only ever reached when
-        # the candidate list is empty.
+        # Fallback so read_int() gets a value on an empty read set.
         printf '0\n' >> n50_candidates.txt
         head -1 n50_candidates.txt > read_n50.txt
     >>>
@@ -119,46 +103,21 @@ task MeasureDivergence {
     command <<<
         set -euxo pipefail
 
-        # Subsample by stride and not by taking a prefix, so the probe spans the
-        # whole file: basecaller output order tracks run time, and quality drifts over
-        # a run. `keep` is only reassigned on a header line, so it carries across all
-        # four lines of a record.
-        #
-        # A stride is the right shape here because all-vs-all needs the *subsample* to
-        # retain enough depth for reads to overlap each other at all: it divides the
-        # original coverage by N. At 54x and N=10 that leaves 5.4x, which is ample; a
-        # 10x input would leave 1x, find almost nothing, and fall through to the -1
-        # path below instead of reporting a median off a handful of alignments.
+        # Subsample by stride, not a prefix: read quality drifts over a run.
         gzip -dcf ~{fastq} | awk -v stride=~{sample_every_nth} 'NR % 4 == 1 { keep = (++rec % stride == 0) } keep' > sample.fq
 
         minimap2 -x ava-ont -t ~{num_threads} sample.fq sample.fq > overlaps.paf
 
-        # minimap2's own `dv:f` tag ("approximate per-base sequence divergence"), which is
-        # exactly this quantity and needs no base-level alignment.
-        #
-        # NOT `1 - matches/blocklen`, which looks equivalent and is not: without `-c`,
-        # column 10 counts matching *seed* bases and not aligned matching bases, so it
-        # reads far too low. Measured, on reads simulated at a known 8% error rate: that
-        # formula gave 0.78 (worse than two random sequences) where `dv:f` gave 0.1532
-        # against the ~0.154 the error model implies. (`de:f` is the gap-compressed variant
-        # emitted instead when `-c` is given; matching either costs one character.)
-        #
-        # Column 1 against 6 drops self-hits, which `ava-ont` implies -X against but which
-        # cost nothing to exclude explicitly. `match` instead of a field loop because a
-        # `for` header's semicolons would confuse the command scanner that decides which
-        # tool wheels this task needs.
+        # Divergence is minimap2's dv:f tag. Not 1 - matches/blocklen: without -c that counts seed bases.
+        # match() rather than a for loop, whose semicolons confuse the tool-wheel command scanner.
         awk -v minlen=~{min_overlap_bp} '$1 != $6 { if ($11 >= minlen) if (match($0, /d[ve]:f:[0-9.]+/)) print substr($0, RSTART + 5, RLENGTH - 5) }' overlaps.paf > divergences.txt
-        # LC_ALL=C for the same reason Paftools' sort has it: these are decimal values,
-        # and a locale whose decimal separator is a comma makes `sort -n` read 0.061 as
-        # 0, which silently returns a median of the wrong reads.
+        # LC_ALL=C: a comma-decimal locale breaks sort -n.
         LC_ALL=C sort -n divergences.txt > sorted_divergences.txt
 
         awk 'END { print NR + 0 }' sorted_divergences.txt > num_overlaps.txt
         awk 'END { print int((NR + 1) / 2) }' sorted_divergences.txt > median_index.txt
 
-        # -1 is the "no opinion" signal the caller branches on: too few overlaps to
-        # trust a median, which is the expected outcome on a low-coverage input and
-        # must not be confused with a genuinely low divergence.
+        # -1 means too few overlaps to trust a median.
         awk -v k="$(cat median_index.txt)" -v n="$(cat num_overlaps.txt)" -v need=~{min_overlaps} 'NR == k { if (n >= need) print }' sorted_divergences.txt > median_candidates.txt
         printf -- '-1\n' >> median_candidates.txt
         head -1 median_candidates.txt > divergence.txt

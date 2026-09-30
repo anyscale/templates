@@ -84,8 +84,7 @@ task Shard {
         echo "hostname=$(uname -n)"
         echo "nproc=$(nproc)"
 
-        # Written to stderr on purpose: the driver tails stderr.txt off shared
-        # storage, so this line proves live log streaming works.
+        # stderr on purpose: the driver tails it, so this proves live log streaming.
         echo "shard ~{seed} starting" >&2
 
         mkdir -p chunks

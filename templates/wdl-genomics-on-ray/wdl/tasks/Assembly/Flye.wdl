@@ -89,12 +89,7 @@ task Assemble {
         mv asm/assembly.fasta ~{prefix}.flye.fa
         mv asm/assembly_graph.gfa ~{prefix}.flye.gfa
 
-        # Upstream keeps only the fasta and the gfa and lets the run directory go.
-        # assembly_info.txt is the first thing anyone asks Flye for: per-contig
-        # length, coverage, circularity and the repeat flag, which is how you tell
-        # a collapsed repeat from a real contig, and the only place the assembler
-        # says what it thought it was doing. flye.log carries the stage timings the
-        # README quotes. Both are small; the multi-GB intermediates stay behind.
+        # Also keep assembly_info.txt and flye.log; upstream keeps only the fasta and gfa.
         mv asm/assembly_info.txt ~{prefix}.flye.assembly_info.txt
         mv asm/flye.log ~{prefix}.flye.log
     >>>

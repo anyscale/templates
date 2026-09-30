@@ -1,24 +1,7 @@
-"""Copy a completed run's declared outputs somewhere that outlives the cluster.
+"""Copy a finished run's declared outputs to storage that outlives the cluster.
 
-Anyscale terminates a job's cluster when the job *succeeds*, and `/mnt/cluster_storage` is
-deleted with it. So a run pointed at that mount, which is the default because it is shared
-across nodes and fast, destroys its own results by finishing correctly. A 14h44m
-HG002 chr20 assembly completed, reported a 33.3 Mbp N50, and left
-nothing behind but the driver log.
-
-This copies only the *declared workflow outputs*, not the run tree. The distinction matters at
-this scale: the same run's `40-polishing/bubbles_1.fasta` intermediate was 3.85 GB on its own,
-and none of it is a result.
-
-Destination, in order:
-
-  1. ``--dest``, or ``WDL_ON_RAY_RESULTS``. An ``s3://`` URI or a path.
-  2. the first writable durable mount: ``/mnt/user_storage``, then ``/mnt/shared_storage``.
-     Both persist across clusters where the cloud provides them, which is exactly the property
-     ``/mnt/cluster_storage`` lacks.
-  3. nothing, with a loud warning. Not an error: the local and demo paths have no cluster to
-     outlive, and failing a 14h run at the last step because a bucket was unset would be worse
-     than the problem being solved.
+Destination: --dest or WDL_ON_RAY_RESULTS (an s3:// URI or a path), else the first writable of
+/mnt/user_storage and /mnt/shared_storage, else nothing, with a warning.
 """
 
 from __future__ import annotations

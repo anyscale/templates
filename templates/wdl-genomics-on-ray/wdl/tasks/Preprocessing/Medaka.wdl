@@ -44,9 +44,7 @@ task MedakaPolish {
     Int disk_size = 10 + (4 * n_rounds * ceil(size([basecalled_reads, draft_assembly], "GB")))
 
     command <<<
-        # Present inside upstream's lr-medaka image; absent (and safely skipped) when the
-        # command runs directly on a Ray worker that gets medaka some other way, or, for
-        # n_rounds = 0, not at all.
+        # Only present in upstream's lr-medaka image; skipped elsewhere.
         if [ -f /medaka/venv/bin/activate ]; then source /medaka/venv/bin/activate; fi
 
         set -euxo pipefail
