@@ -19,8 +19,6 @@ than running them one after another:
 The 26.5% is the gap between the slowest co-resident run and the fastest serial run, so it is a
 lower bound. Each run's wall clock includes loading the models from a warm cache; production
 scale and more actors per stage are not measured.
-[NOTES.md](https://github.com/anyscale/templates/blob/main/templates/ray-data-multimodel-frame-enrichment/NOTES.md)
-has the per-run data and the other measurements behind this page.
 
 You end with:
 
