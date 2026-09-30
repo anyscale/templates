@@ -65,6 +65,8 @@ for t in $TEMPLATES; do
         export ANYSCALE_CLI_TOKEN="\$\$(aws --region=us-west-2 secretsmanager get-secret-value --secret-id \$\$ANYSCALE_CLI_TOKEN_SECRET_NAME | jq -r .SecretString)"
         export ANYSCALE_HOST="https://console.anyscale.com"
         bash download_rayapp.sh
+        # TODO(elliot-barn): bump forge to a bookworm tag (product's forge Dockerfile is already
+        # python:3.13-bookworm) and drop the -t pin and the SSL_CERT_FILE export below.
         # forge:241125 is Debian 11, past end of life, and its security pool is being pruned:
         # the rsync and ca-certificates updates there can return 404, and one failed fetch
         # aborts the whole install. -t <codename> takes rsync from the main suite instead.
