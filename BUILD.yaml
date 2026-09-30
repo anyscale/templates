@@ -915,7 +915,6 @@
     GCP: configs/nextflow-genomics-on-ray/gce.yaml
   test:
     # Unit checks, main.nf on a synthetic trio (must score 1.0), the notebook at quick; NF_CNN=false.
-    # About 13 min on prod; 3600 is headroom.
     tests_path: tests/nextflow-genomics-on-ray/
     command: bash tests.sh
     timeout_in_sec: 3600
