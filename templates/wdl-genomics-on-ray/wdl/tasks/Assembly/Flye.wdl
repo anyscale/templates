@@ -52,7 +52,7 @@ import "../../structs/Structs.wdl"
 # Flye does not checkpoint across a WDL retry. `--resume` reads its own `--out-dir`, and
 # miniwdl gives every attempt a fresh working directory, so a retry starts from
 # `configure`. Reaching the previous attempt is possible and deliberately not done; the
-# spot model in NOTES.md says why, and at what assembly length the trade reverses.
+# README's spot estimate says at what assembly length restarts eat the saving.
 #
 # So the backend's Ray-node-loss -> `Interrupted` -> `runtime.preemptible` mapping does not
 # make this task retry by default. As declared here it does not; it retries because an

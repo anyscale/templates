@@ -637,8 +637,6 @@ Workers ask for spot, falling back to on-demand; the head stays on demand. With
 no real reclaim has tested it. At the Spot Advisor's -69% for `m5.8xlarge` (us-west-2, 2026-09-24),
 the run would cost about $3.65, an estimate; at 10% reclaims per node-hour, restarts eat the saving
 on assemblies past about ten hours.
-[`NOTES.md`](https://github.com/anyscale/templates/blob/main/templates/wdl-genomics-on-ray/NOTES.md)
-has the read-mode history, queue times, contigs and spot model.
 
 ## Bring your own WDL and inputs
 

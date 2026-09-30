@@ -9,12 +9,12 @@ worker_nodes:
 #
 # max_nodes: 3, one worker per concurrent assembly, since each sample's Flye task holds 30 of a
 # node's 32 vCPUs. Fewer still completes, less concurrently, because every per-task request fits
-# one node; the template's NOTES.md has the queue times measured at 3 and at 2.
+# one node.
 #
 # market_type: PREFER_SPOT. Every task carries preemptible_tries: 3 (the inputs JSONs and the
 # notebook's inputs), and the backend maps a reclaimed node to miniwdl's Interrupted, so a lost
 # task reruns from its start. The schema allows market_type on worker groups only, so the head
-# stays on demand. No real reclaim has hit this yet; NOTES.md has the cost estimate.
+# stays on demand. No real reclaim has hit this yet.
 - name: assembly-worker
   instance_type: m5.8xlarge
   min_nodes: 1
