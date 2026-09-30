@@ -1,0 +1,16 @@
+head_node:
+  instance_type: n2-standard-8
+  resources:
+    CPU: 0
+worker_nodes:
+# Matches aws.yaml's m5.8xlarge; sized with runtime_attr_flye and flye_num_threads (30).
+# One worker per concurrent assembly. Multi-zone, so a one-zone spot shortage does not stall it.
+- name: assembly-worker
+  instance_type: n2-standard-32
+  min_nodes: 1
+  max_nodes: 3
+  market_type: PREFER_SPOT
+advanced_instance_config:
+  instance_properties:
+    labels:
+      as-feature-multi-zone: 'true'

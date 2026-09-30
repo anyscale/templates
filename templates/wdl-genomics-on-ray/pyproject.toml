@@ -1,0 +1,29 @@
+[project]
+name = "wdl-on-ray"
+# Single-sourced from wdl_on_ray/_version.py, so the package and its metadata cannot drift.
+dynamic = ["version"]
+description = "Run WDL pipelines on Ray and Anyscale clusters"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+# Ray comes from the base image; pinning it here would let pip install a second one.
+dependencies = [
+    "miniwdl==1.15.0",
+]
+
+[project.scripts]
+wdl-on-ray = "wdl_on_ray.cli:main"
+
+# "ray" is what `[scheduler] container_backend` selects. backend.register_backend() covers an
+# uploaded working_dir, where entry points do not exist.
+[project.entry-points."miniwdl.plugin.container_backend"]
+ray = "wdl_on_ray.backend:RayContainer"
+
+[build-system]
+requires = ["hatchling==1.28.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "wdl_on_ray/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["wdl_on_ray"]

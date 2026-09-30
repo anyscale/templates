@@ -1,0 +1,20 @@
+# Per-task image for MedakaPolish, whose torch and CUDA runtime the cluster image leaves out.
+#   anyscale image build -n wdl-medaka-gpu --containerfile tools/Dockerfile.medaka-gpu
+# Select it by mapping lr-medaka:0.1.0 in [ray] task_image_map (container_runtime = ray).
+
+# Ray and Python must match the cluster's exactly: the same base, plus CUDA.
+FROM anyscale/ray:2.58.0-py312-cu128
+
+# torch pinned: medaka asks only for torch~=2.9, and PyPI's default from 2.11 is CUDA 13.
+# 2.10.0 is the newest on CUDA 12.8. Not yet built with this pin.
+RUN pip install --no-cache-dir medaka==2.2.2 torch==2.10.0
+
+# Fail the build, not a run whose assembly has already succeeded.
+RUN set -eux; \
+    medaka --version; \
+    python -c "import torch; print('torch', torch.__version__, 'cuda build:', torch.version.cuda)"; \
+    python -c "import torch; assert (torch.version.cuda or '').startswith('12.8'), torch.version.cuda"; \
+    medaka tools list_models | tr ',' '\n' | grep -q 'r1041_e82_400bps_sup_v4.1.0'
+
+# Baked in: the model otherwise downloads on first use, which hangs on a private-subnet GPU node.
+RUN medaka tools download_models --models r1041_e82_400bps_sup_v4.1.0

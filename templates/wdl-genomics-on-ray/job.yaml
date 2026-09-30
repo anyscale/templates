@@ -1,0 +1,63 @@
+# The GIAB Ashkenazi trio over all of chr20, as an Anyscale Job. Submit from this directory,
+# since `working_dir: .` is relative to the shell:
+#   cd templates/wdl-genomics-on-ray && anyscale job submit --config-file job.yaml
+name: wdl-genomics-on-ray-chr20-trio
+
+# The toolchain is baked in; a job's requirements: would install before working_dir is staged.
+image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.58.0
+
+working_dir: .
+excludes:
+  - .ipynb_checkpoints
+  - __pycache__
+
+env_vars:
+  # persist_outputs.py copies the declared outputs here; without it they go with the cluster.
+  WDL_ON_RAY_RESULTS: /mnt/user_storage/wdl-on-ray/results/chr20-trio
+
+# POSIX sh: jobs use dash, where `set -o pipefail` fails. No exec, so the persist step runs.
+entrypoint: |
+  set -u
+  # The driver's TMPDIR only; tasks use their node's /tmp unless [file_io] mount_tmpdir = true.
+  export TMPDIR=/mnt/cluster_storage/wdl-on-ray/tmp
+  RUN_DIR=/mnt/cluster_storage/wdl-on-ray/runs
+  CACHE_DIR=/mnt/cluster_storage/wdl-on-ray/cache
+  mkdir -p "$TMPDIR" "$RUN_DIR" "$CACHE_DIR"
+
+  # /mnt/cluster_storage is recreated per job, so this cache only helps a rerun on the same
+  # cluster. To resume across job retries, put RUN_DIR and CACHE_DIR on /mnt/user_storage and
+  # set max_retries: 1. The toolchain is not in the cache key: clear CACHE_DIR on a new image.
+  wdl-on-ray run wdl/pipelines/ONT/Assembly/ONTAssembleCohort.wdl \
+    -i wdl/pipelines/ONT/Assembly/inputs.chr20.cohort.json \
+    --container-runtime none \
+    --dir "$RUN_DIR" \
+    --call-cache "$CACHE_DIR" \
+    --verbose
+  STATUS=$?
+
+  OUTPUTS=$(ls -t "$RUN_DIR"/*/outputs.json 2>/dev/null | head -1 || true)
+  if [ -n "$OUTPUTS" ]; then
+    python persist_outputs.py --outputs "$OUTPUTS" || true
+  else
+    echo "no outputs.json found under $RUN_DIR -- nothing to persist" >&2
+  fi
+  exit $STATUS
+
+compute_config:
+  head_node:
+    instance_type: m5.2xlarge
+    resources:
+      CPU: 0
+  worker_nodes:
+    # Sized with the inputs' runtime_attr_flye and flye_num_threads (30): change them together.
+    - instance_type: m5.8xlarge
+      min_nodes: 1
+      max_nodes: 3
+      market_type: PREFER_SPOT  # workers only; the head stays on demand
+
+# 24 h: room for a slower instance type, a whole genome or spot retries.
+timeout_s: 86400
+
+# Node loss is retried inside the workflow, from the inputs' preemptible_tries: 3. A job retry
+# gets a new cluster and an empty call cache; see the entrypoint before raising this.
+max_retries: 0

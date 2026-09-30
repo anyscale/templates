@@ -1,0 +1,5 @@
+# Driver-side dependencies, for running off Anyscale; the image already carries them.
+miniwdl==1.15.0
+# miniwdl upgrades the image's ruamel.yaml (0.18.10 to ~=0.19); expected, not a pin to relax.
+# The image's version, so plots off Anyscale match the cluster's.
+matplotlib==3.10.8

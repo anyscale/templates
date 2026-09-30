@@ -1,0 +1,65 @@
+# The bioinformatics toolchain, pinned once. build_tools.sh (the image), build_wheels.sh and
+# wdl_on_ray/envs.py (`native`) all read it and verify the same sha256. Upstream tarballs,
+# not bioconda: conda cannot install into the Ray image's Anaconda base environment.
+
+# kind: binary (prebuilt, unpatched), source (built from the tarball), pypi (a dependency edge).
+
+[tools.minimap2]
+version = "2.28"
+kind    = "binary"
+url     = "https://github.com/lh3/minimap2/releases/download/v2.28/minimap2-2.28_x64-linux.tar.bz2"
+sha256  = "51f2cf0e486d0f9f88ace1aa58fdc56571382a676ea0889ae607301c60693377"
+strip   = 1
+
+# The minimap2 release also ships the k8 that its paftools.js was released against.
+[tools.minimap2.provides]
+minimap2      = "minimap2"
+k8            = "k8"
+"paftools.js" = "paftools.js"
+
+[tools.samtools]
+version = "1.21"
+kind    = "source"
+url     = "https://github.com/samtools/samtools/releases/download/1.21/samtools-1.21.tar.bz2"
+sha256  = "05724b083a6b6f0305fcae5243a056cc36cf826309c3cb9347a6b89ee3fc5ada"
+strip   = 1
+# No upstream binary. Builds the htslib bundled in the tarball, version-matched by construction.
+
+[tools.samtools.provides]
+samtools = "bin/samtools"
+
+[tools.bcftools]
+version = "1.21"
+kind    = "source"
+url     = "https://github.com/samtools/bcftools/releases/download/1.21/bcftools-1.21.tar.bz2"
+sha256  = "528a4cc1d3555368db75a700b22a3c95da893fd1827f6d304716dfd45ea4e282"
+strip   = 1
+# Only `bcftools norm`, for the notebook's Step 6b; Paftools' declared lr-asm image lacks it.
+
+[tools.bcftools.provides]
+bcftools = "bin/bcftools"
+
+[tools.flye]
+version = "2.9.5"
+kind    = "source"
+url     = "https://github.com/fenderglass/Flye/archive/refs/tags/2.9.5.tar.gz"
+sha256  = "7b384266d83b1e66bcaf82d49d35ac6c587bad9146e8f3b752a220291f6b1a6f"
+strip   = 1
+# Workers lack zlib headers, so Flye is built into the image. Flye.wdl declares lr-flye:2.8.3,
+# but under --container-runtime none this 2.9.5 is what runs.
+
+[tools.flye.provides]
+flye = "bin/flye"
+
+[tools.quast]
+version      = "5.2.0"
+kind         = "pypi"
+requirements = ["quast==5.2.0", "setuptools==80.9.0", "matplotlib==3.10.8"]
+needs        = ["minimap2"]
+# needs: QUAST's reference-based metrics need minimap2 on PATH, and its own build of it fails
+# silently. setuptools < 81 supplies distutils on Python 3.12; matplotlib draws the PDFs.
+# Pins match the base image: move them with it on a Ray bump, and check the PDFs still appear.
+# provides is prefix-relative here: pip installs the entry point as quast.py.
+
+[tools.quast.provides]
+quast = "bin/quast.py"
