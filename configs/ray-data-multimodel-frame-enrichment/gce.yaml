@@ -1,0 +1,10 @@
+# Same shape as aws.yaml beside it: one L4 per GPU worker (24 GB = 22.35 GiB, 22.03 usable).
+head_node:
+  instance_type: n2-standard-8
+  resources:
+    CPU: 0
+worker_nodes:
+- name: gpu-worker
+  instance_type: g2-standard-16-nvidia-l4-1
+  min_nodes: 1
+  max_nodes: 2

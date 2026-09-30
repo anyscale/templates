@@ -1,4 +1,7 @@
 
+import logging
+import math
+import re
 import time
 from datetime import datetime
 
@@ -9,18 +12,146 @@ import numpy as np
 import QuantLib as ql
 import yfinance as yf
 
+log = logging.getLogger(__name__)
+
+# What get_iv() and get_npv() return when QuantLib can't price a contract.
+# NaN rather than 0.0, because 0.0 passes for a real vol or NPV; see get_iv().
+PRICING_FAILED = float("nan")
+
+# iv_source values for contracts get_iv() skips rather than solves.
+NO_QUOTE = "no_quote"        # no usable bid/ask mid or last_price
+BELOW_BOUND = "below_bound"  # price below the no-arbitrage lower bound
+SKIPPED = (NO_QUOTE, BELOW_BOUND)
+
+
+def _pricing_columns(df):
+    """The implied_volatility column plus every scenario NPV column (s1_npv, s2_npv, ...)."""
+    return [c for c in df.columns
+            if c == "implied_volatility" or re.fullmatch(r"s\d+_npv", str(c))]
+
+
+def _priced(df, columns=None):
+    if columns is None:
+        columns = _pricing_columns(df)
+    if not columns or any(c not in df for c in columns):
+        return pd.Series(False, index=df.index)
+    return df[columns].notna().all(axis=1)
+
+
+def count_priced(df, columns=None):
+    """Count the rows with a value in every one of `columns`: the N in "N of M".
+
+    By default that is implied_volatility and every scenario NPV, so a contract
+    counts as priced only if all of them solved. A contract whose base IV
+    solved can still fail a scenario; see get_npv().
+    """
+    return int(_priced(df, columns).sum())
+
+
+def count_skipped(df):
+    """Count the contracts get_iv() skipped for a bad quote (iv_source in SKIPPED)."""
+    if "iv_source" not in df:
+        return 0
+    return int(df["iv_source"].isin(SKIPPED).sum())
+
+
+def count_from_last(df):
+    """Count the priced contracts whose IV came from last_price, not a bid/ask mid."""
+    if "iv_source" not in df:
+        return 0
+    return int((_priced(df) & (df["iv_source"] == "last")).sum())
+
+
+def _stats_label(symbol, priced, skipped, total, from_last):
+    # One label for the serial and Ray paths. The caller appends the seconds.
+    # Whatever is neither priced nor skipped failed in QuantLib.
+    failed = total - priced - skipped
+    unpriced = [f"{skipped} skipped"] if skipped else []
+    if failed:
+        unpriced.append(f"{failed} FAILED, see warnings")
+    notes = [f"{from_last} from last_price"] if from_last else []
+    if unpriced:
+        notes.append(", ".join(unpriced))
+    suffix = f" ({'; '.join(notes)})" if notes else ""
+    return f"Stats for {symbol:>6}: {priced:>5} of {total:>5} options priced{suffix} in "
+
+
 # Common, long print string, pulled out of notebook
 def get_symbols_stat_print(symbol, df):
-    return f"Stats for {symbol:>6}: {len(df):>5} options, calc'd IV for all  shocks in "
+    # "Priced" means the IV and every scenario NPV solved; see count_priced().
+    return _stats_label(symbol, count_priced(df), count_skipped(df), len(df), count_from_last(df))
+
+
+def pricing_summary(symbol, df, path, seconds):
+    """What a Ray pricing task returns: the CSV path plus its pricing counts.
+
+    The driver prints them with print_pricing_summary(). A print() inside the
+    task would reach the notebook through Ray's log forwarding, which can
+    deliver it late or not at all (on CI, the AAPL line never arrived).
+    """
+    return {
+        "symbol": symbol,
+        "path": path,
+        "priced": count_priced(df),
+        "skipped": count_skipped(df),
+        "from_last": count_from_last(df),
+        "total": len(df),
+        "seconds": seconds,
+    }
+
+
+def print_pricing_summary(summaries):
+    """Print one "N of M options priced" line per pricing_summary(), on the driver."""
+    for s in summaries:
+        label = _stats_label(s['symbol'], s['priced'], s['skipped'], s['total'], s['from_last'])
+        print(f"{label}{s['seconds']:.6f} sec")
+
+
+def _as_float(x):
+    return float("nan") if x is None else float(x)
+
+
+def _iv_price(option):
+    """The price get_iv() solves from, and its iv_source: "mid", "last" or NO_QUOTE."""
+    bid, ask, last = (_as_float(option.get(k)) for k in ("bid", "ask", "last_price"))
+    if bid > 0 and ask > 0 and ask >= bid:  # all False for NaN
+        return (bid + ask) / 2, "mid"
+    if last > 0:
+        return last, "last"
+    return PRICING_FAILED, NO_QUOTE
+
+
+def _iv_result(price, source, implied_volatility):
+    # One row of get_iv() output; df.apply(get_iv, axis=1) makes these columns.
+    return pd.Series({
+        "iv_price": price,
+        "iv_source": source,
+        "implied_volatility": implied_volatility,
+    })
+
 
 def get_iv(option):
     """
-    Get implied volatility for a given option
+    Implied vol of an American option, solved from its bid/ask mid.
+
+    Returns a Series, which df.apply(get_iv, axis=1) turns into three columns:
+      iv_price            the option price the vol is solved from
+      iv_source           where iv_price came from:
+        "mid"             (bid + ask) / 2, when bid > 0, ask > 0 and ask >= bid
+        "last"            last_price, when there is no such two-sided quote
+                          (typically a zero bid on a far-OTM or illiquid strike)
+        NO_QUOTE          skipped: no usable mid or last_price
+        BELOW_BOUND       skipped: iv_price is below the no-arbitrage lower
+                          bound, so no vol reproduces it
+      implied_volatility  the vol; NaN if skipped, or if QuantLib can't solve
+                          it (logged, and counted as FAILED)
     """
     risk_free_rate = 0.0425
 
     volatility = 0.001
-    option_price = option['last_price']
+    option_price, source = _iv_price(option)
+    if source == NO_QUOTE:
+        return _iv_result(option_price, source, PRICING_FAILED)
     dividend_yield = float(option['dividend_yield'])
     strike_price = float(option['strike'])
     spot_price = float(option['underlying_price'])
@@ -41,6 +172,20 @@ def get_iv(option):
     spot_handle = ql.QuoteHandle(ql.SimpleQuote(spot_price))
 
     expiration_date = today + ql.Period(days_to_maturity, ql.Days)
+
+    # No-arbitrage lower bound for an American option under the model's r and
+    # q: the larger of immediate exercise and the European bound. No vol
+    # reproduces a price below it. That is a data problem, typically a stale
+    # trade or quote on a deep-ITM contract, not a solver failure: skip it.
+    disc_r = risk_free_ts.discount(expiration_date)
+    disc_q = dividend_ts.discount(expiration_date)
+    if option_type == ql.Option.Call:
+        lower_bound = max(spot_price - strike_price, spot_price * disc_q - strike_price * disc_r, 0.0)
+    else:
+        lower_bound = max(strike_price - spot_price, strike_price * disc_r - spot_price * disc_q, 0.0)
+    if option_price < lower_bound:
+        return _iv_result(option_price, BELOW_BOUND, PRICING_FAILED)
+
     payoff = ql.PlainVanillaPayoff(option_type, strike_price)
     exercise = ql.AmericanExercise(today, expiration_date)
     american_option = ql.VanillaOption(payoff, exercise)
@@ -59,19 +204,52 @@ def get_iv(option):
         implied_volatility = american_option.impliedVolatility(
             option_price, bsm_process, 1e-4, 1000, 1e-8, 4.0
         )
-        return float(implied_volatility)
-    except:
-        return 0.0
+        return _iv_result(option_price, source, float(implied_volatility))
+    except RuntimeError as exc:
+        # QuantLib raises RuntimeError for solver and pricing errors, such as
+        # "root not bracketed" when the price implies a vol outside the
+        # [1e-8, 4.0] search range. With sub-bound prices skipped above, that
+        # leaves a price above the 400%-vol value, or one within the solver's
+        # grid error of the bound. Catch only RuntimeError. A bare except would
+        # also swallow Ctrl-C and real bugs.
+        #
+        # Return NaN rather than 0.0. A zero passes for a real vol in the CSV
+        # and in any aggregate; NaN marks the contract as failed, and
+        # count_priced() counts it. pandas sum() and mean() skip NaN by
+        # default, so check the priced count before aggregating.
+        log.warning(
+            "implied volatility failed for %s (%s strike=%s exp=%s %s price=%s): %s",
+            option.get("contractSymbol", "<unknown contract>"),
+            option.get("type"),
+            option.get("strike"),
+            option.get("expiration"),
+            source,
+            option_price,
+            exc,
+        )
+        return _iv_result(option_price, source, PRICING_FAILED)
 
 def get_npv(option, underlying_price, implied_volatility):
     """
-    Get NPV for a given option
+    NPV of an American option at the given spot and vol.
+
+    The scenarios pass a shocked spot and the contract's base implied vol plus
+    a vol shock. That is sticky-strike: each strike keeps its own vol when spot
+    moves, so nothing is re-solved at the shocked spot.
+
+    Returns NaN (PRICING_FAILED) if the engine fails, so a failed valuation
+    stays distinguishable from a zero-value position.
     """
     risk_free_rate = 0.0425
 
     volatility = float(implied_volatility)
+
+    # A NaN vol means get_iv() skipped or failed this contract, and it is
+    # already counted. Skip the binomial solve so a failure isn't logged twice.
+    if not math.isfinite(volatility):
+        return PRICING_FAILED
+
     spot_price = underlying_price
-    option_price = option['last_price']
     dividend_yield = option['dividend_yield']
     strike_price = option['strike']
     days_to_maturity = (datetime.strptime(option['expiration'], '%Y-%m-%d') - datetime.now()).days
@@ -106,12 +284,22 @@ def get_npv(option, underlying_price, implied_volatility):
     american_option.setPricingEngine(engine)
 
     try:
-        implied_volatility = american_option.impliedVolatility(
-            option_price, bsm_process, 1e-4, 1000, 1e-8, 4.0
-        )
         return american_option.NPV()
-    except:
-        return 0.0
+    except RuntimeError as exc:
+        # Same handling as get_iv(): QuantLib engine errors (such as the
+        # binomial tree's "negative probability") become NaN, and
+        # count_priced() checks every sN_npv column for them.
+        log.warning(
+            "NPV failed for %s (%s strike=%s exp=%s spot=%s vol=%s): %s",
+            option.get("contractSymbol", "<unknown contract>"),
+            option.get("type"),
+            option.get("strike"),
+            option.get("expiration"),
+            spot_price,
+            volatility,
+            exc,
+        )
+        return PRICING_FAILED
 
 _yf_cache_isolated = False
 
@@ -256,9 +444,13 @@ class FuncTimer:
     def s(self):
         self.start_time = time.perf_counter()
 
-    def e(self, label="Elapsed time"):
+    def elapsed(self):
+        """Seconds since s(), without printing or resetting."""
         if self.start_time is None:
             raise RuntimeError("Timer was not started.")
-        duration = time.perf_counter() - self.start_time
+        return time.perf_counter() - self.start_time
+
+    def e(self, label="Elapsed time"):
+        duration = self.elapsed()
         print(f"{label}{duration:.6f} sec")
         self.start_time = None  # reset for reuse
