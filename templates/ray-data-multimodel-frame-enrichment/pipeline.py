@@ -9,8 +9,7 @@ stages hold different amounts of VRAM and run at different rates; `packing.py` c
 they fit, without a GPU.
 
 The comment on each setting below gives its effect as measured on the production workload the
-defaults came from, and what should change it. NOTES.md has that workload's end-to-end
-throughput, with its scope.
+defaults came from, and what should change it.
 """
 
 from __future__ import annotations
@@ -42,9 +41,9 @@ IMAGE_EMBED_MODEL = os.environ.get("IMAGE_EMBED_MODEL", "google/siglip2-base-pat
 #
 # Each label must be a concrete noun phrase. On make_fixture.py's frames (an L4, the shipped
 # threshold of 0.4), `object`, `shape` and `region` return no boxes at any threshold down to
-# 0.05, while `rectangle` and `bright square` do; NOTES.md has the table and the COCO
-# control. If you change the imagery, re-check the labels: a label that grounds to nothing
-# still costs a full forward pass per batch and reads downstream as an empty frame.
+# 0.05, while `rectangle` and `bright square` do. If you change the imagery, re-check the
+# labels: a label that grounds to nothing still costs a full forward pass per batch and
+# reads downstream as an empty frame.
 LABELS = [s for s in os.environ.get("LABELS", "bright square,rectangle").split(",") if s]
 
 # --------------------------------------------------------------------------------------
