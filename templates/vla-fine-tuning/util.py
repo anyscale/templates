@@ -142,7 +142,11 @@ def load_pi05_policy(pretrained_path=None):
 def load_checkpoint(checkpoint, policy, optimizer, scaler) -> tuple[int, int]:
     """Restore model/optimizer/scaler state from a Ray Train checkpoint.
 
-    Returns (start_epoch, start_step).
+    Returns (start_epoch, start_step): the epoch after the checkpointed one,
+    and the micro-batch count so far. Checkpoints are written at epoch ends,
+    except that README.ipynb's max_train_steps cap writes one mid-epoch, so
+    resuming from it skips the rest of that epoch. The data stream position
+    is not restored; see make_checkpoint().
     """
     import ray.cloudpickle as pickle
 
@@ -159,8 +163,20 @@ def load_checkpoint(checkpoint, policy, optimizer, scaler) -> tuple[int, int]:
 def make_checkpoint(policy, optimizer, scaler, epoch, step):
     """Serialize model + optimizer + scaler state into a Ray Train Checkpoint.
 
-    This captures everything needed to resume training: model weights,
-    optimizer state, gradient scaler state, and the current epoch/step.
+    Captures the model weights, optimizer and grad-scaler state, and the
+    epoch/step counters. It doesn't capture the position in the data stream:
+    LeRobotDatasource has no offset, so a restart re-reads the dataset from
+    the beginning and resumes at the start of the next epoch.
+
+    `step` counts micro-batches, but build_lr_scheduler(..., last_step=step)
+    treats it as an optimizer-step count. The optimizer steps once per
+    `grad_accum` micro-batches, so a resumed schedule is `grad_accum` times
+    too far along. lr_lambda doesn't clamp, so the cosine wraps around.
+    With num_epochs=2 and grad_accum=8 (L4), the resumed second epoch starts
+    at 0.75x the base LR instead of 0.59x; with grad_accum=2 (A100) it starts
+    at 0 and rises to 0.59x. Saving scheduler.state_dict() here and restoring
+    it on resume would fix this.
+
     The checkpoint is written to a temp directory and returned as a
     ray.train.Checkpoint for use with ray.train.report().
     """
