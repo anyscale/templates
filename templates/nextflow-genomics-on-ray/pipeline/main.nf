@@ -1,25 +1,9 @@
 #!/usr/bin/env nextflow
 
 /*
- * Germline short-variant calling for the three GIAB Ashkenazi trio samples,
- * each benchmarked against its own GIAB v4.2.1 truth set.
- *
- *   nextflow run pipeline/main.nf -profile ray
- *
- * GATK Best Practices in nf-core/sarek's shape, with the divergences listed in
- * PIPELINE.md, and rtg vcfeval for scoring. Nothing in this file, in modules/
- * or in conf/base.config refers to Ray; `-profile ray` adds the executor.
- *
- * The scatter is what the scheduler sees. Three samples over N intervals is
- * 3 x N independent calling tasks, which converge per interval for joint
- * genotyping and once more for the callset. One sample would still scatter
- * over N intervals; three add the joint-genotyping step. The pedigree is not
- * used.
- *
- * Two filtered callsets come out, and both are benchmarked: the joint callset
- * with GATK's hard filters (`gatk_hard`), and, with --cnn, each sample's own
- * calls filtered by GATK's CNN on a GPU (`gatk_cnn`), as sarek's joint and
- * single-sample modes would filter them.
+ * Germline short-variant calling for the GIAB Ashkenazi trio, each sample scored
+ * against its own GIAB v4.2.1 truth set. Nothing here refers to Ray; `-profile ray`
+ * adds the executor.
  */
 
 nextflow.enable.dsl = 2
@@ -33,18 +17,8 @@ include { CNN_FILTER } from './modules/local/cnn_filter.nf'
 include { BENCHMARK } from './modules/local/benchmark.nf'
 include { MULTIQC; COLLECT_PLACEMENT } from './modules/local/reporting.nf'
 
-/*
- * Scale presets. The processes, tools and resource requests are the same at
- * every scale; the region and interval count differ, so a green CI run at
- * `quick` exercises the code path a reader gets at `standard`. The
- * regions match what tools/stage-demo-data.sh publishes, and
- * tests/nextflow-genomics-on-ray/test_config_agreement.py fails if the two
- * drift, since the pipeline would then score a region the data does not cover.
- *
- * A function, not a top-level `def`: the strict parser does not allow statements
- * to be mixed with script declarations, so that a script included as a module
- * cannot execute anything at import time.
- */
+// Regions must match tools/stage-demo-data.sh. A function because the strict
+// parser forbids mixing top-level statements with declarations.
 def scales() {
     return [
         quick   : [ region: 'chr20:1000000-3000000',  intervals: 8,
@@ -56,12 +30,7 @@ def scales() {
     ]
 }
 
-/*
- * Every boolean param goes through this. Under the strict parser a param given on
- * the command line arrives as a String, and a non-empty String is true in Groovy,
- * so without it `--cnn false` would turn the CNN arm on. The numeric params below
- * have the same problem, one type over.
- */
+// CLI params arrive as Strings, and a non-empty String is truthy: `--cnn false`.
 def flag(value) {
     return value instanceof Boolean ? value : value.toString().trim().toLowerCase() in ['true', 'yes', '1']
 }
@@ -70,25 +39,18 @@ workflow {
 
     def SCALES = scales()
 
-    // -- inputs ---------------------------------------------------------------
-
     if( !SCALES.containsKey(params.scale) )
         error "Unknown --scale '${params.scale}'. One of: ${SCALES.keySet().join(', ')}"
 
     def preset  = SCALES[params.scale]
     def region  = params.region ?: preset.region
 
-    // `as Integer`, always. A param supplied on the command line arrives as a
-    // String, and Groovy's arithmetic on Strings means something else: `"4" - 1`
-    // is string subtraction and yields "4", and a Range built from it compares by
-    // character code. Unconverted, smoke.nf's `--shards 4` runs 53 shards and
-    // reports success.
+    // A CLI String would make `"4" - 1` string subtraction.
     def n_intervals = (params.intervals ?: preset.intervals) as Integer
     if( n_intervals < 2 )
         error "--intervals must be >= 2 (got ${n_intervals}); the scatter is the point"
     def cnn = flag(params.cnn)
 
-    // FilterVariantTranches' resources, comma-separated. Only the CNN arm reads them.
     def resource_paths = (params.tranche_resources ?: '').toString().tokenize(',')
         .collect { p -> p.trim() }
         .findAll { p -> p }
@@ -121,11 +83,8 @@ workflow {
                                  file(row.fastq_2, checkIfExists: true)])
     }
 
-    // One truth set *per sample*, from the samplesheet's optional truth_vcf and
-    // truth_bed columns. GIAB publishes a benchmark VCF and a high-confidence BED
-    // for each of HG002, HG003 and HG004, and scoring the son's calls against
-    // the father's truth would report the difference between two people as caller
-    // error. A row without them is called but not scored.
+    // Per-sample truth: scoring HG002 against HG003's truth would count the
+    // difference between two people as caller error.
     ch_truth = ch_rows
         .filter { row -> row.truth_vcf && row.truth_bed }
         .map { row ->
@@ -135,9 +94,7 @@ workflow {
                   file(row.truth_bed,          checkIfExists: true))
         }
 
-    // The reference travels as one tuple everywhere. GATK needs all three files
-    // present next to each other and fails late and unhelpfully when the .dict is
-    // missing, so they are never separated.
+    // Kept together: GATK fails late and unhelpfully when the .dict is missing.
     ch_reference = channel.value(tuple(
         file(params.reference,                            checkIfExists: true),
         file("${params.reference}.fai",                   checkIfExists: true),
@@ -152,8 +109,6 @@ workflow {
     ch_resources     = channel.value(resource_paths.collect { p -> file(p, checkIfExists: true) })
     ch_resource_tbis = channel.value(resource_paths.collect { p -> file("${p}.tbi", checkIfExists: true) })
 
-    // -- preprocessing: FASTQ -> analysis-ready BAM ---------------------------
-
     BWAMEM2_INDEX(ch_reference.map { fasta, _fai, _dict -> fasta })
     FASTP(ch_samples)
     BWAMEM2_MEM(FASTP.out.reads, BWAMEM2_INDEX.out.index)
@@ -167,20 +122,12 @@ workflow {
     ch_bam = GATK4_APPLYBQSR.out.bam
     SAMTOOLS_STATS(ch_bam)
 
-    // -- the scatter ----------------------------------------------------------
-
     MAKE_INTERVALS(ch_reference, n_intervals, region)
     ch_intervals = MAKE_INTERVALS.out.intervals.flatten()
 
-    // The cross product is the fan-out: every sample against every interval, all
-    // independent and submitted at once. At `standard`, 3 samples x 24 intervals
-    // = 72 HaplotypeCaller tasks, as many running at once as the cluster has room for.
     ch_calling_units = ch_bam.combine(ch_intervals)
     GATK4_HAPLOTYPECALLER(ch_calling_units, ch_reference)
 
-    // Regroup by interval: joint genotyping needs every sample's GVCF for one
-    // interval together, which is the one place the fan-out has to converge
-    // before it can fan out again.
     ch_by_interval = GATK4_HAPLOTYPECALLER.out.gvcf
         .map { interval_id, _meta, gvcf, tbi -> tuple(interval_id, gvcf, tbi) }
         .groupTuple()
@@ -189,18 +136,13 @@ workflow {
     GATK4_GENOMICSDBIMPORT(ch_by_interval)
     GATK4_GENOTYPEGVCFS(GATK4_GENOMICSDBIMPORT.out.db, ch_reference)
 
-    // Sorted, so the gather's inputs, and its -resume hash, do not depend on which
-    // interval finished first.
+    // Sorted, so the -resume hash does not depend on which interval finished first.
     GATK4_MERGEVCFS(
         GATK4_GENOTYPEGVCFS.out.vcf.map { vcf, _tbi -> vcf }.collect(sort: true),
         GATK4_GENOTYPEGVCFS.out.vcf.map { _vcf, tbi -> tbi }.collect(sort: true),
         'joint',
     )
 
-    // -- hard filters, per variant type ---------------------------------------
-
-    // SNPs and everything else apart, each filtered with GATK's thresholds for its
-    // type, then merged back into one callset.
     GATK4_SELECTVARIANTS(GATK4_MERGEVCFS.out.vcf.combine(channel.of('snp', 'indel')), ch_reference)
     GATK4_VARIANTFILTRATION(GATK4_SELECTVARIANTS.out.vcf, ch_reference)
     GATK4_MERGEVCFS_FILTERED(
@@ -209,10 +151,7 @@ workflow {
         'joint.filtered',
     )
 
-    // -- the CNN arm, on a GPU ------------------------------------------------
-
-    // Each sample's GVCFs, regrouped by sample this time: the CNN scores single-sample
-    // calls (modules/local/cnn_filter.nf has why).
+    // Regrouped per sample: the CNN scores single-sample calls.
     ch_cnn = channel.empty()
     if( cnn ) {
         ch_sample_gvcfs = GATK4_HAPLOTYPECALLER.out.gvcf
@@ -222,11 +161,6 @@ workflow {
         ch_cnn = CNN_FILTER.out
     }
 
-    // -- benchmarking ---------------------------------------------------------
-
-    // The joint callset carries every sample, so it is fanned back out per sample
-    // to be scored; the CNN callsets are one per sample already. The label names
-    // each callset in benchmark.tsv.
     ch_hard_calls = ch_bam
         .map { meta, _bam, _bai -> meta }
         .combine(GATK4_MERGEVCFS_FILTERED.out.vcf)
@@ -235,26 +169,20 @@ workflow {
 
     BENCHMARK(ch_hard_calls.mix(ch_cnn_calls), ch_reference, ch_truth, region)
 
-    // -- reporting ------------------------------------------------------------
-
     ch_reports = FASTP.out.json
         .mix(GATK4_MARKDUPLICATES.out.metrics)
         .mix(SAMTOOLS_STATS.out.stats)
         .collect()
     MULTIQC(ch_reports)
 
-    // Ordering only: the placement record is complete once the work is. Waits on
-    // every terminal output rather than on the benchmark alone, which emits
-    // nothing when no sample has a truth set.
+    // Waits on every terminal output: BENCHMARK emits nothing when no sample has truth.
     ch_done = GATK4_MERGEVCFS_FILTERED.out.vcf
         .mix(BENCHMARK.out, ch_cnn, MULTIQC.out.report)
         .collect()
         .map { _outputs -> 'done' }
     COLLECT_PLACEMENT(ch_done)
 
-    // Inside the entry workflow, and with an equals sign. The strict parser does
-    // not allow statements at script level, so the familiar top-level
-    // `workflow.onComplete { ... }` no longer parses.
+    // Assigned here: the strict parser rejects a top-level `workflow.onComplete { }`.
     workflow.onComplete = {
         log.info """
         ${workflow.success ? 'SUCCEEDED' : 'FAILED'}  duration=${workflow.duration}

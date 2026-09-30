@@ -19,57 +19,21 @@ import nextflow.util.MemoryUnit
 import nextflow.util.ServiceName
 import org.pf4j.ExtensionPoint
 
-/**
- * Runs Nextflow processes as Ray tasks.
- *
- * <p>Nextflow already knows how to talk to a batch scheduler: write directives
- * into the job script, submit it with a command, poll a queue, cancel by id. This
- * executor supplies those four things for Ray, so from the pipeline's side
- * `executor 'ray'` works like `executor 'slurm'`. Processes that declare
- * containers still need one of the routes in the README's "Containers" section;
- * only this template's pipeline has been run this way.
- *
- * <p>The Ray side lives in Python ({@code nf-ray}, in this template's {@code nf_ray}
- * package) and is reached by running it. Ray does ship a Java API, but it is
- * documented as "experimental and only supported by the community", its version
- * must match Ray Python exactly, and {@code ray-runtime} loads a JNI library that
- * would have to initialise inside Nextflow's pf4j plugin classloader, in
- * Nextflow's own JVM. One {@code fork}/{@code exec} per submit keeps the plugin
- * small and free of any dependency on the Ray version.
- *
- * <p><b>Contract with the Python side.</b> Three things must agree, and each is
- * asserted by the offline unit tests in
- * {@code tests/nextflow-genomics-on-ray/test_nf_ray.py}:
- * <ul>
- *   <li>the {@code #RAY} header format written by {@link #getDirectives}</li>
- *   <li>the {@code Submitted ray task N} line matched by {@link #parseJobId}</li>
- *   <li>the {@code <id> <state>} lines parsed by {@link #parseQueueStatus}</li>
- * </ul>
- */
+/** Grid executor that runs each Nextflow task as a Ray task through the {@code nf-ray} CLI. */
 @Slf4j
 @CompileStatic
 @ServiceName('ray')
 class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
 
+    // The #RAY header, this line and the status lines are a contract with nf_ray (test_nf_ray.py).
     private static final Pattern SUBMIT_REGEX = ~/Submitted ray task (\S+)/
 
-    /** Default CLI. Overridable with `ray.cliPath` for a non-standard install. */
     private static final String DEFAULT_CLI = 'nf-ray'
-
-    // -- the scheduler contract ------------------------------------------
 
     @Override
     protected String getHeaderToken() { '#RAY' }
 
-    /**
-     * Emit the resource request as {@code #RAY} header lines.
-     *
-     * <p><b>The returned list must have an even number of elements.</b>
-     * {@code AbstractGridExecutor.getHeaders} walks it as
-     * {@code for(i=0; i < size-1; i+=2)}, pairing {@code dir[i]} with
-     * {@code dir[i+1]} -- so a stray unpaired element does not raise, it silently
-     * drops the last directive. Every {@code <<} below therefore adds exactly two.
-     */
+    // getHeaders pairs the list's elements, so every << adds exactly two.
     @Override
     protected List<String> getDirectives(TaskRun task, List<String> result) {
         result << '-name' << getJobNameFor(task)
@@ -81,9 +45,6 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
 
         final AcceleratorResource acc = task.config.getAccelerator()
         if( acc ) {
-            // `accelerator 2, type: 'nvidia-l4'` -> request=2. AcceleratorResource
-            // back-fills request from limit when only one is given, but a process
-            // that plainly wants a GPU must never end up asking Ray for zero.
             Integer count = acc.getRequest()
             if( count == null )
                 count = acc.getLimit()
@@ -98,13 +59,8 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
         if( time )
             result << '-time' << String.valueOf(time.toMinutes())
 
-        // Ray-specific requests Nextflow has no vocabulary for. `ext` is the
-        // documented channel for executor-specific settings -- Nextflow does not
-        // let a plugin define new process directives.
-        //
-        // Read with get('ext') rather than getExt(): TaskConfig is a LazyMap and
-        // exposes `ext` as a map key, so under @CompileStatic the property form
-        // does not resolve to anything.
+        // get('ext'), not getExt(): TaskConfig is a LazyMap, and under @CompileStatic the
+        // property form resolves to nothing.
         final Object extRaw = task.config.get('ext')
         if( extRaw instanceof Map ) {
             final Map ext = (Map) extRaw
@@ -122,29 +78,16 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
         return result
     }
 
-    /**
-     * Strip whitespace from a JSON value so it survives header pairing.
-     *
-     * <p>Each directive occupies one header line, and the Python parser takes the
-     * whole remainder of the line as the value -- so a space would in fact
-     * survive. This is belt and braces for the case where a future
-     * {@code wrapHeader} implementation splits or quotes on whitespace.
-     */
     private static String compact(String json) {
         return json.replaceAll(/\s+/, '')
     }
 
     @Override
     List<String> getSubmitCommandLine(TaskRun task, Path scriptFile) {
-        // GridTaskHandler runs this with the task's work directory as CWD, which
-        // is why the bare file name is enough -- the same reason `sbatch
-        // .command.run` needs no path.
+        // Run from the task's work directory, as `sbatch .command.run` is.
         return cli() + ['submit', scriptFile.getName()]
     }
 
-    // Untyped return, matching the abstract declaration (`abstract parseJobId(String)`)
-    // and SlurmExecutor's own override. A narrowed String return is legal Groovy
-    // but needlessly differs from every other executor in the tree.
     @Override
     def parseJobId(String text) {
         for( String line : text.readLines() ) {
@@ -165,15 +108,7 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
     @Override
     protected List<String> queueStatusCommand(Object queue) { cli() + ['status'] }
 
-    /**
-     * Parse `nf-ray status` output: one {@code <id> <state>} per line.
-     *
-     * <p>CANCELLED maps to ERROR rather than to a state of its own. Nextflow has
-     * no "cancelled" queue status, and the distinction is preserved where it
-     * matters anyway: the daemon writes exit code 143 into {@code .exitcode}, so
-     * the pipeline's {@code errorStrategy} sees a terminated task rather than a
-     * failed one.
-     */
+    /** Parse {@code nf-ray status}: one {@code <id> <state>} per line. */
     @Override
     protected Map<String, QueueStatus> parseQueueStatus(String text) {
         final Map<String, QueueStatus> result = new LinkedHashMap<String, QueueStatus>()
@@ -194,50 +129,20 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
             case 'RUNNING':   return QueueStatus.RUNNING
             case 'DONE':      return QueueStatus.DONE
             case 'ERROR':     return QueueStatus.ERROR
+            // Nextflow has no cancelled state; the daemon's .exitcode 143 tells them apart.
             case 'CANCELLED': return QueueStatus.ERROR
             default:          return QueueStatus.UNKNOWN
         }
     }
 
-    // -- the pipeline's bin/ ---------------------------------------------
-
-    /** The copy of the project's bin/ that tasks run; null when there is none to use. */
     private Path stagedBinDir
 
-    /**
-     * Where tasks find the pipeline's bin/ scripts.
-     *
-     * <p>Nextflow appends this to every task's PATH (TaskProcessor.getProcessEnvironment),
-     * and the default is {@code session.binDir}, i.e. {@code <projectDir>/bin}, a path on
-     * the machine running Nextflow. A grid executor gets away with that on HPC, where the
-     * project sits on a filesystem every node mounts. A Ray cluster shares only
-     * /mnt/cluster_storage: the pipeline lives in the workspace's or the job's working
-     * directory on the head node, so a task that calls a bin/ script on a worker fails
-     * with `command not found`, exit 127. Tasks get a copy under the work directory
-     * instead, which every node must see anyway. The AWS Batch executor does the same
-     * with S3.
-     *
-     * <p>Module-level bin directories ({@code nextflow.enable.moduleBinaries}) are not
-     * copied.
-     */
+    /** A copy of bin/ in the shared work directory: the project exists only on the head node. */
     @Override
     Path getBinDir() {
         return stagedBinDir ?: super.getBinDir()
     }
 
-    /**
-     * Copy {@code session.binDir} to a fresh {@code <workDir>/tmp/..../bin}.
-     *
-     * <p>Every file in the copy is made executable. rayapp's template zip records no Unix
-     * modes, so a template unpacked from it (CI, or a console template) has its bin/
-     * scripts at 0644, and bash refuses a non-executable script it finds on PATH with
-     * `Permission denied`, exit 126. Symlinks are followed, since a link back into the
-     * project would dangle on a worker.
-     *
-     * <p>Returns null, leaving tasks on the original path, when the pipeline has no bin/,
-     * when {@code executor.disableRemoteBinDir} says the project is already on shared
-     * storage, or when the work directory is not a local POSIX path.
-     */
     private Path stageBinDir() {
         final Path source = session?.getBinDir()
         if( source == null || !Files.isDirectory(source) )
@@ -261,6 +166,8 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
         }
     }
 
+    // chmod +x: rayapp's zip records no modes, so bin/ can arrive 0644. Links are followed, since
+    // one back into the project would dangle on a worker.
     private static void copyExecutable(Path source, Path target) throws IOException {
         final Set<PosixFilePermission> exec = EnumSet.of(
             PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_EXECUTE,
@@ -284,7 +191,6 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
                     Files.setPosixFilePermissions(dest, perms)
                 }
                 catch( IOException | UnsupportedOperationException e ) {
-                    // Still worth using: the copy was created with the source's mode.
                     log.debug "nf-ray: could not chmod ${dest}: ${e.message}"
                 }
             }
@@ -294,18 +200,12 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
         }
     }
 
-    // -- lifecycle -------------------------------------------------------
-
     @Override
     protected void register() {
         super.register()
-        // Before any task exists: TaskProcessor reads getBinDir() once per process and
-        // keeps the answer.
+        // Before any task: TaskProcessor reads getBinDir() once per process.
         stagedBinDir = stageBinDir()
-        // Start the daemon now rather than on the first submit. Connecting to Ray
-        // is the step most likely to fail, and failing here costs seconds at
-        // pipeline start instead of surfacing as an unexplained submit error once
-        // the first process has already staged its inputs.
+        // Connecting to Ray is what most often fails, so do it at start, not on the first submit.
         final cmd = cli() + ['up']
         try {
             final proc = new ProcessBuilder(cmd).redirectErrorStream(true).start()
@@ -324,9 +224,7 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
 
     @Override
     void shutdown() {
-        // Release the Ray driver promptly. The daemon also has an idle timeout, but
-        // that is a backstop for a killed run -- on a clean exit the cluster should
-        // be free to scale down as soon as the pipeline is done with it.
+        // Release the driver now; the daemon's idle timeout is a backstop for killed runs.
         try {
             new ProcessBuilder(cli() + ['down']).redirectErrorStream(true).start().waitFor()
         }
@@ -336,17 +234,8 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
         super.shutdown()
     }
 
-    // -- configuration ---------------------------------------------------
-
-    /**
-     * The CLI invocation, with the `ray` config scope forwarded as environment.
-     *
-     * <p>Every setting has to reach three separate processes (this JVM, the
-     * daemon, and a fresh CLI per submit), and only the environment gets to all
-     * three. Java cannot mutate its own environment, so the settings are pushed
-     * through {@code env} on each call instead, which also puts the full
-     * configuration in the command line Nextflow reports when a submit fails.
-     */
+    // The `ray` scope goes through `env` on every call: only the environment reaches the daemon
+    // and each CLI process, and Java cannot set its own.
     private List<String> cli() {
         final List<String> argv = ['/usr/bin/env']
         rayEnv().each { String k, String v -> argv << "${k}=${v}".toString() }
@@ -364,13 +253,6 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
         return (scope instanceof Map) ? (Map<String, Object>) scope : [:] as Map<String, Object>
     }
 
-    /**
-     * Translate the `ray { }` config scope into `NF_RAY_*` variables.
-     *
-     * <p>{@code clampResources} becomes {@code NF_RAY_CLAMP_RESOURCES}, and so on,
-     * so the scope and the environment are two spellings of one setting rather
-     * than two lists to keep in step.
-     */
     private Map<String, String> rayEnv() {
         final Map<String, String> out = new LinkedHashMap<String, String>()
         rayScope().each { Object k, Object v ->
@@ -379,9 +261,7 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
                 return
             out.put('NF_RAY_' + camelToUpper(key), String.valueOf(v))
         }
-        // Always last, so it cannot be shadowed by the scope: the daemon keys its
-        // socket on this path, and two runs pointing at one socket would share a
-        // Ray driver and each other's task ids.
+        // Last, so the scope cannot shadow it: the daemon keys its socket on this path.
         if( session?.workDir != null )
             out.put('NF_RAY_WORK_DIR', session.workDir.toString())
         return out

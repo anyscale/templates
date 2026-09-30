@@ -1,28 +1,4 @@
-"""Read the ``#RAY`` header out of a Nextflow job script.
-
-Nextflow's ``AbstractGridExecutor`` builds a job script (``.command.run``) and
-prefixes it with one header line per directive, using the token the executor
-declares in ``getHeaderToken()``. For SLURM that produces ``#SBATCH -c 4``; for
-this executor it produces::
-
-    #!/bin/bash
-    #RAY -name nf-FASTP_HG002
-    #RAY -cpus 6
-    #RAY -memory 36864
-    #RAY -gpus 1
-    #RAY -accelerator nvidia-l4
-    #RAY -resources {"nvme":1}
-
-Parsing the header rather than accepting command-line flags is deliberate: it
-keeps the submit call to ``nf-ray submit .command.run`` regardless of how many
-directives a process declares, and it means the resource request is recorded in
-the task's own work directory, where anyone debugging the run will look first.
-
-One value per line. The value is the entire remainder of the line, so values
-containing spaces survive -- but the Groovy side still emits JSON without
-spaces, because ``AbstractGridExecutor`` pairs directive tokens up two at a time
-and a bare space inside a value would split it across two header lines.
-"""
+"""Parse the ``#RAY`` header the plugin writes into ``.command.run``, like SLURM's ``#SBATCH``."""
 
 from __future__ import annotations
 
@@ -31,17 +7,11 @@ import shlex
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 
-#: ``#RAY -key value`` -- leading whitespace tolerated, ``value`` optional so a
-#: flag-style directive (``-preemptible``) parses to the empty string.
 _HEADER_RE = re.compile(r"^\s*#RAY\s+(?P<key>-{1,2}[A-Za-z][\w-]*)\s*(?P<value>.*?)\s*$")
 
-#: Stop scanning once the script body starts. Nextflow puts every header line in
-#: the first block, so a `#RAY` string appearing later (in a heredoc, or in a
-#: user's `script:` block that happens to echo one) must not be picked up.
+# Stop at the script body, so a `#RAY` echoed later (a heredoc, a script: block) is not read.
 _BODY_RE = re.compile(r"^\s*[^#\s]")
 
-#: How many leading lines to scan before giving up on finding a header. Nextflow
-#: emits its headers immediately after the shebang; this is slack, not a target.
 _MAX_HEADER_LINES = 200
 
 
@@ -63,8 +33,6 @@ class Directives:
     runtime: str = ""
     time_minutes: int = 0
     extra: dict[str, str] = field(default_factory=dict)
-    """Directives this version does not recognize, kept rather than dropped.
-    Nothing acts on them yet."""
 
 
 def _as_float(key: str, value: str) -> float:
@@ -82,15 +50,7 @@ def _as_int(key: str, value: str) -> int:
 
 
 def scan(lines: Iterable[str]) -> dict[str, str]:
-    """Collect ``#RAY`` key/value pairs from the head of a job script.
-
-    The single place both bounds are enforced, so neither can drift from the
-    other: stop at the first body line, and never scan more than
-    :data:`_MAX_HEADER_LINES`. Takes an iterable so :func:`parse_script` can hand
-    it a file object and read no more of the file than is actually scanned -- a
-    job script embeds the process's whole ``script:`` block, which for a genomics
-    tool invocation runs to hundreds of lines.
-    """
+    """Collect ``#RAY`` key/value pairs from the head of a job script, stopping at the body."""
     seen: dict[str, str] = {}
     for lineno, line in enumerate(lines):
         if lineno >= _MAX_HEADER_LINES:
@@ -141,12 +101,7 @@ def parse_script(path: str) -> Directives:
 
 
 def render_command(script: str) -> list[str]:
-    """The argv that runs a Nextflow job script.
-
-    Nextflow's wrapper redirects the task's own stdout/stderr to
-    ``.command.out``/``.command.err`` and writes ``.exitcode`` itself, so there
-    is nothing to arrange here beyond invoking it under bash.
-    """
+    """The argv that runs a Nextflow job script."""
     return ["/bin/bash", "-ue", script]
 
 

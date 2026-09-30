@@ -1,28 +1,5 @@
 #!/usr/bin/env python3
-"""The numbers that live in several files, checked against each other.
-
-Four decisions in this template are written down in more than one place, because
-each place is read by a different program. Nothing else notices when they drift,
-and each drift fails the same quiet way: a task that pends forever, or a table
-scored over a region the reads do not cover.
-
-* **The node ceiling.** pipeline/conf/base.config (``resourceLimits``, which
-  Nextflow clamps to), pipeline/conf/ray.config (``maxNode*``, which the executor
-  rejects over) and configs/nextflow-genomics-on-ray/{aws,gce}.yaml (the instance
-  types). The ceiling has to be what the largest worker can *schedule*: Ray
-  2.58.0 advertises about 70% of a node's free memory as ``memory``
-  (DEFAULT_OBJECT_STORE_MEMORY_PROPORTION = 0.3), so the check allows 0.7 x the
-  instance's memory, less 5% for the OS and the container.
-* **The GPU label's ceiling**, against the GPU worker, since a GPU task can land
-  nowhere else.
-* **The scale regions** in main.nf's ``scales()`` and tools/stage-demo-data.sh.
-* **The plugin version** in ray.config, nf-ray-plugin/build.gradle and
-  nf_ray/_version.py.
-
-Instance sizes are from the providers' published specs (AWS EC2 instance types;
-GCP machine families), in GiB, and are the one thing here that is typed in by
-hand. Plain script, like the others in this directory.
-"""
+"""The numbers that live in several files, checked against each other."""
 
 from __future__ import annotations
 
@@ -31,8 +8,7 @@ import re
 import sys
 import traceback
 
-# The template directory: CWD under tests.sh, where rayapp (so CI) flattens
-# templates/<name>/ and tests/<name>/ together; the repo layout otherwise.
+# rayapp flattens templates/<name>/ and tests/<name>/ into the CWD; fall back to the repo layout.
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.abspath(os.path.join(_HERE, "..", ".."))
 _TEMPLATE = next(
@@ -43,12 +19,11 @@ _TEMPLATE = next(
     ),
     os.path.join(_REPO, "templates", "nextflow-genomics-on-ray"),
 )
-#: Compute configs exist only in a repo checkout; rayapp does not ship them to the
-#: test cluster. The checks that need them say so and skip there.
+# rayapp does not ship configs/ to the test cluster, so the checks that need them skip there.
 _CONFIGS = os.path.join(_REPO, "configs", "nextflow-genomics-on-ray")
 _HAVE_CONFIGS = os.path.isfile(os.path.join(_CONFIGS, "aws.yaml"))
 
-#: vCPU, memory GiB, GPUs, accelerator.
+# vCPU, memory GiB, GPUs, accelerator, from the providers' published specs.
 INSTANCES = {
     "m5.2xlarge": (8, 32, 0, None),
     "r6i.4xlarge": (16, 128, 0, None),
@@ -58,7 +33,7 @@ INSTANCES = {
     "g2-standard-8-nvidia-l4-1": (8, 32, 1, "L4"),
 }
 
-#: Ray's share of free memory for tasks, and an allowance for what is not free.
+# Ray 2.58.0 offers tasks ~70% of free memory (the object store takes 0.3); 5% for OS and container.
 RAY_MEMORY_SHARE = 0.7
 OS_ALLOWANCE = 0.95
 
@@ -115,8 +90,7 @@ def worker_groups(cloud_file: str) -> list[dict]:
 
 
 def label_block(text: str, label: str) -> str:
-    """The body of ``withLabel:<label> { ... }``, braces matched: the closures
-    inside (``{ 6 * task.attempt }``) have braces of their own."""
+    """The body of ``withLabel:<label> { ... }``, with its closures' braces matched."""
     start = text.index("{", text.index(f"withLabel:{label}"))
     depth = 0
     for i in range(start, len(text)):
@@ -193,8 +167,7 @@ def _() -> None:
 
 @check("labels: every nf-core label but process_high_memory fits at attempt 1")
 def _() -> None:
-    # process_high_memory is left at nf-core's 200 GB on purpose and clamped;
-    # everything else should run as asked on its first attempt.
+    # process_high_memory stays at nf-core's 200 GB on purpose, and is clamped.
     base = read(_TEMPLATE, "pipeline", "conf", "base.config")
     limits = base_limits()
     for label in ("process_single", "process_low", "process_medium", "process_high"):

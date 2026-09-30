@@ -1,21 +1,5 @@
 #!/usr/bin/env python3
-"""Offline tests for nf_ray.daemon's task table.
-
-No cluster and no Ray install: a stand-in ``ray`` module is put in
-``sys.modules`` before the daemon imports it, which it only ever does lazily,
-inside the functions that need it. What is under test is the bookkeeping around
-Ray -- who finishes a task, and how many times -- not Ray.
-
-The reason this file exists is a race the daemon had. Two callers reap: the
-reaper thread, and every ``status`` request, and the server is threaded, so
-several requests at once. Before ``_reap_lock``, two of them could take the same
-snapshot of live tasks, both see a ref ready, and both finish it. Reproduced
-here by holding two reapers at ``ray.wait`` until both have arrived: three tasks
-came out as six placement rows.
-
-Deliberately a plain script, not a pytest suite, like the others in this
-directory.
-"""
+"""Offline tests for nf_ray.daemon's task table, against a stand-in ray module."""
 
 from __future__ import annotations
 
@@ -38,8 +22,6 @@ for candidate in (os.getcwd(), _TEMPLATE):
 
 
 class _Ref:
-    """Stands in for an ObjectRef. ray.wait hands back the objects it was given."""
-
     def __init__(self, task_id: int) -> None:
         self.task_id = task_id
 
@@ -126,10 +108,8 @@ def _() -> None:
         for i in (1, 2, 3):
             _add(s, tmp, i)
 
-        # Hold every reaper at ray.wait until a second one arrives, which is the
-        # interleaving the reaper thread and a status request can produce. With
-        # the lock in place the second never gets there, so the barrier times out
-        # and the first carries on alone.
+        # Hold each reaper at ray.wait until a second arrives, as the reaper thread and a status
+        # request can; with the reap lock the second never does, and the barrier times out.
         barrier = threading.Barrier(2)
 
         def hold() -> None:
@@ -161,9 +141,7 @@ def _() -> None:
 
 @check("promote: a task that finishes mid-scan is not moved back to RUNNING")
 def _() -> None:
-    # _promote_started stats each pending task's marker on NFS outside the lock.
-    # If the task finishes in that window, the old code set RUNNING over DONE,
-    # leaving a live entry with no ref -- which the next ray.wait would choke on.
+    # _promote_started stats markers on NFS outside the lock; a task can finish in that window.
     with tempfile.TemporaryDirectory() as tmp:
         s = _scheduler(tmp)
         entry = _add(s, tmp, 1)

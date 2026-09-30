@@ -1,26 +1,5 @@
-"""``nf-ray`` -- the command line the Nextflow executor plugin drives.
-
-Three of these are on the hot path and are called by the plugin, once per task or
-once per poll::
-
-    nf-ray submit .command.run     ->  "Submitted ray task 41"
-    nf-ray status                  ->  "41 RUNNING\\n42 PENDING"
-    nf-ray kill 41 42
-
-Their output format is the contract with ``RayExecutor.groovy`` -- ``parseJobId``
-and ``parseQueueStatus`` on the other side. Changing a line here means changing a
-regex there.
-
-The rest are for humans: ``up``/``down`` to control the daemon explicitly,
-``doctor`` to report the executor's configuration and this node's environment
-without running anything, and ``probe-image`` to check an ``ext.image`` candidate
-before a pipeline depends on it.
-
-The hot subcommands deliberately import only :mod:`nf_ray.client` and
-:mod:`nf_ray.config`. Importing :mod:`nf_ray.daemon` here would pull Ray into
-every submit, which costs about a second each -- so the dispatch table below
-resolves handlers lazily, and ``daemon``/``doctor``/``probe-image`` are the only
-paths that touch Ray.
+"""``nf-ray``, the CLI the executor plugin drives. RayExecutor.groovy parses the output of
+submit/status/kill, which run per task and so must not import Ray: handlers import lazily.
 """
 
 from __future__ import annotations
@@ -56,16 +35,12 @@ def _config(args: argparse.Namespace) -> Config:
     return Config.from_env()
 
 
-# -- hot path -----------------------------------------------------------------
-
-
 def cmd_submit(args: argparse.Namespace) -> int:
     """Submit one job script. Prints the line ``parseJobId`` matches."""
-    from nf_ray import client  # noqa: PLC0415 -- lazy by design; see the module docstring
+    from nf_ray import client  # noqa: PLC0415
 
     config = _config(args)
-    # The task's work directory is the CWD, because AbstractGridExecutor runs the
-    # submit command there -- the same reason `sbatch .command.run` needs no path.
+    # AbstractGridExecutor runs submit in the task's work directory, as with sbatch.
     work_dir = os.getcwd()
     client.ensure_daemon(config.socket_path, config.work_dir)
     task_id = client.submit(config.socket_path, args.script, work_dir)
@@ -75,13 +50,11 @@ def cmd_submit(args: argparse.Namespace) -> int:
 
 def cmd_status(args: argparse.Namespace) -> int:
     """Print the whole queue, one ``<id> <state>`` per line."""
-    from nf_ray import client  # noqa: PLC0415 -- lazy by design; see the module docstring
+    from nf_ray import client  # noqa: PLC0415
 
     config = _config(args)
     if not client.ping(config.socket_path):
-        # No daemon means no tasks. An empty queue is the correct answer and lets
-        # Nextflow's own bookkeeping decide what that means; an error here would
-        # fail a pipeline that has not submitted anything yet.
+        # No daemon means no tasks: an empty queue, not an error before the first submit.
         return 0
     for task_id, state in client.status(config.socket_path):
         print(f"{task_id} {state}")
@@ -89,15 +62,12 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 def cmd_kill(args: argparse.Namespace) -> int:
-    from nf_ray import client  # noqa: PLC0415 -- lazy by design; see the module docstring
+    from nf_ray import client  # noqa: PLC0415
 
     config = _config(args)
     if client.ping(config.socket_path):
         client.kill(config.socket_path, [int(i) for i in args.ids])
     return 0
-
-
-# -- lifecycle ----------------------------------------------------------------
 
 
 def cmd_daemon(args: argparse.Namespace) -> int:
@@ -109,7 +79,7 @@ def cmd_daemon(args: argparse.Namespace) -> int:
 
 
 def cmd_up(args: argparse.Namespace) -> int:
-    from nf_ray import client  # noqa: PLC0415 -- lazy by design; see the module docstring
+    from nf_ray import client  # noqa: PLC0415
 
     config = _config(args)
     client.ensure_daemon(config.socket_path, config.work_dir)
@@ -118,7 +88,7 @@ def cmd_up(args: argparse.Namespace) -> int:
 
 
 def cmd_down(args: argparse.Namespace) -> int:
-    from nf_ray import client  # noqa: PLC0415 -- lazy by design; see the module docstring
+    from nf_ray import client  # noqa: PLC0415
 
     config = _config(args)
     client.shutdown(config.socket_path)
@@ -126,11 +96,7 @@ def cmd_down(args: argparse.Namespace) -> int:
     return 0
 
 
-# -- diagnostics --------------------------------------------------------------
-
-#: Executables the shipped pipeline's processes call. Reported by ``doctor``
-#: because a missing tool under `-profile ray` surfaces as a task exiting 127 deep
-#: inside a scatter, which is a much worse place to learn it.
+# A missing tool otherwise surfaces as a task exiting 127 deep inside a scatter.
 EXPECTED_TOOLS = (
     "nextflow",
     "java",
@@ -145,13 +111,8 @@ EXPECTED_TOOLS = (
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
-    """Report the executor's configuration and this node's environment, running nothing.
-
-    Configuration comes from ``NF_RAY_*`` environment variables only. The plugin
-    forwards a pipeline's ``ray {}`` scope to nf-ray as those variables, so a doctor
-    run by hand does not see that scope: its declared ceiling reads "none" unless
-    ``NF_RAY_MAX_NODE_*`` are set in the shell.
-    """
+    """Report the executor's configuration and this node's environment, running nothing."""
+    # Reads NF_RAY_* only; the ray {} scope arrives via the plugin, so a doctor by hand misses it.
     config = _config(args)
     problems: list[str] = []
 
@@ -209,7 +170,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         if not found:
             problems.append(f"{tool} is not on PATH")
 
-    from nf_ray import client  # noqa: PLC0415 -- lazy by design; see the module docstring
+    from nf_ray import client  # noqa: PLC0415
 
     if client.ping(config.socket_path):
         info = client.info(config.socket_path)
@@ -233,13 +194,10 @@ def cmd_probe_image(args: argparse.Namespace) -> int:
     """Run one task inside a candidate ``ext.image`` and report what it sees."""
     import ray  # noqa: PLC0415 -- the hot subcommands must not import Ray
 
-    from nf_ray import daemon, job  # noqa: PLC0415 -- as above
+    from nf_ray import daemon, job  # noqa: PLC0415
 
     config = _config(args)
-    # Route through the daemon's own connect logic rather than calling ray.init
-    # directly, so that off a cluster it starts a local Ray instead of failing with
-    # a ConnectionError from address="auto", which is where you want to try an
-    # image first.
+    # Via the daemon's connect logic: off a cluster it starts a local Ray instead of failing.
     scheduler = daemon.Scheduler(config)
     try:
         remote = ray.remote(job.probe).options(  # type: ignore[arg-type]
@@ -275,9 +233,6 @@ def cmd_probe_image(args: argparse.Namespace) -> int:
         return 1
     print("\nusable")
     return 0
-
-
-# -- dispatch -----------------------------------------------------------------
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -333,9 +288,7 @@ def main(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         return 130
     except Exception as exn:  # noqa: BLE001
-        # Nextflow shows the submit command's stderr when it fails, so this is the
-        # one place a user reliably sees. Keep it to the message, not a traceback,
-        # unless they asked for one.
+        # Nextflow shows a failed submit's stderr: keep it to the message unless asked.
         if os.environ.get("NF_RAY_TRACEBACK"):
             raise
         print(f"nf-ray: {type(exn).__name__}: {exn}", file=sys.stderr)

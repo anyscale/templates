@@ -1,32 +1,7 @@
 /*
- * The GPU arm: GATK's CNN filter on each sample's own calls, the way nf-core/sarek
- * filters a single-sample HaplotypeCaller run.
- *
- *   GVCFs per sample -> GATK4_GENOTYPEGVCFS_SAMPLE -> NVSCOREVARIANTS (L4)
- *                    -> GATK4_FILTERVARIANTTRANCHES -> benchmarked as `gatk_cnn`
- *
- * NVSCOREVARIANTS is the one process in the DAG that asks for an accelerator.
- * `accelerator 1, type: 'nvidia-l4'` becomes `num_gpus=1, accelerator_type='L4'` on
- * a Ray task, the autoscaler starts an L4 node for it on the cluster running the CPU
- * work, and it reads its input from shared storage.
- *
- * Single-sample calls, not the joint callset. NVScoreVariants' models are
- * CNNScoreVariants' ported to PyTorch, and GATK's CNNScoreVariants documentation says
- * they were trained on single-sample VCFs and should not be used on annotations from a
- * joint callset: the QD, DP, FS, SOR, MQ and rank-sum values the 1D model reads are
- * computed over every sample at the site. So each sample's GVCFs are genotyped alone
- * here, and the joint callset keeps the hard filters. The two callsets main.nf
- * benchmarks differ in calling mode as well as in filter, as sarek's joint and
- * single-sample modes do.
- *
- * The 1D model, which reads the reference around the variant and those seven
- * annotations. The 2D model also reads the pileup, but GATK's CNN workflows train and
- * run it on HaplotypeCaller's realigned reads (-bamout), which this pipeline does not
- * write, and it builds its read tensors in single-threaded Python. PIPELINE.md has the
- * choice.
- *
- * Adapted from nf-core/modules gatk4/{genotypegvcfs,cnnscorevariants,filtervarianttranches}
- * (MIT). See PIPELINE.md.
+ * The GPU arm: each sample genotyped alone, scored by NVScoreVariants (1D) on an L4,
+ * then tranche-filtered. GATK's CNN models were trained on single-sample annotations.
+ * Adapted from nf-core/modules gatk4/{genotypegvcfs,cnnscorevariants,filtervarianttranches} (MIT).
  */
 
 process GATK4_GENOTYPEGVCFS_SAMPLE {
@@ -68,14 +43,8 @@ process NVSCOREVARIANTS {
     tuple val(meta), path("${meta.id}.cnn.vcf.gz"), path("${meta.id}.cnn.vcf.gz.tbi"), emit: vcf
 
     script:
-    // The JVM only unpacks the model and the script and waits; the memory is for the
-    // Python process it starts.
-    //
-    // java.io.tmpdir, not --tmp-dir, and set to the task directory. NVScoreVariants
-    // unpacks each model into the temp directory and renames it into a model
-    // directory that Java creates under the JVM's own temp directory, which
-    // --tmp-dir, set after startup, does not move. With the task on scratch and /tmp
-    // on another filesystem, the rename fails ("Error moving ... .pt").
+    // Small heap: the memory is for the Python the JVM starts. java.io.tmpdir, not --tmp-dir:
+    // the model is renamed into the JVM's temp dir, which fails across filesystems from scratch.
     """
     # GATK checks that `scorevariants` imports with `python`, then runs the model with
     # `python3`, each looked up on PATH. Both names are pointed at one interpreter, the
@@ -122,15 +91,8 @@ process NVSCOREVARIANTS {
     """
 }
 
-/*
- * The cutoffs are GATK's defaults: a variant passes if it scores above the CNN_1D
- * score at which 99.95% of the SNPs and 99.4% of the indels in the resources would
- * pass, which GATK tuned for F1 on whole human genomes. The resources are those of
- * GATK's CNN workflow (gatk4-cnn-variant-filter): HapMap 3.3, 1000G phase 1
- * high-confidence SNPs and Mills. Only resource sites inside the called region count,
- * so a small region sets the indel cutoff from a few hundred scores; PIPELINE.md has
- * the arithmetic.
- */
+// GATK's default tranches, tuned on whole genomes. Only resource sites in the called
+// region count, so a small region sets the indel cutoff from a few hundred scores.
 process GATK4_FILTERVARIANTTRANCHES {
     tag "${meta.id}"
     label 'process_low'
@@ -158,9 +120,6 @@ process GATK4_FILTERVARIANTTRANCHES {
     """
 }
 
-/*
- * The whole arm, as one unit main.nf calls.
- */
 workflow CNN_FILTER {
     take:
     ch_gvcfs          // tuple(meta, [gvcf, ...], [tbi, ...]), one per sample

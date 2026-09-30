@@ -1,16 +1,4 @@
-"""Stdlib-only client for the daemon's unix socket.
-
-This module is on the hot path and is the reason the daemon exists in the shape it
-does. Nextflow spawns one process per submit; on a pipeline with a few hundred
-tasks, a client that imported Ray to talk to the cluster would spend roughly a
-second per call doing nothing but importing. So nothing here imports Ray, or
-anything else outside the standard library -- and :mod:`nf_ray.cli` is careful to
-route the hot subcommands through this module without touching
-:mod:`nf_ray.daemon`.
-
-Keep it that way. The cheap way to break this template's throughput is a
-convenience import at the top of this file.
-"""
+"""Stdlib-only client for the daemon's socket. It runs per submit, so it must never import Ray."""
 
 from __future__ import annotations
 
@@ -23,12 +11,9 @@ import subprocess
 import sys
 import time
 
-#: Long enough that a busy daemon reaping several hundred refs does not look dead,
-#: short enough that a genuinely wedged daemon fails the run instead of hanging it.
+# Long enough for a busy daemon; short enough that a wedged one fails the run, not hangs it.
 DEFAULT_TIMEOUT = 120.0
 
-#: How long to wait for a freshly started daemon to answer. Dominated by
-#: `ray.init()` attaching to the cluster.
 START_TIMEOUT = 180.0
 
 
@@ -76,17 +61,7 @@ def ping(socket_path: str, timeout: float = 5.0) -> bool:
 
 
 def ensure_daemon(socket_path: str, work_dir: str, timeout: float = START_TIMEOUT) -> None:
-    """Start a daemon if none is answering, and wait until one is.
-
-    Guarded by a lock file, because Nextflow submits concurrently: without it, a
-    pipeline whose first wave is twenty tasks would race twenty daemons into
-    existence, nineteen of which would fail to bind and take their tasks with
-    them.
-
-    A stale socket file left by a killed daemon is unlinked here rather than at
-    startup, so the common case (nothing running, no socket) needs no cleanup and
-    the uncommon one is handled where it is detectable.
-    """
+    """Start a daemon if none answers; locked, as concurrent submits would race several up."""
     if ping(socket_path):
         return
 
@@ -95,7 +70,6 @@ def ensure_daemon(socket_path: str, work_dir: str, timeout: float = START_TIMEOU
     with open(lock_path, "a+") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
         try:
-            # Another process may have started one while we waited for the lock.
             if ping(socket_path):
                 return
             if os.path.exists(socket_path):
@@ -118,12 +92,6 @@ def ensure_daemon(socket_path: str, work_dir: str, timeout: float = START_TIMEOU
 
 
 def _spawn(socket_path: str, work_dir: str) -> None:
-    """Start the daemon detached, with its log on disk.
-
-    ``start_new_session`` matters: without it the daemon joins Nextflow's process
-    group and dies with the first ``nf-ray submit`` that spawned it, taking every
-    task it owns.
-    """
     log_path = os.path.join(work_dir, ".nf-ray.daemon.log")
     os.makedirs(work_dir, exist_ok=True)
     with open(log_path, "ab") as log:
@@ -132,6 +100,7 @@ def _spawn(socket_path: str, work_dir: str) -> None:
             stdin=subprocess.DEVNULL,
             stdout=log,
             stderr=subprocess.STDOUT,
+            # Else the daemon dies with the submit that spawned it, and its tasks with it.
             start_new_session=True,
             env={**os.environ, "NF_RAY_WORK_DIR": work_dir, "NF_RAY_SOCKET": socket_path},
         )

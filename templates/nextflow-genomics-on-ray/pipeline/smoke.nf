@@ -1,25 +1,8 @@
 #!/usr/bin/env nextflow
 
 /*
- * A one-minute pipeline that exercises the executor and nothing else.
- *
- * It calls no genomics tool, reads no reference and downloads nothing, so when
- * it fails the failure is the executor's or the cluster's. The real pipeline
- * takes minutes to reach its first interesting task, and a misconfigured cluster
- * and an unhappy bwa-mem2 can look alike in a stack trace. Run this first; the
- * README does.
- *
- * Every shard's output is a pure function of its index, so the checksums must
- * be identical wherever a task ran: locally, on a Ray worker, or inside a
- * per-process image. A change in the environment (a different locale, a
- * different awk, a truncated write over NFS) shows up here as a changed number.
- *
- *   nextflow run pipeline/smoke.nf -profile ray --outdir smoke-results
- *   nextflow run pipeline/smoke.nf -profile ray --outdir smoke-results --shards 12 --hold 30
- *
- * It sits beside main.nf, not in a subdirectory, because Nextflow reads
- * nextflow.config from the script's own directory: one level down, it would run
- * without the `ray` profile it exists to test, and pass.
+ * Executor-only check: no tools, no downloads. Each shard's checksum depends only on
+ * its index, so it must match wherever it ran. Beside main.nf to share nextflow.config.
  */
 
 nextflow.enable.dsl = 2
@@ -27,17 +10,9 @@ nextflow.enable.dsl = 2
 params.shards = 4
 params.hold   = 8      // seconds per shard; long enough to observe placement
 
-// No `params.outdir` default here. This script shares nextflow.config with
-// main.nf, where a config param beats a script default, so a default here would
-// be replaced by main.nf's 'results' and the smoke run would publish into the
-// real pipeline's output directory. Outputs go under ${params.outdir}/smoke;
-// pass --outdir to keep this run's trace.txt apart from main.nf's as well.
+// No outdir default: nextflow.config's would win. Pass --outdir to keep it apart from main.nf's.
 
-/*
- * One shard. Deliberately asks for more than one CPU so that a cluster whose
- * nodes are smaller than the request fails here, in eight seconds, rather than
- * in the alignment step.
- */
+// Two CPUs, so an undersized cluster fails here rather than in alignment.
 process SHARD {
     tag "shard-${idx}"
     cpus 2
@@ -72,17 +47,8 @@ process SHARD {
     """
 }
 
-/*
- * Gather. Gives the pipeline a real dependency edge: a fan-out with no join
- * shows the scheduler can start tasks, not that one node can read another's
- * outputs, which is the failure that bites on a cluster.
- *
- * Through a bin/ script for the same reason. Nextflow puts the project's bin/
- * on every task's PATH, but the project sits on the node running Nextflow, and
- * a worker sees bin/ only because the executor copies it to shared storage.
- * Without that copy, main.nf's COLLECT_BENCHMARK fails on a worker with
- * `command not found`.
- */
+// The join checks that one node can read another's outputs; the bin/ script, that
+// bin/ reaches the workers (the executor copies it to shared storage).
 process COLLECT {
     cpus 1
     memory 1.GB
@@ -102,12 +68,7 @@ process COLLECT {
 }
 
 workflow {
-    // `as Integer` is load-bearing. A param given on the command line arrives as
-    // a String. Groovy's `"4" - 1` is string subtraction (remove the first "1", of
-    // which there is none), so it yields "4"; then `0.."4"` compares an Integer
-    // against a String by character code, and '4' is 52. Without the coercion,
-    // `--shards 4` runs 53 shards and reports success. Coerce every numeric param
-    // at the point of use.
+    // A CLI param is a String: without `as Integer`, `--shards 4` runs 53 shards.
     def n_shards = params.shards as Integer
     if( n_shards < 1 )
         error "--shards must be >= 1, got ${params.shards}"
@@ -115,9 +76,7 @@ workflow {
     channel.of(0..<n_shards) | SHARD
     COLLECT(SHARD.out.report.collect())
 
-    // Inside the entry workflow, and with an equals sign: the strict parser does
-    // not allow statements at script level, so the familiar top-level
-    // `workflow.onComplete { ... }` no longer parses.
+    // Assigned here: the strict parser rejects a top-level `workflow.onComplete { }`.
     workflow.onComplete = {
         log.info """
         smoke ${workflow.success ? 'OK' : 'FAILED'}  duration=${workflow.duration}

@@ -1,28 +1,7 @@
-# Call variants for the three GIAB Ashkenazi trio samples over all of chr20, as an Anyscale Job:
-# the notebook's pipeline at `full` scale, where 48 intervals give 144 HaplotypeCaller tasks.
-#
-#   cd templates/nextflow-genomics-on-ray && anyscale job submit --config-file job.yaml
-#
-# Submit it from this directory. `working_dir: .` is relative to the shell, not to this file,
-# so submitting from the repo root uploads the repo root and the entrypoint finds no pipeline/.
-# tools/stage-demo-data.sh builds the `full` data the entrypoint syncs.
-#
-# Both callsets come out, each benchmarked against every sample's own GIAB truth: the joint
-# callset with GATK's hard filters, and each sample's own calls filtered by GATK's CNN on the
-# L4 workers.
-#
-# Measured on Anyscale, 2026-09-25, with this file as committed: the pipeline ran 309 tasks in
-# 29m52s, 24.1 CPU hours by Nextflow's count, and the job took about 35 minutes from submission
-# to persisted results. Across the three samples SNP F1 was 0.9920-0.9923 hard-filtered and
-# 0.9939-0.9945 CNN-filtered, and indel F1 0.9460-0.9513 and 0.9455-0.9489. The run lost a CPU
-# worker, and the three GenotypeGVCFs tasks on it passed on retry. The reads are
-# reference-selected, so precision reads high against a whole-genome run (README, "Measured
-# runs"). Cost was not measured.
+# The notebook's pipeline over all of chr20 (`full` scale) as an Anyscale Job. Submit from this
+# directory: `working_dir: .` is relative to the shell, not to this file.
 name: nextflow-genomics-on-ray-chr20-trio
 
-# The template's image, with the toolchain, the nf-ray plugin and the Python NVScoreVariants runs
-# in (see Dockerfile). Processes run with no container runtime, so every tool has to be on every
-# node before the first task starts, and a job's `requirements:` installs pip packages only.
 image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/nextflow-genomics-on-ray:2.58.0
 
 working_dir: .
@@ -34,14 +13,10 @@ excludes:
 
 env_vars:
   NF_DEMO_SCALE: full
-  # Where persist_outputs.py copies the published results before the entrypoint exits.
-  # Without it they go with the cluster when the job ends; see the entrypoint.
+  # Where persist_outputs.py copies the results; /mnt/cluster_storage goes with the cluster.
   NF_RAY_RESULTS: /mnt/user_storage/nextflow-genomics-on-ray/results/chr20-trio
 
-# The entrypoint must not `exec` the pipeline, or nothing could run after it and the results
-# would go with the cluster. It captures the status, persists, then exits with the pipeline's
-# own code. It must also stay POSIX: Anyscale runs job entrypoints under /bin/sh (dash), where
-# `set -o pipefail` is an "Illegal option" and nothing runs.
+# POSIX only (job entrypoints run under dash), and no `exec`, so the results persist afterwards.
 entrypoint: |
   set -u
   DATA=/mnt/cluster_storage/nf-genomics/data/full
@@ -52,10 +27,7 @@ entrypoint: |
   python pipeline/bin/make_samplesheet.py --data-dir "$DATA" --output "$DATA/samplesheet.csv" \
     --resources-output "$DATA/tranche_resources.txt"
 
-  # -resume is not here on purpose. It needs the work directory from the previous attempt,
-  # and /mnt/cluster_storage is recreated per job, so there is nothing to resume from -- which
-  # is also why max_retries stays 0 below. Node loss is handled inside the run: nf-ray maps a
-  # lost node onto an exit code nf-core's errorStrategy retries.
+  # No -resume, and max_retries 0: every job attempt starts on an empty /mnt/cluster_storage.
   nextflow run pipeline/main.nf -profile ray \
     --scale full \
     --samplesheet "$DATA/samplesheet.csv" \
@@ -68,10 +40,7 @@ entrypoint: |
   python persist_outputs.py --results "$OUT" || true
   exit $STATUS
 
-# Inline, with the instance types of configs/nextflow-genomics-on-ray/aws.yaml: the pipeline's
-# resource ceiling (pipeline/conf/base.config, conf/ray.config) is sized to these nodes, and a
-# request no node can satisfy pends forever on Ray. max_nodes is higher than the notebook's
-# config because `full` has six times `quick`'s calling tasks. It is a cost bound.
+# The pipeline's resource ceiling (conf/base.config, conf/ray.config) is sized to these nodes.
 compute_config:
   head_node:
     instance_type: m5.2xlarge
@@ -88,11 +57,7 @@ compute_config:
       max_nodes: 2
   enable_cross_zone_scaling: true
 
-# 3 h, about five times the measured run's 35 minutes, so a slow capacity day still fits. The
-# failure it guards against is a stall, such as an L4 that never arrives or a request no node
-# can place, and a stalled run should stop within hours instead of holding a cluster.
+# Stops a stalled run, e.g. an L4 that never arrives.
 timeout_s: 10800
 
-# A job-level retry runs on a new cluster with an empty work directory, so it would redo
-# everything. Retries happen inside the run, per task.
 max_retries: 0

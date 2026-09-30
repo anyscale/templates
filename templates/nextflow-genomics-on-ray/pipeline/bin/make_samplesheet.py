@@ -1,24 +1,5 @@
 #!/usr/bin/env python3
-"""Build the pipeline's samplesheet from a staged MANIFEST.json.
-
-The manifest is the authority on what was published for a scale -- which samples,
-which files, and their checksums. Deriving the samplesheet from it rather than
-writing one by hand means a sample that failed to stage is a loud error here
-instead of a "file not found" several processes into the run, and it means the
-samplesheet cannot drift from the data it points at.
-
-This lives in ``bin/`` rather than inline in the notebook for one reason: things
-in the notebook cannot be tested without running the notebook, and this is exactly
-the kind of small path-assembling code that is wrong in a way nobody notices until
-a pipeline reads the wrong file.
-
-    make_samplesheet.py --data-dir /mnt/cluster_storage/data/.../quick \\
-                        --output samplesheet.csv \\
-                        --resources-output tranche_resources.txt
-
-The second file is the manifest's FilterVariantTranches resources, checked the same
-way and comma-separated, which is the form main.nf's ``--tranche_resources`` takes.
-"""
+"""Build the pipeline's samplesheet from a staged MANIFEST.json."""
 
 from __future__ import annotations
 
@@ -73,18 +54,13 @@ def build_rows(manifest: dict, data_dir: str, verify: bool) -> list[dict[str, st
                 if want:
                     got = sha256(path)
                     if got != want:
-                        # A truncated download produces a FASTQ that reads fine and
-                        # yields a quietly worse callset. Checking here costs
-                        # seconds; noticing later costs the run.
+                        # A truncated FASTQ reads fine and yields a quietly worse callset.
                         raise ManifestError(
                             f"{sample['id']} {os.path.basename(path)}: checksum mismatch\n"
                             f"  expected {want}\n  actual   {got}"
                         )
             row[column] = os.path.abspath(path)
 
-        # The sample's own truth set, when the manifest has one. Per sample
-        # because GIAB publishes one per genome; main.nf scores each sample's
-        # calls against its own and leaves a row with empty columns unscored.
         truth_vcf, truth_bed = sample.get("truth_vcf"), sample.get("truth_bed")
         row["truth_vcf"] = row["truth_bed"] = ""
         if truth_vcf or truth_bed:
@@ -108,13 +84,7 @@ def build_rows(manifest: dict, data_dir: str, verify: bool) -> list[dict[str, st
 
 
 def check_tranche_resources(manifest: dict, data_dir: str, verify: bool) -> list[str]:
-    """Absolute paths of the manifest's FilterVariantTranches resources, checked.
-
-    Not samplesheet columns, since every sample is filtered against the same ones;
-    main.nf takes them as ``--tranche_resources``. Checked here all the same, because
-    a missing or truncated resource otherwise surfaces as a GATK error after calling
-    has finished. A manifest without any (the synthetic trio's) returns none.
-    """
+    """Absolute paths of the manifest's FilterVariantTranches resources, checked."""
     paths = []
     for resource in manifest.get("tranche_resources", []):
         path = os.path.join(data_dir, resource["vcf"])

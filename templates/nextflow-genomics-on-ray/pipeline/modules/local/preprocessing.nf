@@ -1,13 +1,6 @@
 /*
- * FASTQ to analysis-ready BAM: GATK Best Practices preprocessing.
- *
- * Adapted from nf-core/modules (MIT); PIPELINE.md has the per-process
- * provenance and every divergence. The shape is nf-core's, so a reader who
- * knows sarek recognises each step.
- *
- * nf-core's `container` directives are dropped. There is no container runtime
- * inside a Ray worker to honour them, so tools come from the image;
- * `-profile conda` is the alternative. PIPELINE.md lists this divergence.
+ * FASTQ to analysis-ready BAM. Adapted from nf-core/modules (MIT). Container
+ * directives dropped: a Ray worker has no container runtime; tools come from the image.
  */
 
 process BWAMEM2_INDEX {
@@ -66,10 +59,7 @@ process BWAMEM2_MEM {
     tuple val(meta), path("${meta.id}.bam"), path("${meta.id}.bam.bai"), emit: bam
 
     script:
-    // The read group is not optional. GATK refuses to run without one, and the
-    // SM field is what every downstream tool -- GenomicsDBImport, vcfeval --
-    // uses to identify the sample. Getting it wrong produces a callset that
-    // looks fine and scores against the wrong truth set.
+    // GATK requires a read group, and SM is how GenomicsDBImport and vcfeval name the sample.
     def rg = "@RG\\\\tID:${meta.id}\\\\tSM:${meta.id}\\\\tPL:ILLUMINA\\\\tLB:${meta.id}"
     // Sorting takes memory per thread on top of the alignment itself, so it gets
     // a slice of the task's allocation rather than samtools' default, which is
@@ -102,9 +92,7 @@ process GATK4_MARKDUPLICATES {
     path "${meta.id}.md.metrics", emit: metrics
 
     script:
-    // GATK is a JVM tool inside a wrapper: -Xmx has to be set explicitly or it
-    // takes a fraction of the *node's* RAM, not the task's. On a shared node that
-    // is how one task's heap gets another task's memory and both die.
+    // Explicit -Xmx: otherwise the JVM sizes its heap from the node's RAM, not the task's.
     def heap = Math.max(1, (task.memory.toGiga() * 0.8) as int)
     """
     gatk --java-options "-Xmx${heap}g" MarkDuplicates \\

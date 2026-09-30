@@ -1,19 +1,5 @@
-"""Typed configuration for the Ray side of the executor.
-
-Every setting arrives as an ``NF_RAY_*`` environment variable, the one channel
-that reaches all three places the settings have to be visible: the Nextflow JVM
-(which spawns ``nf-ray``), the daemon (a separate long-lived process), and the
-CLI (a fresh process per submit). A Nextflow config scope would reach only the
-first.
-
-The Groovy plugin forwards a ``ray { ... }`` scope into this namespace, so all
-three of these are spellings of the same setting::
-
-    ray { clampResources = true }              # nextflow.config
-    env { NF_RAY_CLAMP_RESOURCES = 'true' }    # nextflow.config
-    NF_RAY_CLAMP_RESOURCES=true nextflow run   # shell
-
-Defaults worth their comments are commented at the field.
+"""Executor settings from ``NF_RAY_*`` env vars, the one channel that reaches Nextflow, the
+daemon and every per-submit CLI. The plugin forwards a ``ray { ... }`` scope into them.
 """
 
 from __future__ import annotations
@@ -24,10 +10,6 @@ import os
 from dataclasses import dataclass, field
 from typing import Any
 
-#: Storage that every node sees at the same absolute path. Nextflow stages inputs
-#: by path and a grid executor has no other way to move them, so a work directory
-#: outside this list means the second process in the pipeline gets "no such file"
-#: on a different node -- silently, and only once the cluster has more than one.
 SHARED_STORAGE_PREFIXES = (
     "/mnt/cluster_storage",
     "/mnt/shared_storage",
@@ -40,18 +22,11 @@ SHARED_STORAGE_PREFIXES = (
 
 _TRUE = frozenset({"1", "true", "yes", "on"})
 
-#: Where the daemon's socket goes by default. Node-local on purpose: the socket
-#: only ever connects processes on the head node (Nextflow, the CLI it spawns, the
-#: daemon), and the work directory is on NFS, where a unix socket may not be
-#: supported at all and the lock file beside it relies on flock over the network.
-#: A fixed /tmp rather than $TMPDIR, because a notebook that points TMPDIR at
-#: shared storage would otherwise move the socket straight back onto it.
+# Node-local: unix sockets and flock are unreliable on NFS. Not $TMPDIR, which a notebook
+# may point at shared storage.
 SOCKET_DIR = "/tmp"
 
-# Defaults live here, once, and are referenced by both the dataclass field and
-# `from_env`. Written as a literal in both places, a default can drift into two:
-# the dataclass says one thing, the env reader another, and a test catches only
-# the one it exercises.
+# Shared by the dataclass and from_env, so the two cannot drift.
 DEFAULT_TASK_MAX_RETRIES = 0
 DEFAULT_POLL_INTERVAL = 0.25
 DEFAULT_IDLE_TIMEOUT = 3600.0
@@ -104,87 +79,28 @@ class Config:
 
     address: str = "auto"
     namespace: str = "nf-ray"
-
     socket_path: str = ""
-    """Unix socket the CLI uses to reach the daemon. Defaults to
-    ``/tmp/nf-ray-<hash of work_dir>.sock`` (see :func:`default_socket_path`), so
-    two concurrent pipelines in different work directories get their own daemon
-    without coordinating, and the socket stays off NFS."""
-
     work_dir: str = ""
-    """Nextflow's ``workDir``. Used to site the socket and to warn when it is not
-    on shared storage."""
-
+    # Off: a tool told it has more memory than it gets dies mid-task, with a worse message.
     clamp_resources: bool = False
-    """Shrink an unsatisfiable request to the largest node instead of rejecting
-    it. Off, because a tool told it has more memory than it gets dies partway
-    through the task with a worse message. See :mod:`nf_ray.resources`."""
-
+    # Zero: Nextflow owns retries, and a hidden Ray retry would defeat task.attempt scaling.
     task_max_retries: int = DEFAULT_TASK_MAX_RETRIES
-    """Ray-level retries. Zero on purpose: Nextflow's ``maxRetries`` and
-    ``errorStrategy`` are the pipeline's retry policy, and a Ray retry underneath
-    them is invisible to Nextflow -- it would silently multiply the real attempt
-    count and defeat ``task.attempt``-scaled resource requests."""
-
     scheduling_strategy: str = DEFAULT_SCHEDULING_STRATEGY
-    """``DEFAULT`` is Ray's default placement, which favours nodes that already
-    have work and then less-loaded ones. ``SPREAD`` distributes tasks over live
-    nodes, which is useful for demonstrating placement and for I/O-bound fan-out."""
-
     default_accelerator: str = ""
-    """Applied to GPU tasks that name no model: a bare ``accelerator 1``, or
-    ``nvidia.com/gpu``, names none, so without this a GPU process would be
-    scheduled onto any accelerator the cluster happens to have."""
-
     extra_resources: dict[str, float] = field(default_factory=dict)
     runtime_env: dict[str, Any] = field(default_factory=dict)
-
+    # Declared image -> launchable image; "*" is a catch-all.
     image_map: dict[str, str] = field(default_factory=dict)
-    """Declared image -> image actually launchable on this cluster. Ray's
-    ``image_uri`` requires the image's Ray and Python to match the cluster's to
-    the patch, so a pipeline's own ``ext.image`` usually cannot be used verbatim.
-    ``"*"`` is honoured as a catch-all."""
-
     image_fallback: str = DEFAULT_IMAGE_FALLBACK
-    """What to do when ``ext.image`` has no mapping: ``error`` or ``ignore``
-    (run in the cluster's own image). ``error``, because silently ignoring a
-    declared image runs the task against different software than it asked for."""
-
     poll_interval: float = DEFAULT_POLL_INTERVAL
-    """How often the daemon reaps finished tasks. Nextflow polls status on its own
-    ``queueStatInterval``; this only bounds how stale the answer can be."""
-
     idle_timeout: float = DEFAULT_IDLE_TIMEOUT
-    """Shut the daemon down after this long with no client contact, so a killed
-    Nextflow run cannot leave a Ray driver holding the cluster open."""
-
     placement_tsv: str = ""
-    """Consolidated placement record. Defaults to
-    ``<work_dir>/nf_ray_placement.tsv``."""
-
     log_level: str = "INFO"
-
+    # Declared, not observed: ray.nodes() misses workers the autoscaler has yet to start.
+    # Zero falls back to the largest node seen alive.
     max_node_cpus: float = 0.0
     max_node_memory_gb: float = 0.0
     max_node_gpus: float = 0.0
-    """The largest worker this cluster can *grow* to, declared rather than
-    discovered.
-
-    ``ray.nodes()`` only reports nodes that are already alive, so on a cluster
-    whose big worker group sits at ``min_nodes: 0`` the observed ceiling is
-    whatever happens to be running, which would reject a 72 GB request that the
-    autoscaler could satisfy by starting a node. The autoscaler's configured node
-    types are not reachable through a public API, so the template's ``ray``
-    profile states them instead, copied from the compute config
-    (``ray { maxNodeCpus = 16 ... }`` in conf/ray.config, which the plugin passes
-    on as):
-
-        NF_RAY_MAX_NODE_CPUS=16  NF_RAY_MAX_NODE_MEMORY_GB=80  NF_RAY_MAX_NODE_GPUS=1
-
-    The compute configs' comments describe the same coupling from the other side:
-    the instance type and the pipeline's resource request are one decision.
-    Left at zero, the ceiling falls back to the largest node seen alive so far,
-    and a cluster with no worker alive yet gets no check at all."""
 
     @classmethod
     def from_env(cls, work_dir: str = "") -> Config:
@@ -242,14 +158,7 @@ class Config:
 
 
 def default_socket_path(work_dir: str) -> str:
-    """The daemon socket for *work_dir*: node-local, and short.
-
-    Keyed by a hash of the absolute work directory, which keeps "one daemon per
-    work directory" without putting the socket inside it. The hash also keeps the
-    path at a fixed 33 characters, well inside the 108 bytes ``sun_path`` allows;
-    ``<work_dir>/.nf-ray.sock`` grew with the work directory and failed to bind
-    past that limit.
-    """
+    """The daemon socket for *work_dir*: node-local, hashed to fit ``sun_path``'s 108 bytes."""
     digest = hashlib.sha256(os.path.abspath(work_dir).encode()).hexdigest()[:16]
     return os.path.join(SOCKET_DIR, f"nf-ray-{digest}.sock")
 
@@ -264,14 +173,7 @@ def is_shared_storage(path: str) -> bool:
 
 
 def shared_storage_warning(work_dir: str) -> str:
-    """The warning for a work directory no other node can read, or ``""``.
-
-    Deliberately **not** gated on how many nodes are alive right now. A cluster
-    whose worker group has ``min_nodes: 0`` looks single-node until the moment the
-    autoscaler adds the second node, which is exactly the moment this becomes a
-    problem -- so a check that stays quiet while the cluster is small is quiet
-    precisely when it is needed.
-    """
+    """Warning for a workDir other nodes cannot read, or ``""``; not gated on current node count."""
     if is_shared_storage(work_dir):
         return ""
     return (

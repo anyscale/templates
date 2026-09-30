@@ -1,58 +1,12 @@
-# Python additions to the base image, for reproducing this template off Anyscale.
-#
-# On Anyscale you do not need this file: the template's image
-# (us-docker.pkg.dev/.../nextflow-genomics-on-ray:2.58.0) already has all of it.
-# It is here so the same environment can be rebuilt elsewhere, and so the pins are
-# reviewable in the repo rather than only inside a layer.
-#
-# Base image: anyscale/ray:2.58.0-py312-cu128
-#   ray 2.58.0, python 3.12.13, numpy 2.2.6, pandas 2.3.3, pyarrow 23.0.1,
-#   matplotlib 3.10.8, ipykernel 7.2.0
-#
-# Ray is deliberately absent. Installing it here would let pip pull a second Ray
-# over the image's own, and a driver and its workers on different Ray versions is
-# the one failure `ext.image` cannot survive.
-#
-# matplotlib is *not* listed for the same reason in reverse: the image ships
-# 3.10.8 and the notebook is written against it. Pinning "the newest" here would
-# quietly upgrade it on every rebuild.
-#
-# Checked against dependencies/images/ray-2.58.0-py312-cu128.freeze.txt with
-#   uv pip compile --python-version 3.12 --python-platform x86_64-manylinux_2_28 \
-#       -c <freeze> requirements.txt <torch==2.9.1>
-# which resolves with every package the image already has left at its image
-# version. The additions are torch's own dependencies and the five below.
+# Additions to anyscale/ray:2.58.0-py312-cu128; the template's image already has them. No ray
+# (driver and workers must share the image's) and no matplotlib (the notebook targets 3.10.8).
 
-# --- the CNN arm: GATK's NVScoreVariants ------------------------------------
-# NVScoreVariants is a Java front end that runs GATK's Python package,
-# `scorevariants`, which imports torch, pytorch_lightning (and the lightning_fabric
-# it carries), pysam and Bio. The package itself is installed from the GATK
-# source by the Dockerfile; torch lives in tools/requirements.gpu.txt, which pins
-# it with its own --index-url, so nothing else here can be resolved from a
-# non-PyPI index.
-#
-# GATK 4.6.2.0's own environment (scripts/gatkcondaenv.yml.template) is Python
-# 3.10 with torch 2.1 and pytorch-lightning 2.4.0, pysam 0.22.0 and biopython
-# 1.84. This image is Python 3.12 with torch 2.9.1, so:
-#
-#   pytorch-lightning 2.6, the line Lightning's compatibility matrix tests up to
-#   torch 2.10 (2.4 stops at 2.6); lightning-utilities and torchmetrics are its
-#   dependencies, at the versions it resolves to;
-#
-#   pysam 0.22.0 and biopython 1.84, GATK's own pins, which have cp312 wheels.
-#
-# tools/smoke-nvscorevariants.sh runs NVScoreVariants against exactly these, and
-# the image build runs it.
+# For NVScoreVariants' `scorevariants` (torch is in tools/requirements.gpu.txt). Lightning 2.6 is
+# tested up to torch 2.10; pysam and biopython are GATK 4.6.2.0's own pins.
 pytorch-lightning==2.6.6
 lightning-utilities==0.15.3
 torchmetrics==1.9.0
 pysam==0.22.0
 biopython==1.84
 
-# --- notebook and staging ---------------------------------------------------
-# Nothing to add. The notebook fetches demo data with `aws s3 sync
-# --no-sign-request`, and the base image already ships AWS CLI v2 at
-# /usr/local/bin/aws (aws-cli/2.36.27, read from anyscale/ray:2.58.0-py312). An
-# `awscli` pin here would do harm twice: v1 pins botocore exactly (1.42.30 wants
-# 1.40.30), which breaks the image's boto3 1.29.7, and pip puts its `aws` in
-# /home/ray/anaconda3/bin, ahead of /usr/local/bin on PATH, shadowing v2.
+# No awscli: v1 breaks the image's boto3 and shadows its AWS CLI v2 on PATH.

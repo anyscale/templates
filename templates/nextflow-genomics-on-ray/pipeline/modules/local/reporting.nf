@@ -1,12 +1,3 @@
-/*
- * Report aggregation.
- *
- * MultiQC over the QC files the preprocessing stages write, plus a copy of the
- * executor's placement record. The notebook's Gantt chart reads the placement
- * record to show which Ray node ran each task, and so whether the work spread
- * across nodes or queued behind one.
- */
-
 process MULTIQC {
     tag "multiqc"
     label 'process_low'
@@ -20,10 +11,7 @@ process MULTIQC {
     path "*_data", emit: data
 
     script:
-    // Globs, as nf-core's MULTIQC module declares them. The data directory is
-    // named after the report: `--filename multiqc_report.html` made multiqc 1.35
-    // write multiqc_report_data/, while this process declared multiqc_data/, so
-    // every run failed here on a missing output (seen on the first native run).
+    // Globs, as nf-core declares them: the data directory's name follows the report's.
     """
     multiqc --force .
     """

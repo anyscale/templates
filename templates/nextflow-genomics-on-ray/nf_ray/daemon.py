@@ -1,41 +1,5 @@
-"""The long-lived owner of every Ray task in a pipeline run.
-
-Why a daemon exists at all
---------------------------
-
-A Ray task belongs to the process that submitted it and is cancelled when that
-process exits. ``nf-ray submit`` runs for a few milliseconds and dies, so it
-cannot submit: it would hand Ray a task and immediately orphan it. Something has
-to stay alive for the length of the pipeline and hold the references.
-
-That something could be a detached actor. A plain driver process fits better,
-because its lifetime is already right: it comes up with the run and goes away
-with it, and if it dies the run is dead anyway. A detached actor outlives the run
-by construction, so a killed pipeline would leave a stale actor holding tasks,
-and the next run would have to decide whether to adopt or evict it. So: one
-daemon per work directory, owning its own tasks, cancelling them on the way out.
-
-The unix socket in front of it is there for latency. Nextflow spawns one process
-per submit; a client that had to ``import ray`` would spend about a second doing
-it, several hundred times. A stdlib-only client on a socket costs a few
-milliseconds.
-
-What it does that Nextflow cannot see
--------------------------------------
-
-**It writes ``.exitcode`` when Ray fails around a task.** Nextflow's wrapper writes
-that file itself and is the authority on the task's own exit status -- but when
-the node is reclaimed mid-task the wrapper never runs, and Nextflow's only
-recourse is to wait ``exitReadTimeout`` and report "failed to get exit status".
-Writing the file on Ray's behalf, with a code from :mod:`nf_ray.errors`, turns an
-opaque timeout into a retry the pipeline already knows how to handle. It is
-written only if absent, because a wrapper that did finish wins.
-
-**It separates queue time from run time.** Ray has no started-callback, so a task
-is reported ``PENDING`` until its placement file appears on shared storage (written
-by :func:`nf_ray.job.execute_and_record` as its first act). Without that, every
-task looks like it starts the instant it is submitted, and "the cluster is too
-small" is indistinguishable from "the task is slow".
+"""The long-lived owner of every Ray task in a run: a Ray task dies with its submitter, and each
+``nf-ray submit`` exits at once. Also writes ``.exitcode`` when Ray fails around a task.
 """
 
 from __future__ import annotations
@@ -57,9 +21,6 @@ from nf_ray.config import Config, shared_storage_warning
 
 log = logging.getLogger("nf_ray.daemon")
 
-#: Task states reported to the Groovy executor, which maps them onto Nextflow's
-#: ``QueueStatus``. Spelled out rather than borrowing SLURM's single letters --
-#: both sides of this contract are ours, and these end up in logs a human reads.
 PENDING = "PENDING"
 RUNNING = "RUNNING"
 DONE = "DONE"
@@ -68,24 +29,12 @@ CANCELLED = "CANCELLED"
 
 _TERMINAL = frozenset({DONE, ERROR, CANCELLED})
 
-#: How long a finished task stays in the table after Nextflow could first have
-#: seen it. Nextflow polls on its own interval and needs at least one poll to
-#: observe the terminal state; dropping the row immediately would make the task
-#: vanish from the queue with no status, which Nextflow reads as a lost job.
+# Nextflow must poll at least once to see a terminal state, or it reads the job as lost.
 _REAPED_TTL = 600.0
 
 
+# By value, so workers need no nf_ray install; py_modules could clash with the job's own.
 def _pickle_worker_modules_by_value() -> None:
-    """Ship :mod:`nf_ray.job` to workers by value, not by reference.
-
-    Without this, every worker node would need this package installed, and the
-    two ways to arrange that both fail here: ``runtime_env.py_modules`` conflicts
-    with a ``py_modules`` the surrounding Anyscale job may already declare, and
-    relying on the installed package breaks the moment the code arrives as an
-    uploaded ``working_dir`` instead. Registering the module by value sidesteps
-    both -- which is why :mod:`nf_ray.job` is under orders to import nothing
-    outside the standard library at module level.
-    """
     import ray  # noqa: PLC0415
 
     ray.cloudpickle.register_pickle_by_value(job)
@@ -116,10 +65,7 @@ class Scheduler:
     def __init__(self, config: Config) -> None:
         self.config = config
         self._lock = threading.RLock()
-        # Serialises reaping. Two callers reap: the reaper thread, and every
-        # `status` request (the server is threaded, so several at once). Without
-        # this, two of them could take the same snapshot of live tasks, both see
-        # a ref ready, and both finish it -- two placement rows for one task.
+        # The reaper thread and every status request reap; without this a task could finish twice.
         self._reap_lock = threading.Lock()
         self._entries: dict[int, Entry] = {}
         self._next_id = 1
@@ -127,15 +73,11 @@ class Scheduler:
         self._seen_limits = resources.NodeLimits()
         self._connect()
 
-    # -- Ray -------------------------------------------------------------
-
     def _connect(self) -> None:
         import ray  # noqa: PLC0415
 
         address = self.config.address
-        # `ray.init(address="auto")` raises if no cluster is running, which is the
-        # right behaviour on a cluster and the wrong one on a laptop running the
-        # smoke pipeline. "local" is the explicit spelling of "start one for me".
+        # address="auto" raises with no cluster running; "local" starts a Ray instance instead.
         kwargs: dict[str, object] = {"namespace": self.config.namespace}
         if address and address not in ("local", "auto"):
             kwargs["address"] = address
@@ -152,12 +94,7 @@ class Scheduler:
         )
 
     def limits(self) -> resources.NodeLimits:
-        """The largest single node a task could land on.
-
-        Declared ceiling wins over the observed one -- see
-        :attr:`nf_ray.config.Config.max_node_cpus` for why an autoscaling cluster
-        cannot be measured for this.
-        """
+        """The largest single node a task could land on; a declared ceiling beats observed."""
         cfg = self.config
         if cfg.max_node_cpus or cfg.max_node_memory_gb or cfg.max_node_gpus:
             return resources.NodeLimits(
@@ -177,8 +114,7 @@ class Scheduler:
             cpus = float(res.get("CPU", 0) or 0)
             memory = int(res.get("memory", 0) or 0)
             gpus = float(res.get("GPU", 0) or 0)
-            # The head runs with CPU: 0 by template convention, so it contributes
-            # nothing and must not drag the ceiling down.
+            # The head has CPU: 0 by template convention.
             if cpus <= 0:
                 continue
             best = resources.NodeLimits(
@@ -188,8 +124,7 @@ class Scheduler:
                 source="largest live node",
             )
 
-        # Remember the high-water mark: a node group that scaled up and back down
-        # still proves the request is satisfiable.
+        # High-water mark: a group that scaled back down still proves a request fits.
         with self._lock:
             self._seen_limits = resources.NodeLimits(
                 cpus=max(self._seen_limits.cpus, best.cpus),
@@ -198,8 +133,6 @@ class Scheduler:
                 source="largest node seen alive so far",
             )
             return self._seen_limits
-
-    # -- operations ------------------------------------------------------
 
     def submit(self, script: str, work_dir: str) -> int:
         """Submit one Nextflow job script as a Ray task; return its id."""
@@ -265,8 +198,7 @@ class Scheduler:
             if entry is None or entry.state in _TERMINAL or entry.ref is None:
                 continue
             with contextlib.suppress(Exception):
-                # Give the job script a chance to run its EXIT trap (which writes
-                # .exitcode and cleans up scratch) before taking the worker away.
+                # force=False lets the job script's EXIT trap write .exitcode and clean scratch.
                 ray.cancel(entry.ref, force=False)
             entry.detail = "cancelled by Nextflow"
 
@@ -295,17 +227,12 @@ class Scheduler:
             "nodes_alive": sum(1 for n in ray.nodes() if n.get("Alive")),
         }
 
-    # -- reaping ---------------------------------------------------------
-
     def _promote_started(self) -> None:
-        """Move PENDING -> RUNNING for tasks whose placement file has appeared."""
         with self._lock:
             pending = [e for e in self._entries.values() if e.state == PENDING]
         for entry in pending:
             marker = os.path.join(entry.work_dir, job.PLACEMENT_FILENAME)
-            # The stat is outside the lock (it is NFS); the transition is not.
-            # A task can finish between the snapshot and here, and moving a DONE
-            # entry back to RUNNING would leave it live with no ref to wait on.
+            # Stat outside the lock (NFS); recheck under it, as the task may have finished.
             if os.path.exists(marker):
                 with self._lock:
                     if entry.state == PENDING:
@@ -313,10 +240,7 @@ class Scheduler:
                         entry.started = time.time()
 
     def reap_once(self) -> None:
-        """Collect finished tasks and record their outcomes.
-
-        Safe to call from several threads at once; see ``_reap_lock``.
-        """
+        """Collect finished tasks and record their outcomes; safe from several threads."""
         import ray  # noqa: PLC0415
 
         with self._reap_lock:
@@ -329,8 +253,7 @@ class Scheduler:
             if live:
                 refs = [e.ref for e in live]
                 ready, _ = ray.wait(refs, num_returns=len(refs), timeout=0, fetch_local=False)
-                # ray.wait returns the ObjectRef objects it was given, so identity
-                # is enough to map them back.
+                # ray.wait returns the refs it was given, so identity maps them back.
                 by_ref = {id(e.ref): e for e in live}
                 for ref in ready:
                     entry = by_ref.get(id(ref))
@@ -374,12 +297,7 @@ class Scheduler:
 
     @staticmethod
     def _write_exitcode_if_absent(work_dir: str, code: int) -> None:
-        """Record an exit status Nextflow would otherwise never see.
-
-        Only if absent: Nextflow's own wrapper is the authority whenever it got as
-        far as writing the file, and a node that died during teardown can leave a
-        perfectly good ``.exitcode`` behind.
-        """
+        # O_EXCL: a .exitcode the wrapper managed to write is the authority.
         path = os.path.join(work_dir, ".exitcode")
         try:
             fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
@@ -397,20 +315,13 @@ class Scheduler:
             out.write(f"[nf-ray] {message}\n")
 
     def _append_placement(self, entry: Entry) -> None:
-        """Append one row to the consolidated placement record.
-
-        Written by the daemon rather than by the tasks: a single writer on the
-        head node cannot interleave with itself, whereas many nodes appending to
-        one file over NFS can and does. The per-task ``.nf-ray.placement`` files
-        remain the ground truth; this is the convenient join for the notebook.
-        """
+        # One writer on the head: many nodes appending to one NFS file interleave.
         path = self.config.placement_tsv
         if not path:
             return
         node_id, node_ip = entry.node_id, entry.node_ip
         if not node_id:
-            # Ray failed before the task reported; fall back to what the task
-            # itself managed to write, if anything.
+            # Ray failed before the task reported; use its placement file, if any.
             marker = os.path.join(entry.work_dir, job.PLACEMENT_FILENAME)
             with contextlib.suppress(OSError, ValueError):
                 with open(marker) as handle:
@@ -435,7 +346,6 @@ class Scheduler:
             log.warning("could not append placement record: %s", exn)
 
     def _expire(self) -> None:
-        """Drop long-finished rows so the status payload stays small."""
         now = time.time()
         with self._lock:
             for entry in self._entries.values():
@@ -449,8 +359,6 @@ class Scheduler:
             for i in stale:
                 del self._entries[i]
 
-    # -- lifecycle -------------------------------------------------------
-
     def run_reaper(self) -> None:
         while not self._stop.wait(self.config.poll_interval):
             try:
@@ -459,12 +367,7 @@ class Scheduler:
                 log.exception("reaper iteration failed")
 
     def shutdown(self) -> None:
-        """Cancel anything still running, then disconnect.
-
-        Cancelling is the point: a Nextflow run that was killed must not leave
-        ``bwa-mem2`` processes holding cores on nodes the autoscaler then refuses
-        to reclaim because they look busy.
-        """
+        """Cancel anything still running, then disconnect."""
         self._stop.set()
         with self._lock:
             live = [e for e in self._entries.values() if e.state not in _TERMINAL]
@@ -478,8 +381,6 @@ class Scheduler:
 
 
 class _Handler(socketserver.StreamRequestHandler):
-    """One line-delimited JSON request per connection."""
-
     def handle(self) -> None:  # noqa: D102
         server: _Server = self.server  # type: ignore[assignment]
         server.touch()
@@ -550,7 +451,6 @@ def serve(config: Config) -> None:
 
     scheduler = Scheduler(config)
     server = _Server(config.socket_path, scheduler)
-    # The socket is the run's control plane; nothing outside this node needs it.
     os.chmod(config.socket_path, 0o600)
 
     threading.Thread(target=scheduler.run_reaper, daemon=True).start()

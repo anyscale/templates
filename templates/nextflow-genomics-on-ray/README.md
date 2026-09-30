@@ -115,7 +115,6 @@ import os
 import pathlib
 import subprocess
 
-# CI sets `quick`. The scales differ only in region size and how finely it is split.
 SCALE = os.getenv("NF_DEMO_SCALE", "standard")
 SCALES = {
     "quick":    {"region": "chr20:1000000-3000000",  "span": "2 Mbp"},
@@ -124,18 +123,15 @@ SCALES = {
 if SCALE not in SCALES:
     raise ValueError(f"NF_DEMO_SCALE must be one of {sorted(SCALES)}, got {SCALE!r}")
 CFG = SCALES[SCALE]
-# The CNN arm, which is the GPU process. CI turns it off.
 CNN = os.getenv("NF_CNN", "true").lower() in ("1", "true", "yes")
 
-# Son, father and mother, called jointly as three samples.
 SAMPLES = ["HG002", "HG003", "HG004"]
 
 TEMPLATE_DIR = pathlib.Path.cwd()
 PIPELINE = TEMPLATE_DIR / "pipeline"
 DATA_URI = f"s3://anyscale-public-materials/genomics/giab-trio-illumina-chr20/{SCALE}"
 
-# Shared storage, because tasks read their inputs by path from whichever node wrote them.
-# NF_WORK is conf/ray.config's workDir.
+# Shared storage: tasks read their inputs by path from whichever node wrote them.
 WORK = pathlib.Path("/mnt/cluster_storage/nf-genomics")
 NF_WORK = "/mnt/cluster_storage/nf-work"
 DATA_DIR, RESULTS, SMOKE = WORK / "data" / SCALE, WORK / "results" / SCALE, WORK / "smoke"
@@ -171,7 +167,6 @@ resolved = subprocess.run(
 ).stdout.splitlines()
 
 # `-flat` quotes selector keys (process.'withLabel:process_medium'.cpus), hence the quote.
-# The assert catches a prefix that matches nothing.
 for prefix in ("process.executor", "process.resourceLimits", "process.'withLabel:process_",
                "executor.", "ray.", "workDir"):
     shown = [line for line in resolved
@@ -229,7 +224,6 @@ for entry in manifest["samples"]:
     print(f"{entry['id']:<8}{entry['read_pairs']:>12,}")
 REFERENCE = DATA_DIR / manifest["reference"]["fasta"]
 KNOWN_SITES = DATA_DIR / manifest["known_sites"]["vcf"]
-# HapMap, 1000G and Mills, comma-separated, as main.nf's --tranche_resources takes them.
 TRANCHE_RESOURCES = RESOURCE_LIST.read_text().strip()
 if CNN and not TRANCHE_RESOURCES:
     raise RuntimeError(f"{DATA_URI} lists no tranche resources; NF_CNN=false skips the CNN arm")
@@ -269,8 +263,7 @@ with open(RESULTS / "pipeline_info" / "trace.txt") as handle:
 with open(RESULTS / "pipeline_info" / "nf_ray_placement.tsv") as handle:
     placed = {row["work_dir"]: row for row in csv.DictReader(handle, delimiter="\t")}
 
-# Keyed on work dir, so earlier runs' rows cannot match. COLLECT_PLACEMENT copied the record
-# while still running, so it has no row; every other traced task must have one.
+# Every traced task has a row but COLLECT_PLACEMENT, which copied the record while running.
 COLLECTOR = "COLLECT_PLACEMENT"
 tasks = [t for t in trace.values() if t["process"] != COLLECTOR]
 assert len(trace) - len(tasks) == 1, f"expected exactly one {COLLECTOR} task in the trace"
@@ -336,7 +329,6 @@ import pandas as pd
 
 bench = pd.read_csv(RESULTS / "benchmark" / "benchmark.tsv", sep="\t")
 CALLSETS = {"gatk_hard", "gatk_cnn"} if CNN else {"gatk_hard"}
-# One row per sample, callset and variant type.
 assert len(bench) == len(SAMPLES) * len(CALLSETS) * 2, bench
 assert set(bench["sample"]) == set(SAMPLES), bench["sample"].unique()
 assert set(bench["caller"]) == CALLSETS, bench["caller"].unique()

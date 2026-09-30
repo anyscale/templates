@@ -1,30 +1,5 @@
 #!/usr/bin/env python3
-"""Offline tests for pipeline/bin/collect_vcfeval.py.
-
-The summaries these tests parse are rtg's own output, not text written to match
-the parser. They are in fixtures/vcfeval/, byte for byte as rtg-tools 3.13 (Core
-c27844a5bb) wrote them during a local run of main.nf on the synthetic trio from
-synthetic_trio.py (amd64 toolchain from tools/env.main.yml, 2026-09-24):
-
-    HG002.gatk.snp/        a scored comparison: a best-threshold row, then None
-    HG003.gatk.indel/      the same, for an indel callset
-    crossed-HG003-calls-vs-HG002-truth/
-                           HG003's SNP calls against HG002's truth, what scoring
-                           every sample against one truth set produced
-    no-baseline/           `--region chrS:1-500`, where the truth has nothing:
-                           one line, no header, and rtg still exits 0
-
-A fixture written to match the parser can only ever agree with it, so these are
-rtg's bytes, not a transcription of them.
-
-The header is also rtg-tools' own source, ``RocContainer.writeSummary``::
-
-    table.addRow("Threshold", "True-pos-baseline", "True-pos-call",
-                 "False-pos", "False-neg", "Precision", "Sensitivity", "F-measure");
-
-To refresh the fixtures, re-run rtg and copy its summary.txt over them; never edit
-one to match the parser.
-"""
+"""Offline tests for pipeline/bin/collect_vcfeval.py, against summaries rtg itself wrote."""
 
 from __future__ import annotations
 
@@ -53,6 +28,7 @@ cv = importlib.util.module_from_spec(_spec)
 sys.modules["collect_vcfeval"] = cv
 _spec.loader.exec_module(cv)
 
+# rtg-tools 3.13's own bytes: refresh them by re-running rtg, never by editing to fit the parser.
 FIXTURES = os.path.join(_HERE, "fixtures", "vcfeval")
 
 _FAILURES: list[str] = []
@@ -78,12 +54,7 @@ def fixture(name: str) -> str:
 
 
 def staged(task_dir: str, work: str, labels: list[tuple[str, str]]) -> list[str]:
-    """Lay out vcfeval output the way COLLECT_BENCHMARK sees it.
-
-    Each RTG_VCFEVAL output directory sits in its own hash-named task directory
-    under ``work``, and Nextflow stages each one into ``task_dir`` as a symlink
-    carrying the output's own name. Returns the names as the task would pass them.
-    """
+    """Symlink each output from its own hash-named work dir into ``task_dir``, as Nextflow does."""
     names = []
     for i, (name, source) in enumerate(labels):
         real = os.path.join(work, f"{i:02x}", f"{i:030x}", name)
@@ -113,8 +84,7 @@ def _() -> None:
 
 @check("the unthresholded row is the one reported, not the best-threshold one")
 def _() -> None:
-    # A threshold chosen to maximise F-measure against the very truth set being
-    # scored is fitted to the answer. rtg writes it first, then None.
+    # The best-threshold row, which rtg writes first, is fitted to the truth being scored.
     row = cv.parse_summary(fixture("HG002.gatk.snp"))
     assert row["Threshold"] == "None", row
     assert (row["True-pos-baseline"], row["False-pos"], row["False-neg"]) == ("344", "0", "0")
@@ -129,9 +99,7 @@ def _() -> None:
 
 @check("'nothing matched' is a distinct failure from 'format changed'")
 def _() -> None:
-    # rtg writes one line and no header, and exits 0. Reporting it as a format
-    # error would send a reader to the parser when the problem is almost always
-    # contig naming or a region that does not intersect the truth BED.
+    # rtg writes one headerless line and exits 0; the cause is contig naming or region, not format.
     with open(fixture("no-baseline")) as handle:
         assert cv.NO_VARIANTS_MARKER in handle.read()
     try:
@@ -140,8 +108,6 @@ def _() -> None:
         assert "chr20 vs 20" in str(exn)
     else:
         raise AssertionError("expected NoBaselineVariants")
-    # and it is still a SummaryFormatError, so a caller catching the base class
-    # does not suddenly stop catching this
     assert issubclass(cv.NoBaselineVariants, cv.SummaryFormatError)
 
 
@@ -168,7 +134,6 @@ def _() -> None:
             ("HG002.gatk.snp", ("HG002", "gatk", "snp")),
             # A sample id containing a dot is ordinary; caller and type never do.
             ("HG002.hiseq.gatk.indel", ("HG002.hiseq", "gatk", "indel")),
-            # main.nf's two callsets.
             ("HG002.gatk_hard.snp", ("HG002", "gatk_hard", "snp")),
             ("HG002.hiseq.gatk_cnn.indel", ("HG002.hiseq", "gatk_cnn", "indel")),
         ):
@@ -208,8 +173,7 @@ def _() -> None:
 
 @check("staged summary.txt files fail loudly: their parent is a hash directory")
 def _() -> None:
-    # What collecting summary.txt files would hand over, had Nextflow not
-    # refused the same-named inputs first.
+    # What collecting summary.txt files would stage, had Nextflow not refused the name clash.
     with tempfile.TemporaryDirectory() as root:
         work, task = os.path.join(root, "work"), os.path.join(root, "task")
         os.makedirs(task)

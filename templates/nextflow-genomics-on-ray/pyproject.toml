@@ -1,24 +1,12 @@
 [project]
 name = "nf-ray"
-# Single-sourced from nf_ray/_version.py, which is what `nf-ray --version` and the
-# `doctor` output read. Two literals drift: the package can report one version
-# while the distribution metadata reports another, and nothing fails to make that
-# visible.
+# From nf_ray/_version.py, so the package and its metadata cannot disagree.
 dynamic = ["version"]
 description = "Run Nextflow pipelines on Ray and Anyscale clusters"
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
-# No dependencies, on purpose, and this is load-bearing twice over.
-#
-# Ray is supplied by the base image. Declaring it here would let `pip install .`
-# in the Dockerfile pull a second Ray over the image's own, which is the classic
-# way to end up with a driver and workers on different versions -- and the one
-# failure mode that `ext.image` cannot tolerate at all.
-#
-# Everything else is standard library because nf_ray.client is spawned once per
-# task submit and nf_ray.job is serialized by value into every Ray task. A third
-# -party import in either would cost throughput in the first case and break
-# workers that do not have this package installed in the second.
+# Empty on purpose. Ray comes from the image (a second one breaks driver/worker parity), and the
+# rest is stdlib: nf_ray.client runs once per submit and nf_ray.job ships into every Ray task.
 dependencies = []
 
 [project.scripts]

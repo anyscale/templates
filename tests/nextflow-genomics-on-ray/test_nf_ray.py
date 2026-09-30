@@ -1,20 +1,5 @@
 #!/usr/bin/env python3
-"""Offline unit tests for the Ray side of the Nextflow executor.
-
-No cluster, no Ray install, no network -- these run in seconds and are the first
-gate in ``tests.sh``. Everything covered here is a contract with something outside
-this package that a type checker cannot see:
-
-* the ``#RAY`` header format, which ``RayExecutor.groovy`` writes and this parses;
-* the directive-to-Ray-resource mapping, which decides whether an nf-core pipeline
-  is schedulable at all;
-* the exit codes, which have to land on the intended side of the band nf-core's
-  ``conf/base.config`` retries -- asserted against the real predicate rather than
-  trusted to a comment.
-
-Deliberately a plain script, not a pytest suite: it has to run before anything is
-installed, on an image whose test dependencies are pinned elsewhere.
-"""
+"""Offline unit tests for the Ray side of the Nextflow executor: no cluster, no Ray."""
 
 from __future__ import annotations
 
@@ -25,12 +10,7 @@ import sys
 import tempfile
 import traceback
 
-# tests.sh runs with the template directory as CWD (papermill needs `--cwd .`),
-# and rayapp, so CI, flattens templates/<name>/ and tests/<name>/ into that one
-# directory. So look there first, and fall back to the repo layout so the test is
-# also runnable directly from a checkout. _TEMPLATE is whichever was found: the
-# smoke.nf and main.nf checks below read files through it, and a repo-only path
-# would fail every one of them under rayapp.
+# rayapp flattens templates/<name>/ and tests/<name>/ into the CWD; fall back to the repo layout.
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _TEMPLATE = os.path.abspath(
     os.path.join(_HERE, "..", "..", "templates", "nextflow-genomics-on-ray")
@@ -56,8 +36,6 @@ _FAILURES: list[str] = []
 
 
 def check(name: str):
-    """Decorator that runs a test immediately and records the outcome."""
-
     def wrap(fn):
         try:
             fn()
@@ -72,11 +50,7 @@ def check(name: str):
     return wrap
 
 
-# -- the #RAY header ----------------------------------------------------------
-
-#: What RayExecutor.groovy actually emits. AbstractGridExecutor pairs directive
-#: tokens two at a time and prefixes each pair with the header token, so every
-#: directive lands on its own line.
+# As RayExecutor.groovy emits it: one directive per line, then a body with a decoy header.
 REAL_HEADER = """\
 #!/bin/bash
 #RAY -name nf-GATK4_HAPLOTYPECALLER_HG002_chr20_3
@@ -109,11 +83,7 @@ def _() -> None:
 
 @check("header: stops at the script body")
 def _() -> None:
-    # The body carries a line that *would* parse as a header, `#RAY -cpus 999`
-    # at column 0 inside a heredoc, so scanning past the body multiplies the
-    # request by 166x with nothing downstream to flag it. The decoy has to be
-    # parseable: inside a quoted `echo` the header regex could never match it,
-    # and the test would pass with the cutoff removed.
+    # The decoy must be parseable (column 0, in a heredoc), or this passes without the cutoff.
     assert "\n#RAY -cpus 999\n" in REAL_HEADER, "fixture must contain a parseable decoy"
     assert directives.parse_header(REAL_HEADER).cpus == 6.0
 
@@ -153,24 +123,18 @@ def _() -> None:
 
 @check("header: the scan is bounded even with no body line to stop at")
 def _() -> None:
-    # An all-comment file never trips the body check, so the line limit is the
-    # only thing bounding the scan. Pinned because `parse_header` and
-    # `parse_script` used to enforce it separately, which left one copy untested.
+    # An all-comment file never trips the body check, so only the line limit bounds the scan.
     limit = directives._MAX_HEADER_LINES
     comments = ["# filler"] * (limit + 50)
     comments.append("#RAY -cpus 64")  # past the limit: must not be read
     d = directives.parse_header("#!/bin/bash\n#RAY -cpus 2\n" + "\n".join(comments))
     assert d.cpus == 2.0, d.cpus
 
-    # Same bound when streaming from a file, and the file is not read past it.
     with tempfile.TemporaryDirectory() as tmp:
         path = os.path.join(tmp, ".command.run")
         with open(path, "w") as fh:
             fh.write("#!/bin/bash\n#RAY -cpus 2\n" + "\n".join(comments))
         assert directives.parse_script(path).cpus == 2.0
-
-
-# -- directives -> Ray --------------------------------------------------------
 
 
 @check("resources: cpus, memory and gpus map onto Ray options")
@@ -186,8 +150,7 @@ def _() -> None:
 
 @check("resources: nvidia.com/gpu means 'any GPU', not a model named that")
 def _() -> None:
-    # The Kubernetes device-plugin spelling. Passing it through as an
-    # accelerator_type would make the task unschedulable on every node.
+    # The Kubernetes spelling; passed through as accelerator_type, it matches no node.
     d = directives.parse_header("#RAY -gpus 1\n#RAY -accelerator nvidia.com/gpu\n")
     assert resources.build_request(d).accelerator_type is None
 
@@ -226,10 +189,7 @@ def _() -> None:
         raise AssertionError("expected ValueError")
 
 
-# -- the unschedulable-request guard -----------------------------------------
-
-#: nf-core base.config ships this for `process_high_memory`, scaled by
-#: task.attempt. On a 64 GiB worker it pends forever unless something rejects it.
+# nf-core's process_high_memory request, which pends forever on a 64 GiB worker.
 NFCORE_HIGH_MEMORY = directives.parse_header(
     "#RAY -name nf-GATK4_MARKDUPLICATES\n#RAY -cpus 12\n#RAY -memory 204800\n"
 )
@@ -245,8 +205,7 @@ def _() -> None:
         resources.check_schedulable(req, limits, process="GATK4_MARKDUPLICATES")
     except resources.Unschedulable as exn:
         text = str(exn)
-        # The message has to carry both numbers and both files a reader can edit,
-        # because Ray itself will say nothing at all.
+        # Ray says nothing about a request that never fits, so the message must.
         assert "200.0 GiB" in text, text
         assert "64.0 GiB" in text, text
         assert "aws,gce" in text, text
@@ -274,13 +233,9 @@ def _() -> None:
 
 @check("schedulable: an unknown ceiling submits rather than guessing")
 def _() -> None:
-    # A cold cluster with no workers alive yet. Refusing here would break every
-    # cold start; the autoscaler is what decides.
+    # A cold cluster has no workers yet; refusing would break every cold start.
     req = resources.build_request(NFCORE_HIGH_MEMORY)
     assert resources.check_schedulable(req, resources.NodeLimits()) is req
-
-
-# -- exit codes ---------------------------------------------------------------
 
 
 class _FakeOOM(Exception):
@@ -306,8 +261,6 @@ _FakeSubclass.__name__ = "SomeFutureRayError"
 
 @check("errors: Ray's memory monitor maps onto nf-core's OOM retry code")
 def _() -> None:
-    # 137 is what nf-core's errorStrategy expects for OOM, and because its
-    # requests scale by task.attempt the retry comes back asking for double.
     assert errors.exit_code_for(_FakeOOM()) == 137
     assert errors.is_retryable(_FakeOOM())
 
@@ -320,8 +273,6 @@ def _() -> None:
 
 @check("errors: an unrecognized subclass inherits its parent's code")
 def _() -> None:
-    # Ray adds exception types between releases; falling through to the
-    # non-retryable framework code would turn a preemption into a dead pipeline.
     assert errors.exit_code_for(_FakeSubclass()) == errors.EXIT_NODE_LOST
 
 
@@ -333,14 +284,13 @@ def _() -> None:
 
 @check("errors: every mapped code lands on the intended side of nf-core's band")
 def _() -> None:
-    # The real predicate from nf-core/conf/base.config, not a paraphrase.
+    # nf-core's conf/base.config predicate, verbatim.
     def nfcore_retries(status: int) -> bool:
         return status in set(range(130, 146)) | {104} | set(range(175, 178))
 
     for name, code in errors.RAY_ERROR_EXIT_CODES.items():
         assert nfcore_retries(code), f"{name} -> {code} would not be retried"
     assert not nfcore_retries(errors.EXIT_FRAMEWORK)
-    # And the module's own view of the band agrees with the predicate.
     for code in range(100, 200):
         assert nfcore_retries(code) == (code in errors.NFCORE_RETRYABLE), code
 
@@ -349,9 +299,6 @@ def _() -> None:
 def _() -> None:
     text = errors.describe(_FakeOOM("worker killed"))
     assert "OutOfMemoryError" in text and "137" in text and "retryable" in text
-
-
-# -- ext.image ----------------------------------------------------------------
 
 
 @check("image: an unmapped ext.image fails rather than silently substituting")
@@ -380,12 +327,7 @@ def _() -> None:
 
 @check("image: no ext.image means no runtime_env at all")
 def _() -> None:
-    # An empty-but-present runtime_env is a real environment to Ray, and it sets
-    # one up per distinct env per node.
     assert envs.build_runtime_env(directives.parse_header("#RAY -cpus 1\n"), Config()) == {}
-
-
-# -- config -------------------------------------------------------------------
 
 
 @check("config: NF_RAY_* env vars are read with their documented types")
@@ -416,9 +358,7 @@ def _() -> None:
 
 @check("config: the daemon socket is node-local, per work dir, and short")
 def _() -> None:
-    # The work dir is on NFS, where a unix socket may not bind and flock on the
-    # lock file beside it is unreliable; and sun_path is 108 bytes on Linux (104
-    # on macOS), which <workDir>/.nf-ray.sock outgrew with a long enough workDir.
+    # Not on NFS (bind and flock are unreliable there), and sun_path is 108 bytes (104 on macOS).
     a = default_socket_path("/mnt/cluster_storage/nf-work")
     b = default_socket_path("/mnt/cluster_storage/other-run")
     assert a.startswith("/tmp/nf-ray-") and a.endswith(".sock"), a
@@ -444,14 +384,7 @@ def _() -> None:
 
 @check("config: Ray-level retries are off by default, from both directions")
 def _() -> None:
-    # Nextflow's maxRetries/errorStrategy IS the retry policy. A Ray retry
-    # underneath it is invisible to Nextflow: it multiplies the real attempt count
-    # and defeats nf-core's task.attempt-scaled resource requests, so a task that
-    # OOMs retries at the same size instead of a larger one.
-    #
-    # Asserted on the dataclass default and on the env reader separately, because
-    # they used to carry the literal 0 independently and a mutation to either one
-    # left the other telling the truth.
+    # A hidden Ray retry would rerun an OOM at the same size, defeating task.attempt scaling.
     assert Config().task_max_retries == 0
     saved = dict(os.environ)
     try:
@@ -486,7 +419,6 @@ def _() -> None:
     assert is_shared_storage("/mnt/user_storage")
     assert not is_shared_storage("/mnt/local_storage/nf-work")
     assert not is_shared_storage("/home/ray/work")
-    # A prefix that merely starts with the same characters is not shared storage.
     assert not is_shared_storage("/mnt/cluster_storage_backup/x")
 
     warning = shared_storage_warning("/mnt/local_storage/nf-work")
@@ -495,33 +427,20 @@ def _() -> None:
     assert shared_storage_warning("/mnt/cluster_storage/nf-work") == ""
 
 
-# -- the smoke pipeline's equivalence oracle ----------------------------------
-
-
 def expected_smoke_checksums(shards: int) -> list[int]:
-    """What ``pipeline/smoke.nf`` must produce, derived rather than recorded.
-
-    Shard *i* sums the 1000 consecutive integers from ``i*1000+1``, so its
-    checksum is ``1_000_000*i + 500_500`` in closed form. Deriving it matters:
-    an oracle seeded with "whatever the first run printed" cannot detect that the
-    first run was already wrong, which is how a fixture ends up mirroring the
-    code's assumption instead of reality.
-    """
+    """What pipeline/smoke.nf must produce, derived in closed form rather than recorded."""
     return [1_000_000 * i + 500_500 for i in range(shards)]
 
 
 @check("smoke: the cross-dispatch oracle has a closed form")
 def _() -> None:
     assert expected_smoke_checksums(4) == [500_500, 1_500_500, 2_500_500, 3_500_500]
-    # And it really is the sum of that range, not just a formula that looks right.
     for i in range(4):
         assert expected_smoke_checksums(4)[i] == sum(range(i * 1000 + 1, i * 1000 + 1001))
 
 
 @check("smoke: smoke.nf still generates the range the oracle assumes")
 def _() -> None:
-    # If someone changes the seq expression, the closed form above silently stops
-    # describing the pipeline and the oracle quietly becomes decorative.
     smoke = os.path.join(_TEMPLATE, "pipeline", "smoke.nf")
     if not os.path.exists(smoke):
         raise AssertionError(f"{smoke} is missing")
@@ -534,9 +453,7 @@ def _() -> None:
 
 @check("smoke: the gather runs a bin/ script, so the smoke run checks bin/ reaches workers")
 def _() -> None:
-    # Without the executor's copy of bin/, main.nf's COLLECT_BENCHMARK fails on a
-    # worker with `collect_vcfeval.py: command not found`. smoke.nf's COLLECT goes
-    # through bin/ so that the one-minute run fails that way first.
+    # Without the executor's copy of bin/, COLLECT_BENCHMARK fails on a worker: command not found.
     with open(os.path.join(_TEMPLATE, "pipeline", "smoke.nf")) as handle:
         text = handle.read()
     collect = text[text.index("process COLLECT") :]
@@ -547,10 +464,7 @@ def _() -> None:
 
 @check("plugin: tasks run bin/ from an executable copy on shared storage")
 def _() -> None:
-    # By inspection: running it takes Nextflow and two Ray nodes. What it pins is that
-    # getBinDir(), which Nextflow appends to every task's PATH, is not left at its
-    # default of <projectDir>/bin, a directory only the head node has, and that the
-    # copy is made executable, since rayapp's zip unpacks bin/ at 0644.
+    # By inspection: <projectDir>/bin exists only on the head node, and rayapp unzips it 0644.
     plugin_src = os.path.join(_TEMPLATE, "nf-ray-plugin", "src", "main", "groovy")
     path = os.path.join(plugin_src, "ai", "anyscale", "nfray", "RayExecutor.groovy")
     with open(path) as handle:
@@ -563,18 +477,7 @@ def _() -> None:
 
 @check("nextflow: numeric params are coerced before arithmetic")
 def _() -> None:
-    # A regression guard for an observed bug.
-    #
-    # A param given on the command line arrives as a String. Groovy's `"4" - 1` is
-    # *string* subtraction -- it removes the first "1", finds none, and returns
-    # "4". `0.."4"` then compares an Integer against a String by character code,
-    # and '4' is 52. So `--shards 4` built a 53-element range, ran 53 tasks, and
-    # reported success. In CI that is 13x the intended work with nothing to
-    # indicate it.
-    #
-    # Checked by inspection because the failure is in Groovy's coercion rules, and
-    # reproducing it needs a Nextflow run; the executable version of this check is
-    # the smoke run in tests.sh, which asserts the shard count.
+    # CLI params arrive as Strings: Groovy's "4" - 1 is "4", and 0.."4" has 53 elements.
     for name, params in (
         ("pipeline/smoke.nf", ["shards"]),
         ("pipeline/main.nf", ["intervals"]),
@@ -585,28 +488,22 @@ def _() -> None:
         assert "as Integer" in text, f"{name}: numeric params must be coerced"
         for param in params:
             assert f"params.{param}" in text, f"{name}: expected params.{param}"
-        # The specific shape that was wrong: arithmetic straight off params.
         assert "params.shards - 1" not in text, f"{name}: string arithmetic on a param"
         assert "params.intervals - 1" not in text, f"{name}: string arithmetic on a param"
 
 
 @check("nextflow: boolean params go through flag(), never straight into an if")
 def _() -> None:
-    # The same coercion rule, one type over, and also observed: a boolean given as
-    # `--<flag> false` arrives as the String "false", which Groovy treats as true, so
-    # a local run printed "yes" for exactly that command line.
+    # `--cnn false` arrives as the String "false", which Groovy treats as true.
     path = os.path.join(_TEMPLATE, "pipeline", "main.nf")
     with open(path) as handle:
         text = handle.read()
     coerced = re.findall(r"flag\(params\.(\w+)\)", text)
     assert "cnn" in coerced, "main.nf: params.cnn is not coerced"
     for param in coerced:
-        # Read anywhere else, raw, it is a truthiness test on a String.
         raw = re.findall(rf"params\.{param}\b", text)
         assert len(raw) == 1, f"main.nf reads params.{param} raw {len(raw) - 1} more time(s)"
 
-
-# -- report -------------------------------------------------------------------
 
 if _FAILURES:
     print(f"\n{len(_FAILURES)} failing: {', '.join(_FAILURES)}", file=sys.stderr)

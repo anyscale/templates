@@ -1,65 +1,24 @@
-"""Map a Ray failure onto an exit code Nextflow's ``errorStrategy`` understands.
-
-Nextflow decides whether to retry a task by looking at ``.exitcode`` in the task's
-work directory. Normally the job wrapper writes that file itself, on its way out.
-But when Ray fails *around* the task -- the node was reclaimed, the object store
-lost an input, the memory monitor killed the worker -- the wrapper never runs and
-never gets to write anything. Left alone, Nextflow waits ``exitReadTimeout`` and
-then reports an opaque "failed to get exit status".
-
-So :mod:`nf_ray.daemon` writes ``.exitcode`` on Ray's behalf in exactly that case,
-using the codes below. They are chosen to land inside the band nf-core's
-``conf/base.config`` already treats as retryable::
-
-    errorStrategy = { task.exitStatus in ((130..145) + 104 + (175..177)) ? 'retry' : 'finish' }
-
-so nf-core's default ``errorStrategy`` retries them without changes. Two of the
-mappings matter most:
-
-* OOM becomes 137. Ray's memory monitor killing a worker is the equivalent of the
-  kernel's OOM killer, and 137 is the code nf-core's retry logic expects for it.
-  Because nf-core scales every request by ``task.attempt``, the retry asks for
-  twice the memory.
-* A lost node becomes 175, inside the retry band, so Nextflow retries the task
-  instead of failing it once ``exitReadTimeout`` passes with no exit file. The
-  retry counts against ``maxRetries`` like any other.
-
-The one code outside the retryable band, :data:`EXIT_FRAMEWORK`, is for Ray
-failures this module does not recognise, which a second attempt is unlikely to
-fix.
+"""Exit codes the daemon writes to ``.exitcode`` when Ray fails around a task and the wrapper
+never ran. All but EXIT_FRAMEWORK fall in nf-core's retry band, (130..145) + 104 + (175..177).
 """
 
 from __future__ import annotations
 
-#: Ray's memory monitor killed the worker. SIGKILL convention; nf-core retries
-#: and, because requests scale by `task.attempt`, asks for more memory.
 EXIT_OOM = 137
 
-#: The task was cancelled (``ray.cancel``). SIGTERM convention.
 EXIT_CANCELLED = 143
 
-#: The node, worker, raylet or owner died -- the preemption class of failure.
 EXIT_NODE_LOST = 175
 
-#: An object was lost or could not be fetched. Distinct from 175 because it
-#: usually means an *input* vanished rather than this task's host dying, and the
-#: two want different diagnoses even though both retry.
+# Separate from 175: an input vanished, not this task's host.
 EXIT_OBJECT_LOST = 176
 
-#: ``runtime_env`` setup failed -- most often an image that could not be pulled.
-#: Retryable once, because registries are flaky and a genuinely absent image will
-#: fail the retry too and stop there.
 EXIT_RUNTIME_ENV = 177
 
-#: A Ray-side failure this module does not recognize. Deliberately *outside* the
-#: retryable band: retrying an unknown framework error is how a run spends an
-#: hour discovering the same thing three times. Report it and stop.
+# Outside the retry band: an unrecognized framework error will not fix itself on retry.
 EXIT_FRAMEWORK = 174
 
-#: Ray exception class name -> exit code. Keyed on the name rather than the class
-#: so this table can be built, read and unit-tested without importing Ray, which
-#: is what lets `tests/nextflow-genomics-on-ray/test_nf_ray.py` run in CI with no
-#: cluster and no Ray install.
+# Keyed by class name so this table imports and tests without Ray.
 RAY_ERROR_EXIT_CODES: dict[str, int] = {
     "OutOfMemoryError": EXIT_OOM,
     "TaskCancelledError": EXIT_CANCELLED,
@@ -75,21 +34,13 @@ RAY_ERROR_EXIT_CODES: dict[str, int] = {
     "RuntimeEnvSetupError": EXIT_RUNTIME_ENV,
 }
 
-#: Codes Nextflow's nf-core `base.config` retries. Kept here so the unit test can
-#: assert every code this module can emit is on the intended side of that line,
-#: rather than trusting a comment.
 NFCORE_RETRYABLE: frozenset[int] = frozenset(
     list(range(130, 146)) + [104] + list(range(175, 178))
 )
 
 
 def exit_code_for(exc: BaseException) -> int:
-    """The exit code to record for a Ray-side failure.
-
-    Walks the exception's MRO by class name, so a subclass Ray adds later still
-    lands on its parent's mapping instead of falling through to
-    :data:`EXIT_FRAMEWORK`.
-    """
+    """The exit code for a Ray-side failure, matched along the MRO so new Ray subclasses map."""
     for klass in type(exc).__mro__:
         code = RAY_ERROR_EXIT_CODES.get(klass.__name__)
         if code is not None:

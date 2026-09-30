@@ -1,36 +1,5 @@
 #!/usr/bin/env python3
-"""Write a small synthetic trio that the whole pipeline can run on, with a known answer.
-
-    python synthetic_trio.py --out /tmp/synth [--length 200000] [--coverage 30]
-    python synthetic_trio.py --check /tmp/synth results/benchmark/benchmark.tsv
-
-What it writes, in the layout tools/stage-demo-data.sh publishes, so the pipeline
-and bin/make_samplesheet.py read it exactly as they read the real data:
-
-    MANIFEST.json
-    reference/chrS.fa  (+ .fai, .dict)
-    known_sites.vcf               sites-only; bgzip + tabix it before use
-    HG00{2,3,4}_R{1,2}.fastq.gz
-    truth/HG00{2,3,4}.vcf         one per sample; bgzip + tabix before use
-    truth/HG00{2,3,4}.bed
-
-Why this exists. It is the CI gate: tests.sh runs main.nf on it under
-`-profile ray` before the notebook, and it needs no staged data. It takes the
-same code path as the real data (FASTQ in, a vcfeval table out) on a genome small
-enough to call in minutes, and the truth set is the list of variants that were
-planted, so a low recall here is a pipeline bug rather than a question about GIAB.
-
-``--check`` is that gate's verdict on the run's benchmark.tsv; see check().
-
-The trio is Mendelian by construction. Four parental haplotypes each carry a
-random half of the planted variants; the father (HG003) gets haplotypes A and B,
-the mother (HG004) C and D, and the child (HG002) A and C. Reads are drawn from a
-sample's two haplotypes with equal probability, with a 0.1% substitution error
-rate and a flat base quality, which makes this far easier than a real genome: it
-is a plumbing test, and its F1 says nothing about GATK.
-
-Standard library only, seeded, and deterministic for a given set of arguments.
-"""
+"""Write a small synthetic trio that the whole pipeline can run on, with a known answer."""
 
 from __future__ import annotations
 
@@ -43,12 +12,11 @@ import os
 import random
 
 CONTIG = "chrS"
+# Mendelian by construction: each sample carries two of four random parental haplotypes.
 SAMPLES = {"HG002": ("A", "C"), "HG003": ("A", "B"), "HG004": ("C", "D")}
 BASES = "ACGT"
 
-#: The callset the gate scores: the hard-filtered joint callset, main.nf's `gatk_hard`.
-#: The CNN arm's `gatk_cnn` is not gated. CI runs with it off, and these reads, with a
-#: flat base quality on a random genome, are nothing like the data its model learned.
+# gatk_cnn is not gated: CI runs it off, and these reads are nothing like its training data.
 GATED_CALLER = "gatk_hard"
 
 
@@ -91,7 +59,6 @@ def revcomp(s: str) -> str:
 
 
 def simulate_reads(haps, n_pairs, read_len, insert_mean, insert_sd, error, rng, sample):
-    """Yield (name, r1, r2) paired reads from a sample's two haplotypes."""
     for i in range(n_pairs):
         hap = haps[rng.randrange(2)]
         insert = max(read_len + 10, int(rng.gauss(insert_mean, insert_sd)))
@@ -132,23 +99,12 @@ def sha256(path: str) -> str:
 
 
 def planted(data_dir: str) -> dict[str, int]:
-    """Variants planted per sample, from the MANIFEST.json the trio was written with."""
     with open(os.path.join(data_dir, "MANIFEST.json")) as handle:
         return {s["id"]: s["truth_variants"] for s in json.load(handle)["samples"]}
 
 
 def check(data_dir: str, benchmark: str) -> list[str]:
-    """What is wrong with ``benchmark`` as a score of the trio in ``data_dir``.
-
-    Empty when the run is right. The truth set is what was planted, so the one
-    right answer is a perfect one: for every sample, SNPs and indels of the
-    hard-filtered callset each at precision, recall and F1 1.0000 with no false
-    positive or negative, and the true positives of the two adding up to
-    everything planted in that sample.
-
-    The sum is not redundant. A truth variant that neither the SNP nor the indel
-    split keeps is scored nowhere, and every rate still reads 1.0000 without it.
-    """
+    """Problems with ``benchmark`` as a score of the trio; the truth is what was planted."""
     expected = planted(data_dir)
     with open(benchmark) as handle:
         rows = [r for r in csv.DictReader(handle, delimiter="\t") if r["caller"] == GATED_CALLER]
@@ -172,6 +128,7 @@ def check(data_dir: str, benchmark: str) -> list[str]:
                 problems.append(f"{label}: {count} {row[count]}, expected 0")
         if row["sample"] in true_pos:
             true_pos[row["sample"]] += int(row["true_pos_baseline"])
+    # TPs must sum to the planted set: a variant in neither split is scored nowhere.
     for sample, n in expected.items():
         if true_pos[sample] != n:
             problems.append(f"{sample}: {true_pos[sample]} true positives, {n} planted")

@@ -1,17 +1,6 @@
 /*
- * GATK joint germline calling, scattered by interval.
- *
- * Per sample: HaplotypeCaller in GVCF mode, once per interval.
- * Per interval: GenomicsDBImport across all samples, then GenotypeGVCFs.
- * Then gather, and hard-filter SNPs and indels separately, each with GATK's
- * thresholds for its type.
- *
- * The scatter is two-dimensional: three samples over 24 intervals is 72
- * independent calling tasks, which is what the autoscaler has to work with.
- * sarek scatters by interval for the same reason HPC users do: HaplotypeCaller
- * dominates the run's wall-clock time.
- *
- * Adapted from nf-core/modules (MIT). See PIPELINE.md.
+ * GATK joint germline calling: HaplotypeCaller per sample x interval, then
+ * GenomicsDBImport and GenotypeGVCFs per interval. Adapted from nf-core/modules (MIT).
  */
 
 process MAKE_INTERVALS {
@@ -27,11 +16,7 @@ process MAKE_INTERVALS {
     path "intervals/*.interval_list", emit: intervals
 
     script:
-    // Split by *base count*, not by contig: a single-contig reference (this
-    // template slices chr20) would otherwise produce exactly one interval, and
-    // the scatter this pipeline exists to demonstrate would silently collapse to
-    // a chain. SplitIntervals with BALANCING_WITHOUT_INTERVAL_SUBDIVISION would
-    // do the same thing.
+    // Split by base count, not by contig: a single-contig reference would give one interval.
     def region_arg = region ? "--intervals ${region}" : ""
     """
     mkdir -p intervals
@@ -68,9 +53,6 @@ process GATK4_HAPLOTYPECALLER {
           path("${meta.id}.${interval.baseName}.g.vcf.gz.tbi"), emit: gvcf
 
     script:
-    // `x as int`, never `(int) x`: Nextflow's strict parser has no C-style
-    // casts, reads `(int) (expr)` as a call to `int`, and fails the task with
-    // "No signature of method: static int.call()". Every heap below does the same.
     def heap = Math.max(1, (task.memory.toGiga() * 0.8) as int)
     """
     gatk --java-options "-Xmx${heap}g" HaplotypeCaller \\
@@ -135,11 +117,7 @@ process GATK4_GENOTYPEGVCFS {
     """
 }
 
-/*
- * Used twice by main.nf: to gather the per-interval joint callset (`joint`) and to
- * merge the two hard-filtered halves back into one (`joint.filtered`). Both are
- * published; the unfiltered one is there to filter differently.
- */
+// Used twice: to gather the per-interval calls (`joint`) and to merge the filtered halves.
 process GATK4_MERGEVCFS {
     tag "${prefix}"
     label 'process_medium'
@@ -166,15 +144,8 @@ process GATK4_MERGEVCFS {
     """
 }
 
-/*
- * The joint callset split for hard filtering: SNPs, and everything else.
- *
- * GATK hard-filters SNPs and indels separately, and its article on it notes that
- * `-select-type INDEL` leaves out mixed records (a SNP and an indel allele at one
- * site), which it suggests filtering as indels, as VQSR does. `--select-type-to-exclude
- * SNP` is that: indels and mixed records, and anything else, so no record is dropped
- * between the split and the merge.
- */
+// SNPs, and everything else: `--select-type-to-exclude SNP` keeps mixed records with
+// the indels, so no record is dropped between the split and the merge.
 process GATK4_SELECTVARIANTS {
     tag "${vtype}"
     label 'process_low'
@@ -198,16 +169,8 @@ process GATK4_SELECTVARIANTS {
     """
 }
 
-/*
- * GATK's generic hard filters, the thresholds for the record's type, from "(How to)
- * Filter variants either with VQSR or by hard-filtering" (GATK article 360035531112).
- * Indels get no SOR, MQ or MQRankSum filter and looser FS and ReadPosRankSum
- * thresholds: an indel lowers the mapping quality of the reads that carry it, and
- * that is not evidence of an error the way it is for a SNP.
- *
- * Hard filters rather than sarek's VQSR, which needs a genome's worth of variants to
- * fit; PIPELINE.md has the detail.
- */
+// GATK's generic hard-filter thresholds per type (GATK article 360035531112). Not
+// sarek's VQSR, which needs a genome's worth of variants to fit.
 process GATK4_VARIANTFILTRATION {
     tag "${vtype}"
     label 'process_low'

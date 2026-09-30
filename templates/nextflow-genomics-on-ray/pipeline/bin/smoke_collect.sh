@@ -1,12 +1,5 @@
 #!/usr/bin/env bash
-#
-# smoke.nf's gather step: shard reports in, the summary and the checksum oracle out.
-#
-#   smoke_collect.sh shard-0.tsv shard-1.tsv ...
-#
-# A bin/ script rather than inline shell so that the smoke run checks one more thing
-# the executor owns: that the pipeline's bin/ reaches the node a task lands on. See
-# COLLECT in smoke.nf.
+# smoke.nf's gather. A bin/ script so the smoke run checks that bin/ reaches the workers.
 set -euo pipefail
 export LC_ALL=C
 

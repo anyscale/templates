@@ -906,9 +906,7 @@
   owner_team: general
   dir: templates/nextflow-genomics-on-ray
   cluster_env:
-    # Custom image: a Ray worker has no container runtime, so the bioconda toolchain (GATK,
-    # bwa-mem2, samtools, rtg-tools) and a JRE must be on every node, and pip `requirements:`
-    # cannot install them. It also carries the nf-ray plugin and NVScoreVariants' Python (Dockerfile).
+    # Custom image: Ray workers have no container runtime, so the toolchain and a JRE are baked in.
     byod:
       docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/nextflow-genomics-on-ray:2.58.0
       ray_version: 2.58.0
@@ -916,10 +914,8 @@
     AWS: configs/nextflow-genomics-on-ray/aws.yaml
     GCP: configs/nextflow-genomics-on-ray/gce.yaml
   test:
-    # Unit checks, then the gate (main.nf under -profile ray on a generated synthetic trio, which
-    # must score 1.0), then the notebook at NF_DEMO_SCALE=quick on the staged data, all with
-    # NF_CNN=false. Prod, 2026-09-25, AWS config: 12m47s in all (workspace start 1m48s, the
-    # notebook's pipeline 4m57s). 3600 is headroom; Buildkite caps the step at 90 min.
+    # Unit checks, main.nf on a synthetic trio (must score 1.0), the notebook at quick; NF_CNN=false.
+    # About 13 min on prod; 3600 is headroom.
     tests_path: tests/nextflow-genomics-on-ray/
     command: bash tests.sh
     timeout_in_sec: 3600

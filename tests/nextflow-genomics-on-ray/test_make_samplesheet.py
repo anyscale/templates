@@ -1,16 +1,5 @@
 #!/usr/bin/env python3
-"""Offline tests for pipeline/bin/make_samplesheet.py.
-
-The samplesheet is where main.nf learns which truth set belongs to which sample,
-and a mistake there is silent: calls scored against the wrong genome still
-produce a table, just a wrong one. So what is pinned here is the per-sample
-wiring, and that a manifest that disagrees with the files on disk stops the run
-before it starts rather than several processes in.
-
-The manifests below are in the shape tools/stage-demo-data.sh writes and
-tests/nextflow-genomics-on-ray/synthetic_trio.py writes; the second is also run
-end to end, through the real pipeline, by the synthetic-trio gate in tests.sh.
-"""
+"""Offline tests for pipeline/bin/make_samplesheet.py."""
 
 from __future__ import annotations
 
@@ -59,7 +48,7 @@ def check(name: str):
     return wrap
 
 
-#: The tranche resources tools/stage-demo-data.sh publishes, in its order.
+# As tools/stage-demo-data.sh publishes them, in order.
 RESOURCES = (
     "hapmap_3.3",
     "1000G_phase1.snps.high_confidence",
@@ -132,8 +121,7 @@ def _() -> None:
         ms.main(["--data-dir", tmp, "--output", out])
         with open(out) as handle:
             header = handle.readline().strip().split(",")
-        # main.nf reads row.sample/fastq_1/fastq_2 and, when present,
-        # row.truth_vcf/truth_bed. A renamed column is a silent unscored run.
+        # A renamed column is a silently unscored run.
         assert header == ["sample", "fastq_1", "fastq_2", "truth_vcf", "truth_bed"], header
         main_nf = os.path.join(os.path.dirname(os.path.dirname(_SOURCE)), "main.nf")
         with open(main_nf) as handle:
@@ -192,7 +180,6 @@ def _() -> None:
             assert "HG004" in str(exn) and "checksum" in str(exn), exn
         else:
             raise AssertionError("expected ManifestError")
-        # --no-verify is the documented way past it, for a re-run you trust.
         out = os.path.join(tmp, "s.csv")
         assert ms.main(["--data-dir", tmp, "--output", out, "--no-verify"]) == 0
 
@@ -213,7 +200,7 @@ def _() -> None:
 
 @check("a manifest with no tranche resources writes an empty list, not an error")
 def _() -> None:
-    # The synthetic trio's manifest has none, and CI runs it with the CNN arm off.
+    # The synthetic trio's manifest has none.
     with tempfile.TemporaryDirectory() as tmp:
         stage(tmp, resources=())
         res = os.path.join(tmp, "tranche_resources.txt")

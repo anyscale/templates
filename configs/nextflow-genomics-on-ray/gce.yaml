@@ -3,36 +3,15 @@ head_node:
   resources:
     CPU: 0
 worker_nodes:
-# 16 vCPU / 128 GB, matching the AWS r6i.4xlarge. Read together with pipeline/conf/base.config's
-# resourceLimits (16 CPU, 80 GB) and pipeline/conf/ray.config's maxNode* (the same numbers): on
-# Ray a resource request that no node can satisfy waits indefinitely instead of failing, so the
-# instance type and the pipeline's ceiling are one decision. test_config_agreement.py checks the
-# three agree.
-#
-# Highmem because of what Ray schedules, which is less than the instance has. Ray 2.58.0
-# advertises about 70% of a node's free memory as `memory` and keeps the rest for the object
-# store, so this node schedules roughly 85 GiB (derived from Ray's code; the template has not run
-# on GCP) and the 80 GB ceiling sits under it. A 64 GB n2-standard-16 schedules about 42 GiB and
-# would never start process_high's 72 GB.
-#
-# min_nodes: 1 so the first task does not wait on a cold autoscale. max_nodes: 4 bounds the cost
-# of the scatter rather than matching it: HaplotypeCaller asks for 6 CPU / 36 GB, so two fit a
-# node and `quick`'s 24 calling tasks run in three waves of eight. In the 2026-09-25 prod runs on
-# AWS, `quick` used all four, and `standard` all four plus 2 L4 workers, 6 nodes.
+# Must hold the pipeline's ceiling, 16 CPU / 80 GB (conf/base.config, conf/ray.config): on Ray a
+# request no node can satisfy pends forever. Highmem because Ray schedules ~70% of free memory.
 - name: cpu-worker
   instance_type: n2-highmem-16
   min_nodes: 1
   max_nodes: 4
-# One NVIDIA L4, for NVSCOREVARIANTS (label process_gpu), GATK's CNN on each sample's calls.
-# `nvidia-l4` is the accelerator the pipeline asks for, and g2 (GCP) and g6 (AWS) are both L4,
-# so the request is the same on both clouds. 8 vCPU / 32 GB schedules about 20 GiB, which is
-# why process_gpu carries its own 18 GB resourceLimits in base.config.
-#
-# min_nodes: 0: the CNN arm runs after calling, so a node started for it at the beginning would
-# sit idle through alignment and calling.
+# One L4 for NVSCOREVARIANTS; it schedules ~20 GiB, hence process_gpu's own 18 GB limit.
 - name: gpu-worker
   instance_type: g2-standard-8-nvidia-l4-1
   min_nodes: 0
   max_nodes: 2
-# GPU capacity is the scarce part; let the autoscaler look in every zone for it.
 enable_cross_zone_scaling: true

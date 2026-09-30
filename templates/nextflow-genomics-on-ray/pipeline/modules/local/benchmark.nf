@@ -1,17 +1,6 @@
 /*
- * Score the callset against each sample's GIAB v4.2.1 truth set.
- *
- * A variant count says the run finished; precision and recall against a truth
- * set say whether the calls are right.
- *
- * `rtg vcfeval` rather than hap.py: it is the comparison engine hap.py itself
- * runs under `--engine=vcfeval`, it is a single JVM tool, and it matches
- * variants by the haplotypes they imply rather than by position, so a
- * left-aligned indel and its right-aligned equivalent are the same call.
- *
- * Scored on the region intersected with GIAB's benchmark regions; outside them
- * the truth set makes no claim. Each sample is scored against its own truth
- * set; see BENCHMARK at the end of this file.
+ * Score each sample's calls against its own GIAB v4.2.1 truth set with rtg vcfeval
+ * (haplotype-aware matching; hap.py's vcfeval engine), inside GIAB's benchmark regions.
  */
 
 process RTG_FORMAT {
@@ -76,10 +65,7 @@ process SUBSET_VARIANT_TYPE {
           path("${meta.id}.${caller}.${vtype}.vcf.gz.tbi"), emit: vcf
 
     script:
-    // SNPs and indels are reported separately because they fail differently and
-    // a combined F1 hides it: SNP F1 is dominated by sequencing error, indel F1
-    // by alignment and by the caller's local reassembly. A single number that
-    // moved would not say which.
+    // SNPs and indels fail for different reasons, and a combined F1 hides which moved.
     def selector = vtype == 'snp' ? '-v snps' : '-v indels'
     """
     bcftools view ${selector} -f PASS,. -Oz -o ${meta.id}.${caller}.${vtype}.vcf.gz ${vcf}
@@ -155,37 +141,14 @@ process COLLECT_BENCHMARK {
     path "benchmark.tsv", emit: table
 
     script:
-    // One tidy table, so the notebook does not have to walk a directory tree and
-    // so `benchmark.tsv` is the single artifact a reader can diff between runs.
-    //
-    // The *directories*, not their summary.txt files. vcfeval's summary.txt says
-    // nothing about what was compared -- sample, caller and type live only in the
-    // directory name RTG_VCFEVAL chose -- and collecting the files instead staged
-    // twelve inputs all named summary.txt into one task, which Nextflow rejects as
-    // an input file name collision. A staged directory keeps its name; a staged
-    // file's parent is a hash directory.
-    //
-    // Called bare: Nextflow puts the pipeline's bin/ on every task's PATH. Under
-    // `-profile ray` that is the executor's copy on shared storage, since a worker
-    // cannot see <projectDir> (RayExecutor.getBinDir).
+    // Directories, not summary.txt files: only the directory name says sample, caller
+    // and type, and a dozen inputs all named summary.txt collide when staged.
     """
     collect_vcfeval.py --output benchmark.tsv ${eval_dirs}
     """
 }
 
-/*
- * The whole scoring stage, as one unit main.nf calls and a test can call alone.
- *
- * Every comparison is against *that sample's* truth set: the calls and the
- * truth sets meet on meta.id, one truth set per sample, with `combine(by: 0)`
- * rather than `join` because each sample has several callsets to score (one per
- * variant type) and one truth set to score them all against.
- *
- * `caller` is a label, carried into the output directory names and so into
- * benchmark.tsv. main.nf passes 'gatk_hard' for the hard-filtered joint callset
- * and 'gatk_cnn' for the CNN-filtered single-sample ones; another callset, mixed
- * into ch_calls under its own label, would be scored the same way.
- */
+// Calls meet truth on meta.id with combine(by: 0), not join: several callsets per sample.
 workflow BENCHMARK {
     take:
     ch_calls       // tuple(meta, caller, vcf, tbi); a joint VCF is fine, SPLIT_SAMPLE subsets it
@@ -197,8 +160,6 @@ workflow BENCHMARK {
     RTG_FORMAT(ch_reference)
     SPLIT_SAMPLE(ch_calls, ch_reference)
 
-    // samples x {snp, indel}. SNPs and indels have different error profiles,
-    // and a combined F1 would hide which one moved.
     ch_typed = SPLIT_SAMPLE.out.vcf.combine(channel.of('snp', 'indel'))
     SUBSET_VARIANT_TYPE(ch_typed)
 

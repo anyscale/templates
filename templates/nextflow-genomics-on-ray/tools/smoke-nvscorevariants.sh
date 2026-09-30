@@ -1,22 +1,13 @@
 #!/usr/bin/env bash
-#
-# Run GATK's NVScoreVariants on two records and fail unless both come back scored.
-#
-#   bash tools/smoke-nvscorevariants.sh        # on the CPU, as the image build runs it
-#   bash tools/smoke-nvscorevariants.sh gpu    # on an L4 node, to check CUDA as well
-#
-# It sets up the environment the way NVSCOREVARIANTS in pipeline/modules/local/cnn_filter.nf
-# does (one interpreter behind GATK's `python` and `python3`, TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD,
-# java.io.tmpdir in the working directory), so change the two together. The check is on the
-# output because NVScoreVariants exits 0 when its Python fails.
+# Score two records with NVScoreVariants ([cpu|gpu]); fail unless both come back scored, since it
+# exits 0 when its Python fails. Sets up the environment as cnn_filter.nf does: change both together.
 set -euo pipefail
 
 accelerator="${1:-cpu}"
 work="$(mktemp -d)"
 cd "$work"
 
-# A random 2 kb contig with a SNP and a 1 bp deletion on it, each carrying the seven INFO
-# annotations the 1D model reads.
+# A SNP and a 1 bp deletion, each with the seven INFO annotations the 1D model reads.
 python3 - <<'PY'
 import random
 
