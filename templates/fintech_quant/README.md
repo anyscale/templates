@@ -35,7 +35,7 @@ import os
 import pandas as pd
 import ray
 
-from util import get_iv, get_npv, get_options_chain, save_csv, get_symbols_stat_print as SYMBOL_STATS_PRINT, FuncTimer as ft
+from util import get_iv, get_npv, get_options_chain, save_csv, get_symbols_stat_print as SYMBOL_STATS_PRINT, pricing_summary, print_pricing_summary, FuncTimer as ft
 
 os.environ["RAY_DEDUP_LOGS"] = "0"
 
@@ -51,6 +51,9 @@ ray.init(
 - This baseline is useful for correctness checks and side-by-side timing.
 - Limitation: symbols are processed one at a time, so runtime grows roughly linearly with universe size.
 - Ray Core value: we keep the pricing logic and parallelize with minimal structural changes.
+- `get_iv` solves each contract's base implied vol as an American option (flat 4.25% rate, trailing dividend yield) from the bid/ask mid when bid > 0, ask > 0 and ask ≥ bid, and from `last_price` otherwise. The `iv_source` column holds `mid` or `last`.
+- Scenarios are sticky-strike: each reprices the contract at spot × (1 − `price_shock`) with its own base vol plus `iv_shock`, re-solving nothing at the shocked spot.
+- A contract is *priced* when its base vol and every scenario NPV solve. `get_iv` skips it (`iv_source` `no_quote` or `below_bound`) when it has no usable price, or when the price is below the no-arbitrage lower bound under the model's r and q, which no vol reproduces: $\max(S-K, S e^{-qT}-K e^{-rT})$ for a call, $\max(K-S, K e^{-rT}-S e^{-qT})$ for a put. Those are typically stale trades or quotes on deep-ITM strikes. If QuantLib fails anyway, `get_iv`/`get_npv` log the contract and return `NaN` rather than `0.0`, which would pass for a real vol or NPV. Each symbol's summary line reports **N of M options priced**, with any `last_price`, skipped and FAILED counts in parentheses. Check it before aggregating: pandas `sum()` and `mean()` skip `NaN` by default.
 
 
 
@@ -81,8 +84,8 @@ def price_option_chain(
         raise RuntimeError(f"{symbol}: could not fetch options chain — {chain['error']}")
     df = pd.DataFrame(chain['options'])
 
-    # Calculate base implied volatility
-    df["implied_volatility"] = df.apply(lambda row: get_iv(row), axis=1)
+    # Base implied vol from the bid/ask mid; adds iv_price, iv_source, implied_volatility
+    df = df.join(df.apply(get_iv, axis=1))
 
     # Apply shocks and calculate NPVs
     for i, (iv_shock, price_shock) in enumerate(zip(iv_shocks, price_shocks), start=1):
@@ -111,6 +114,7 @@ def price_option_chain(
 skip_non_ray = True
 
 if skip_non_ray:
+    # Recorded output from an earlier version; current runs print "N of M options priced".
     print(
         """
         Stats for   AAPL:  1843 options, calc'd IV for all shocks in 137.022463 sec
@@ -136,6 +140,7 @@ else:
 - Best practice: submit all tasks first, then call `ray.get(futures)` once to preserve parallelism.
 - For uneven symbol workloads, `ray.wait(...)` helps process completed work early and keep workers busy.
 - Operational benefit: unfinished tasks can be rescheduled if a worker fails, reducing rerun risk for long pricing jobs.
+- Report from the driver: each task below returns its CSV path and pricing counts, and the driver prints the **N of M options priced** lines after `ray.get`. A `print()` inside a task reaches the notebook through Ray's log forwarding, which can deliver it late or not at all.
 
 
 
@@ -145,7 +150,7 @@ def parallel_price_option_chain(
     symbol: str,
     iv_shocks = [0.05, 0.10],    # Shock percents to apply
     price_shocks = [0.05, 0.10], # Shock percents to apply
-) -> str:
+) -> dict:
     """
     Price an options chain for a given symbol with various shocks to implied volatility and underlying price.
     
@@ -154,7 +159,7 @@ def parallel_price_option_chain(
     - iv_shocks : List of shocks to apply to implied volatility.
     - price_shocks List of shocks to apply to the underlying stock price.
     
-    Returns the path to the CSV file containing the results.
+    Returns the CSV path and its priced/total counts (see pricing_summary), for the driver to print.
     
     """
     total_t = ft()
@@ -167,8 +172,8 @@ def parallel_price_option_chain(
         raise RuntimeError(f"{symbol}: could not fetch options chain — {chain['error']}")
     df = pd.DataFrame(chain['options'])
 
-    # Calculate base implied volatility
-    df["implied_volatility"] = df.apply(lambda row: get_iv(row), axis=1)
+    # Base implied vol from the bid/ask mid; adds iv_price, iv_source, implied_volatility
+    df = df.join(df.apply(get_iv, axis=1))
 
     # Apply shocks and calculate NPVs
     for i, (iv_shock, price_shock) in enumerate(zip(iv_shocks, price_shocks), start=1):
@@ -188,8 +193,7 @@ def parallel_price_option_chain(
     # Save results to CSV
     new_file_path = save_csv(df, symbol)
 
-    total_t.e(SYMBOL_STATS_PRINT(symbol, df))
-    return new_file_path
+    return pricing_summary(symbol, df, new_file_path, total_t.elapsed())
 ```
 
 
@@ -200,6 +204,7 @@ all_symbols_t = ft()
 futures = [parallel_price_option_chain.remote(symbol) for symbol in symbol_list]
 results = ray.get(futures) # ray.wait(...)
 
+print_pricing_summary(results)  # on the driver, from the returned counts
 all_symbols_t.e("Total time for all symbols: ")
 # this will run for ~2-3 minutes. let's look at the Anyscale observability (e.g. metrics) tabs in the meantime
 ```
@@ -245,7 +250,7 @@ def more_parallel_price_option_chain(
     - iv_shocks : List of shocks to apply to implied volatility.
     - price_shocks List of shocks to apply to the underlying stock price.
     
-    Returns the path to the CSV file containing the results.
+    Returns the CSV path and its priced/total counts (see pricing_summary), for the driver to print.
     
     """
     total_t = ft()
@@ -258,8 +263,8 @@ def more_parallel_price_option_chain(
         raise RuntimeError(f"{symbol}: could not fetch options chain — {chain['error']}")
     df = pd.DataFrame(chain['options'])
  
-    # Calculate base implied volatility
-    df["implied_volatility"] = df.apply(lambda row: get_iv(row), axis=1)
+    # Base implied vol from the bid/ask mid; adds iv_price, iv_source, implied_volatility
+    df = df.join(df.apply(get_iv, axis=1))
 
     @ray.remote
     def compute_stats(df: pd.DataFrame, iv_shock: float, price_shock, idx: int, shock_num: int):
@@ -284,8 +289,7 @@ def more_parallel_price_option_chain(
     # Save results to CSV
     new_file_path = save_csv(df, symbol)
 
-    total_t.e(SYMBOL_STATS_PRINT(symbol, df))
-    return new_file_path
+    return pricing_summary(symbol, df, new_file_path, total_t.elapsed())
 ```
 
 
@@ -296,8 +300,10 @@ all_symbols_t = ft()
 futures = [more_parallel_price_option_chain.remote(symbol) for symbol in symbol_list]
 results = ray.get(futures)
 
+print_pricing_summary(results)  # on the driver, from the returned counts
 all_symbols_t.e("Total time for all symbols: ")
 
+# Recorded output from an earlier version; current runs print "N of M options priced".
 print(
     """
     Total time for all symbols: 43.070964 sec
