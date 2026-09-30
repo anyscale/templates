@@ -856,7 +856,7 @@
 
 # owner_team ray-data: a Ray Data join, map_batches GPU actors and a partitioned write.
 # README.md is the nbconvert render of README.ipynb; regenerate it, never hand-edit it.
-# Synthetic data, public MIT model. The template's NOTES.md says what ran where. Unmeasured:
+# Synthetic data, public MIT model. Unmeasured:
 # the GCP config, the probe under worker loss, and job.yaml / run_pipeline.py on a cluster.
 # owner: @em-anyscale
 - name: ray-data-incremental-batch-classification
