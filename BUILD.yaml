@@ -881,6 +881,26 @@
     # transient PyPI 502 during the install.
     timeout_in_sec: 1200
 
+# owner_team ray-data: a Ray Data join, map_batches GPU actors and a partitioned write.
+# README.md is the nbconvert render of README.ipynb; regenerate it, never hand-edit it.
+# Synthetic data, public MIT model. Unmeasured:
+# the GCP config, the probe under worker loss, and job.yaml / run_pipeline.py on a cluster.
+# owner: @em-anyscale
+- name: ray-data-incremental-batch-classification
+  owner_team: ray-data
+  dir: templates/ray-data-incremental-batch-classification
+  cluster_env:
+    image_uri: anyscale/ray:2.58.0-py312-cu129
+  compute_config:
+    AWS: configs/ray-data-incremental-batch-classification/aws.yaml
+    GCP: configs/ray-data-incremental-batch-classification/gce.yaml
+  test:
+    tests_path: tests/ray-data-incremental-batch-classification/
+    command: bash tests.sh
+    # AWS config, 2026-09-24: the rayapp test took 11 min 41 s and tests.sh, which this bounds,
+    # under 9 of them; the first join's autoscaler wait (most of 189.6 s) can stretch. 3x+ headroom.
+    timeout_in_sec: 1800
+
 # owner: @em-anyscale
 - name: nextflow-genomics-on-ray
   owner_team: general
