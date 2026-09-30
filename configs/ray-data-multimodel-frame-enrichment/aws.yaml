@@ -1,0 +1,16 @@
+# One L4 per GPU worker: 24 GB, which is 22.35 GiB, and 22.03 GiB usable as torch reports it
+# (measured on a g6, 2026-08-17). Budget against 22.03; "24 GiB" invents about 2 GiB.
+#
+# One actor of each of this template's stages holds 5.53 GiB, leaving 75% of the card free
+# (`packing.py --stages measured --vram 22.03`). pipeline.py's default actor counts come from a
+# workload tuned on a 48 GiB card and over-commit an L4, so the notebook and tests.sh set one
+# actor per stage.
+head_node:
+  instance_type: m5.2xlarge
+  resources:
+    CPU: 0
+worker_nodes:
+- name: gpu-worker
+  instance_type: g6.4xlarge
+  min_nodes: 1
+  max_nodes: 2

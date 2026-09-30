@@ -1,0 +1,51 @@
+# What this template adds to anyscale/ray:2.58.0-py312-cu129. Resolved on 2026-08-17 against the
+# 2.57.0 image, which a job declaring no requirements measured as shipping:
+#
+#   torch  ABSENT      numpy    2.2.6      pandas 2.3.3
+#   torchvision ABSENT pyarrow  23.0.1     ray    2.57.0     Pillow 11.3.0
+#   transformers ABSENT
+#
+# The 2.58.0 freeze (dependencies/images/ray-2.58.0-py312-cu129.freeze.txt) lists the same for
+# every row but ray. That is read from the freeze, not re-measured on a job.
+#
+# So the three below have to be installed. `-cu129` is the CUDA runtime, not PyTorch.
+# transformers declares `torch>=2.5` under its `torch` extra, not as a core dependency, so
+# installing transformers alone resolves cleanly and leaves the image without torch.
+#
+# Torch's CUDA build comes from the depset index. python_depset.lock is compiled with
+# `--index https://download.pytorch.org/whl/cu129` (dependencies/template.depsets.yaml) and
+# holds the cu129 builds of both, matching the image. Installed straight from PyPI, these two
+# lines give PyPI's default build, which is cu128 for this version and also runs on the newer
+# runtime. templates/tensor_parallel_dtensor pins the same pair on the same image and locks the
+# same two wheels.
+#
+# Check that index for a wheel before bumping either pin. Below the oldest version it carries,
+# uv falls back to PyPI: the wheel loses its CUDA tag and the lock still compiles.
+torch==2.9.1
+torchvision==0.24.1
+
+# SAM 3 needs transformers 5.x. `facebook/sam3`'s config.json declares
+# `transformers_version: 5.0.0.dev0`, and `src/transformers/models/sam3/` first appears in the
+# v5.0.0 tag, so 5.0.0 is the floor. 5.15.0 is the pin, the newest stable on 2026-08-17; 5.17.0
+# has shipped since and is untested here. It resolves against the image's numpy 2.2.6, since
+# transformers asks only for `numpy>=1.17`.
+transformers==5.15.0
+
+# Do not pin numpy or pyarrow. The image ships numpy 2.2.6 and pyarrow 23.0.1, and a pin at an
+# older version downgrades Ray's own stack. Nothing in this file drags either one: transformers
+# asks for `numpy>=1.17` and torch 2.9.1 accepts numpy 2.x.
+#
+# A pin justified by "this matches what the image ships" expires silently when the image moves.
+# Re-measure on a job with no `requirements:` key; with one, the platform installs your pins
+# before the entrypoint runs, and you measure your own pins.
+
+# Not here:
+#   accelerate: needed only for `device_map`, and this pipeline calls `.to(device)`.
+#   torchmetrics: the metrics stage computes gradient-energy sharpness in plain torch.
+#
+# Keep torchvision even though transformers 5.x ships PIL fallbacks for image processors.
+# Without it the SigLIP2 processor resolves to `SiglipImageProcessorPil`; with it, to
+# `SiglipImageProcessor`. The swap is silent and changes preprocessing.
+#
+# With torch and torchvision installed, `AutoImageProcessor` selects `DINOv3ViTImageProcessor`,
+# not the Fast variant.

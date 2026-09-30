@@ -35,8 +35,9 @@ Ray splits this cleanly:
 
 - **[Ray Train](https://docs.ray.io/en/latest/train/train.html)** handles (2): it launches distributed PyTorch workers across
   GPUs, manages DDP synchronization, checkpointing, and fault recovery.
-  If a worker dies, training resumes from the last checkpoint — you
-  don't re-run from scratch.
+  If a worker dies, training restarts from the last checkpoint, which this
+  template writes at the end of each epoch (see
+  [Checkpoint and resume](#checkpoint-and-resume)).
 
 The result: you write a short, single-file script that scales from 1 GPU
 on a laptop to 32 GPUs across a cluster, with zero changes to your code.
@@ -55,7 +56,7 @@ on a laptop to 32 GPUs across a cluster, with zero changes to your code.
                      | - rename cameras   | - train action heads
                      | - transpose HWC    | - mixed-precision
                      |   -> CHW float32   | - gradient accum
-                     | - stream batches   | - checkpoint & resume
+                     | - stream batches   | - checkpoint per epoch
                      +--------------------+---------------------
 ```
 
@@ -121,6 +122,15 @@ mean faster consumption, which can cause the Ray Data pipeline to fall behind an
 spill to disk. If you see frequent object store spillage, reduce the data pipeline's
 throughput to match training speed — for example, lower `map_batches` concurrency
 or decrease the number of CPU data workers so the producer and consumer stay in balance.
+
+**Scaling past 4 GPUs.** The shipped compute configs (`configs/vla-fine-tuning/`)
+run four single-L4 nodes (`min_nodes = max_nodes = 4`), so `num_workers = 4` fills
+them. To add workers, raise `max_nodes` to match `num_workers`, or move to a
+multi-GPU instance type. On single-GPU nodes every DDP allreduce crosses the
+network, but the gradients are small here: only the action and time heads train,
+about 2M parameters. If you unfreeze more of the model, pack GPUs into fewer,
+larger nodes. On EFA or InfiniBand instances, check that NCCL uses the fabric
+rather than falling back to TCP; `NCCL_DEBUG=INFO` logs the transport it picked.
 
 ## 1. Configuration
 
@@ -241,12 +251,49 @@ Under the hood, Ray Train:
 - Streams data shards via Ray Data (no manual `DistributedSampler` needed)
 - Coordinates checkpointing so only rank 0 writes, but all ranks sync
 - Handles fault tolerance: if a worker dies, training restarts from the
-  last checkpoint, not from scratch
+  last checkpoint
 
 All of this happens transparently. The code below reads like **single-GPU
 training code** — Ray handles the distribution.
 
 Docs: [Getting Started with PyTorch](https://docs.ray.io/en/latest/train/getting-started-pytorch.html)
+
+### Checkpoint and resume
+
+A checkpoint (`util.make_checkpoint`) holds the model weights, optimizer and
+grad-scaler state, and the epoch and step counters. It doesn't hold the LR
+scheduler, which is rebuilt from `step` on resume, or the position in the data
+stream: `LeRobotDatasource` has no offset, so every restart re-reads the dataset
+from the beginning. In practice:
+
+- A restart resumes at the start of the epoch after the last completed one. Work
+  in the interrupted epoch is lost, and a failure in the first epoch starts over.
+  With `num_epochs = 2` below, one failure can cost up to half the run.
+- `FailureConfig(max_failures=1)` allows one restart after a worker error; a
+  second ends the run. Node preemptions have their own budget
+  (`max_preemption_failures`, unlimited by default in Ray 2.58), and each one
+  also replays the interrupted epoch.
+- The LR schedule is off after a restart. `step` counts micro-batches, but
+  `build_lr_scheduler(..., last_step=step)` treats it as an optimizer-step count,
+  so the resumed schedule is `grad_accum` times too far along. `lr_lambda`
+  doesn't clamp, so the cosine wraps around. With the settings below
+  (`grad_accum = 8`, `num_epochs = 2`), the resumed second epoch starts at 0.75×
+  the base LR instead of 0.59×. With the A100 settings (`grad_accum = 2`), it
+  starts at 0 and rises to 0.59×, the reverse of the planned decay. Check the
+  logged `lr` after a restart. To fix it, save `scheduler.state_dict()` in the
+  checkpoint and load it on resume.
+- Ray Train resumes any earlier run it finds under the same `RUN_NAME` and
+  `RUN_STORAGE_PATH`, so a second run of this notebook continues the first.
+  After a full run, the second trains nothing. After a `MAX_TRAIN_STEPS` smoke
+  test, it skips the rest of the epoch the cap cut short, since the cap
+  checkpoints that epoch early; with the cap still set, it stops after one
+  batch. To start fresh, change `RUN_NAME` or delete the run's directory under
+  `RUN_STORAGE_PATH`.
+
+A mid-epoch checkpoint alone won't give step-level resume. The stream would still
+start over, so the model would re-train on rows it saw before the failure.
+Step-level resume also needs a data read that can skip consumed rows, which
+`LeRobotDatasource` doesn't support.
 
 
 ```python
@@ -288,7 +335,8 @@ def train_loop_per_worker(config: dict):
     # ray.train.get_checkpoint() returns the last checkpoint saved by
     # ray.train.report() -- if this is a fresh run, it returns None.
     # On failure recovery, Ray automatically passes the most recent checkpoint
-    # back here, so training resumes from where it left off.
+    # back here, so training resumes at the start of the epoch after the last
+    # completed one (see "Checkpoint and resume" above).
     # Docs: https://docs.ray.io/en/latest/train/user-guides/checkpoints.html
 
     checkpoint = ray.train.get_checkpoint()                                # <-- RAY TRAIN: fault tolerance
@@ -371,6 +419,10 @@ def train_loop_per_worker(config: dict):
         #
         # ray.train.report() is a synchronization barrier -- every worker must
         # call it. Only rank 0 creates the actual checkpoint.
+        #
+        # This is the loop's only checkpoint, so a restart replays the whole
+        # interrupted epoch. Read "Checkpoint and resume" above before adding a
+        # mid-epoch one.
         # Docs: https://docs.ray.io/en/latest/train/api/doc/ray.train.report.html
         avg_loss = epoch_loss_sum / max(epoch_loss_count, 1)
         metrics = {"epoch": epoch, "steps": step, "loss": avg_loss, "lr": scheduler.get_last_lr()[0]}
@@ -390,8 +442,9 @@ def train_loop_per_worker(config: dict):
 
 [`TorchTrainer`](https://docs.ray.io/en/latest/train/api/doc/ray.train.torch.TorchTrainer.html)
 is the single entry point for distributed PyTorch on Ray.
-To scale to 8, 16, or 32 GPUs: just change `num_workers`. The training
-code, data pipeline, and checkpointing all adapt automatically.
+To scale to 8, 16, or 32 GPUs: change `num_workers` and give the compute config
+the GPUs to match; the shipped one stops at 4 (see [GPU Requirements](#gpu-requirements)).
+The training code, data pipeline, and checkpointing adapt automatically.
 
 
 ```python
@@ -423,6 +476,8 @@ train_loop_config = {
 #   num_workers=4       -> 4 GPU workers, each running train_loop_per_worker
 #   use_gpu=True        -> each worker gets 1 GPU
 #   accelerator_type    -> request a specific GPU type (e.g. "L4", "A100")
+# The shipped compute config has 4 single-L4 nodes. To raise num_workers, raise
+# its max_nodes too (see "GPU Requirements").
 # Docs: https://docs.ray.io/en/latest/train/api/doc/ray.train.ScalingConfig.html
 scaling_config = ray.train.ScalingConfig(num_workers=4, use_gpu=True, accelerator_type="L4")
 
@@ -463,10 +518,13 @@ This notebook demonstrated distributed fine-tuning of the **PI0.5 VLA model** on
 
 3. **Ray Train distributed training** — `train_loop_per_worker` runs on each GPU
    with automatic DDP wrapping (`prepare_model`), data sharding (`get_dataset_shard`),
-   and fault-tolerant checkpointing (`get_checkpoint` / `report`).
+   and fault-tolerant checkpointing (`get_checkpoint` / `report`) once per epoch.
+   A restart replays the interrupted epoch; see
+   [Checkpoint and resume](#checkpoint-and-resume).
 
 4. **Launch** — `TorchTrainer` ties it all together. To scale from 1 to N GPUs,
-   change `ScalingConfig.num_workers`. Everything else adapts automatically.
+   change `ScalingConfig.num_workers` and give the compute config N GPUs; the
+   code adapts automatically.
 
 ### Job submission
 
