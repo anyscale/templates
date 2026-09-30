@@ -1,0 +1,30 @@
+[project]
+name = "nf-ray"
+# From nf_ray/_version.py, so the package and its metadata cannot disagree.
+dynamic = ["version"]
+description = "Run Nextflow pipelines on Ray and Anyscale clusters"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+# Empty on purpose. Ray comes from the image (a second one breaks driver/worker parity), and the
+# rest is stdlib: nf_ray.client runs once per submit and nf_ray.job ships into every Ray task.
+dependencies = []
+
+[project.scripts]
+nf-ray = "nf_ray.cli:main"
+
+[build-system]
+requires = ["hatchling==1.28.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "nf_ray/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["nf_ray"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "PLC0415"]

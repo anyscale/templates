@@ -1,0 +1,17 @@
+head_node:
+  instance_type: n2-standard-8
+  resources:
+    CPU: 0
+worker_nodes:
+# Must hold the pipeline's ceiling, 16 CPU / 80 GB (conf/base.config, conf/ray.config): on Ray a
+# request no node can satisfy pends forever. Highmem because Ray schedules ~70% of free memory.
+- name: cpu-worker
+  instance_type: n2-highmem-16
+  min_nodes: 1
+  max_nodes: 4
+# One L4 for NVSCOREVARIANTS; it schedules ~20 GiB, hence process_gpu's own 18 GB limit.
+- name: gpu-worker
+  instance_type: g2-standard-8-nvidia-l4-1
+  min_nodes: 0
+  max_nodes: 2
+enable_cross_zone_scaling: true

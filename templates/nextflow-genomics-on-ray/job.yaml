@@ -1,0 +1,63 @@
+# The notebook's pipeline over all of chr20 (`full` scale) as an Anyscale Job. Submit from this
+# directory: `working_dir: .` is relative to the shell, not to this file.
+name: nextflow-genomics-on-ray-chr20-trio
+
+image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/nextflow-genomics-on-ray:2.58.0
+
+working_dir: .
+excludes:
+  - .ipynb_checkpoints
+  - __pycache__
+  - .nextflow
+  - work
+
+env_vars:
+  NF_DEMO_SCALE: full
+  # Where persist_outputs.py copies the results; /mnt/cluster_storage goes with the cluster.
+  NF_RAY_RESULTS: /mnt/user_storage/nextflow-genomics-on-ray/results/chr20-trio
+
+# POSIX only (job entrypoints run under dash), and no `exec`, so the results persist afterwards.
+entrypoint: |
+  set -u
+  DATA=/mnt/cluster_storage/nf-genomics/data/full
+  OUT=/mnt/cluster_storage/nf-genomics/results
+  mkdir -p "$DATA" "$OUT"
+  aws s3 sync --no-sign-request --only-show-errors \
+    s3://anyscale-public-materials/genomics/giab-trio-illumina-chr20/full/ "$DATA/"
+  python pipeline/bin/make_samplesheet.py --data-dir "$DATA" --output "$DATA/samplesheet.csv" \
+    --resources-output "$DATA/tranche_resources.txt"
+
+  # No -resume, and max_retries 0: every job attempt starts on an empty /mnt/cluster_storage.
+  nextflow run pipeline/main.nf -profile ray \
+    --scale full \
+    --samplesheet "$DATA/samplesheet.csv" \
+    --reference "$DATA/reference/chr20.fa" \
+    --known_sites "$DATA/known_sites/dbsnp138.chr20.vcf.gz" \
+    --tranche_resources "$(cat "$DATA/tranche_resources.txt")" \
+    --outdir "$OUT"
+  STATUS=$?
+
+  python persist_outputs.py --results "$OUT" || true
+  exit $STATUS
+
+# The pipeline's resource ceiling (conf/base.config, conf/ray.config) is sized to these nodes.
+compute_config:
+  head_node:
+    instance_type: m5.2xlarge
+    resources:
+      CPU: 0
+  worker_nodes:
+    - name: cpu-worker
+      instance_type: r6i.4xlarge
+      min_nodes: 1
+      max_nodes: 8
+    - name: gpu-worker
+      instance_type: g6.2xlarge
+      min_nodes: 0
+      max_nodes: 2
+  enable_cross_zone_scaling: true
+
+# Stops a stalled run, e.g. an L4 that never arrives.
+timeout_s: 10800
+
+max_retries: 0

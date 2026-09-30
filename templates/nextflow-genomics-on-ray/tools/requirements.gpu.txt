@@ -1,0 +1,5 @@
+# torch alone: --index-url replaces the default index for everything in this file.
+--index-url https://download.pytorch.org/whl/cu128
+
+# +cu128 to match the base image. 2.9.1 is what NVScoreVariants was checked against, not a ceiling.
+torch==2.9.1+cu128

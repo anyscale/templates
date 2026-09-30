@@ -1,0 +1,2 @@
+// The plugin id: must match `id 'nf-ray@<version>'` in pipeline/conf/ray.config.
+rootProject.name = 'nf-ray'

@@ -900,3 +900,21 @@
     # AWS config, 2026-09-24: the rayapp test took 11 min 41 s and tests.sh, which this bounds,
     # under 9 of them; the first join's autoscaler wait (most of 189.6 s) can stretch. 3x+ headroom.
     timeout_in_sec: 1800
+
+# owner: @em-anyscale
+- name: nextflow-genomics-on-ray
+  owner_team: general
+  dir: templates/nextflow-genomics-on-ray
+  cluster_env:
+    # Custom image: Ray workers have no container runtime, so the toolchain and a JRE are baked in.
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/nextflow-genomics-on-ray:2.58.0
+      ray_version: 2.58.0
+  compute_config:
+    AWS: configs/nextflow-genomics-on-ray/aws.yaml
+    GCP: configs/nextflow-genomics-on-ray/gce.yaml
+  test:
+    # Unit checks, main.nf on a synthetic trio (must score 1.0), the notebook at quick; NF_CNN=false.
+    tests_path: tests/nextflow-genomics-on-ray/
+    command: bash tests.sh
+    timeout_in_sec: 3600

@@ -1,0 +1,12 @@
+# Artifacts fetched by URL and sha256-checked by build_tools.sh; everything else is conda. Nextflow
+# is here because bioconda's lags releases, and the engine should not live in an env it drives.
+
+[tools.nextflow]
+version = "26.04.6"
+kind    = "binary"
+url     = "https://github.com/nextflow-io/nextflow/releases/download/v26.04.6/nextflow-26.04.6-dist"
+sha256  = "182a63c74074e2dc7956ffa3c8cd59de952ed2c44394e21faf5e1736b945444c"
+# -dist is self-contained: unlike the bootstrap script, it downloads nothing on first run.
+install = "bin/nextflow"
+mode    = "0755"
+provides = ["nextflow"]

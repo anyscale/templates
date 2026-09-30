@@ -1,0 +1,12 @@
+# Additions to anyscale/ray:2.58.0-py312-cu128; the template's image already has them. No ray
+# (driver and workers must share the image's) and no matplotlib (the notebook targets 3.10.8).
+
+# For NVScoreVariants' `scorevariants` (torch is in tools/requirements.gpu.txt). Lightning 2.6 is
+# tested up to torch 2.10; pysam and biopython are GATK 4.6.2.0's own pins.
+pytorch-lightning==2.6.6
+lightning-utilities==0.15.3
+torchmetrics==1.9.0
+pysam==0.22.0
+biopython==1.84
+
+# No awscli: v1 breaks the image's boto3 and shadows its AWS CLI v2 on PATH.

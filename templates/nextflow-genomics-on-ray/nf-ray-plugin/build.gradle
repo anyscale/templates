@@ -1,0 +1,22 @@
+// No gradle wrapper: the Dockerfile's builder stage supplies Gradle.
+
+plugins {
+    id 'io.nextflow.nextflow-plugin' version '1.0.0-beta.15'
+}
+
+// Semver, or the plugin rejects it. Keep in step with nf_ray/_version.py and conf/ray.config.
+version = '0.1.0'
+
+nextflowPlugin {
+    // The floor and the API compiled against; the image runs 26.04, whose overridden methods match.
+    nextflowVersion = '25.10.0'
+
+    provider = 'anyscale'
+    className = 'ai.anyscale.nfray.RayPlugin'
+    description = 'Run Nextflow processes as Ray tasks on an autoscaling cluster'
+
+    // Needed as well as @ServiceName('ray'), or the plugin manager never sees the class.
+    extensionPoints = [
+        'ai.anyscale.nfray.RayExecutor'
+    ]
+}
