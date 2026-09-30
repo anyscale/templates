@@ -1,21 +1,5 @@
 #!/usr/bin/env python3
-"""Offline check that the notebook's readout cells agree with the workflow's outputs.
-
-Runs README.ipynb's Step 6 / 6b cells against a synthetic `outputs.json` in the shape
-ONTAssembleCohort.wdl declares. No cluster, no data, no assembly -- seconds, not hours.
-
-The contract it guards: `SummarizeQuastReport` mangles QUAST metric names
-(`sed 's/ /_/g'`), so `quast_summary` is keyed `Genome_fraction_(%)`, not
-`Genome fraction (%)`. A notebook that looks up the display names matches four keys out
-of nine and makes its own guard unfalsifiable:
-
-    assert "Genome fraction (%)" in summary   # never true, whatever QUAST produced
-
-Any mismatch between a WDL output name and what the notebook reads is the same class of
-failure, and this catches it before an assembly runs.
-
-Executes the cells' real source, so it cannot drift from what ships.
-"""
+"""Offline check that README.ipynb's readout cells agree with ONTAssembleCohort.wdl's outputs."""
 
 from __future__ import annotations
 
@@ -29,9 +13,7 @@ import tempfile
 import textwrap
 from pathlib import Path
 
-#: Where README.ipynb is. rayapp, and so CI, flattens templates/<name>/ and tests/<name>/ into
-#: one directory, which puts the notebook beside this file; a repo checkout keeps it two levels
-#: up.
+#: rayapp flattens templates/<name>/ and tests/<name>/ into one dir; a checkout keeps it two up.
 _HERE = Path(__file__).resolve().parent
 TEMPLATE = next(
     (
@@ -43,8 +25,7 @@ TEMPLATE = next(
 )
 SAMPLES = ["HG002", "HG003", "HG004"]
 
-#: Cells to exercise, and what each is. Indices are resolved by content, not position,
-#: so inserting a cell does not silently skip a check.
+#: Found by content, not position, so an inserted cell cannot silently skip a check.
 CELLS = [
     ("quast_key", "Step 6 QUAST readout"),
     ("def nx_points", "Nx / NGx curves"),
@@ -81,12 +62,7 @@ SHAPES = [
 
 
 def summarize_quast_report(report_txt: str) -> dict[str, str]:
-    """Quast.wdl's SummarizeQuastReport command block, reimplemented faithfully.
-
-    Kept in step with that task by hand. If the sed pipeline there changes, this is the
-    other half of the contract and has to change with it -- which is the point: the
-    mangling is load-bearing and deserves to be written down twice.
-    """
+    """Quast.wdl's SummarizeQuastReport command, reimplemented; keep the two in step by hand."""
     rows = []
     for line in report_txt.splitlines():
         if line.startswith("All statistics") or not line.strip():
@@ -105,11 +81,7 @@ def write_fasta(path: Path, lengths: list[int], name: str = "contig") -> None:
 
 
 def write_vcf(path: Path, sample: str, positions: list[int], ref_length: int) -> None:
-    """The header paftools.js writes under `call -f`, not a minimal one.
-
-    paftools.js:467-474 emits ##contig for every reference sequence plus ##FORMAT=GT.
-    A fixture without them passes a naive line parser and is rejected by `bcftools norm`.
-    """
+    """The header paftools.js writes under ``call -f``; ``bcftools norm`` rejects a minimal one."""
     with path.open("w") as handle:
         handle.write("##fileformat=VCFv4.1\n")
         handle.write(f"##contig=<ID=chr20,length={ref_length}>\n")
@@ -121,7 +93,6 @@ def write_vcf(path: Path, sample: str, positions: list[int], ref_length: int) ->
 
 
 def notebook_cells() -> dict[str, str]:
-    """Locate each cell by a marker in its source, so a reordered notebook still works."""
     notebook = json.loads((TEMPLATE / "README.ipynb").read_text())
     sources = [c["source"] for c in notebook["cells"] if c["cell_type"] == "code"]
     found = {}
@@ -141,8 +112,7 @@ def build_fixture(root: Path) -> tuple[Path, Path, dict[str, str]]:
     run_dir = runs / "20260809_120000_ONTAssembleCohort"
     run_dir.mkdir(parents=True)
 
-    # Named chr20 to match the VCFs below, because Step 6b now runs `bcftools norm -f`
-    # over them and bcftools rejects a record whose contig is absent from the reference.
+    # Named chr20 to match the VCFs: `bcftools norm -f` rejects a contig absent from the reference.
     ref_length = 10_000_001
     reference = root / "reference.fa"
     write_fasta(reference, [ref_length], name="chr20")
@@ -190,13 +160,10 @@ def build_fixture(root: Path) -> tuple[Path, Path, dict[str, str]]:
             for _ in SAMPLES
         ],
     }
-    # The bare mapping, because that is what miniwdl actually writes to the run-root file;
-    # the {"dir", "outputs"} envelope is CLI stdout only.
+    # The bare mapping miniwdl writes to the run-root file; the envelope is CLI stdout only.
     (run_dir / "outputs.json").write_text(json.dumps(outputs))
 
-    # A decoy: miniwdl writes an outputs.json inside every nested sub-workflow directory,
-    # and one of them can be newer than the run root's. A readout that globs recursively
-    # and sorts by mtime would pick it, so the fixture plants one, newer, under the run.
+    # Decoy: nested sub-workflow directories have their own, possibly newer, outputs.json.
     decoy = run_dir / "call-assemble-0" / "call-flye" / "outputs.json"
     decoy.parent.mkdir(parents=True, exist_ok=True)
     decoy.write_text(json.dumps({"ONTAssembleWithFlye.asm_polished": "bare, no envelope"}))
@@ -208,12 +175,8 @@ def build_fixture(root: Path) -> tuple[Path, Path, dict[str, str]]:
 def main() -> int:
     cells = notebook_cells()
 
-    # Step 6b reads the fixture's VCFs through Ray Data, and the template's head node offers
-    # `CPU: 0` (configs/wdl-genomics-on-ray/*.yaml), so that read runs on a worker. A default
-    # TemporaryDirectory is on the driver's local disk, which no worker can see (the symptom
-    # is `ray::ListFiles() FileNotFoundError .../vcf-normalized/HG003.norm.vcf`). The notebook
-    # keeps WORK on /mnt/cluster_storage for the same reason, so the fixture goes there
-    # whenever it exists. Off Anyscale, the default is fine, because 6b skips without ray.
+    # Step 6b's Ray Data read runs on a worker (the head has CPU: 0), which cannot see the
+    # driver's local disk, so the fixture goes on shared storage when there is one.
     shared = Path("/mnt/cluster_storage")
     fixture_parent = str(shared) if shared.is_dir() and os.access(shared, os.W_OK) else None
 
@@ -221,9 +184,7 @@ def main() -> int:
         root = Path(tmp)
         runs, reference, first_summary = build_fixture(root)
 
-        # The named regression: QUAST's display names must NOT be keys, and the
-        # underscored forms must be. If this ever inverts, the notebook's lookups
-        # need to invert with it.
+        # The named regression: QUAST display names must not be keys; the underscored forms must.
         for display in ("# contigs", "Genome fraction (%)", "# mismatches per 100 kbp"):
             assert display not in first_summary, (
                 f"{display!r} is a key now -- SummarizeQuastReport stopped mangling names,"
@@ -231,11 +192,8 @@ def main() -> int:
             )
         assert "Genome_fraction_(%)" in first_summary
 
-        # WORK and run() come from the notebook's Step 1 cell, which this harness does not
-        # replay: it exercises the readout cells only. Step 6b uses both, to normalize the
-        # VCFs before comparing them, so bind the same definitions here rather than stubbing
-        # them -- a stubbed `run` would make the normalization untested precisely where it
-        # matters.
+        # WORK and run() come from the Step 1 cell, which is not replayed. Real definitions, not
+        # stubs: 6b normalizes the VCFs with them.
         preamble = textwrap.dedent(f"""
             import json, pathlib, subprocess
             import matplotlib
@@ -249,8 +207,6 @@ def main() -> int:
                 subprocess.run([str(c) for c in cmd], check=True, **kwargs)
         """)
 
-        # Cells run cumulatively, as in a notebook: the curve cell uses names/outputs
-        # bound by the QUAST cell.
         replayed = ""
         for marker, label in CELLS:
             if marker == "parse_vcf_lines":
@@ -259,9 +215,7 @@ def main() -> int:
                 except ImportError:
                     print(f"SKIP  {label} (ray not installed)")
                     continue
-                # Present on the template image, where CI runs this; absent on a bare
-                # laptop. Skipping beats a stub, which would leave the normalization
-                # unexercised on the one machine that can exercise it.
+                # On the template image, where CI runs. Skipping beats a stub that tests nothing.
                 missing = [t for t in ("samtools", "bcftools") if shutil.which(t) is None]
                 if missing:
                     print(f"SKIP  {label} ({', '.join(missing)} not on PATH)")

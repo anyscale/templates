@@ -1,40 +1,4 @@
-"""A miniwdl container backend that runs each WDL task as a Ray task.
-
-Registered as the ``ray`` entry in miniwdl's ``miniwdl.plugin.container_backend``
-group, so it is selected with ``[scheduler] container_backend = ray``.
-
-How it fits together
---------------------
-miniwdl's task runner hands a :class:`~WDL.runtime.task_container.TaskContainer`
-a work directory and a shell command, and expects the command to run with the
-task's inputs mounted and its outputs left behind on disk. The stock backends
-satisfy that with a container on the local machine. This one keeps the exact
-same filesystem contract but *dispatches* the container to a Ray task, so it
-lands on whichever node Ray picks, which is what turns a workflow into
-something a cluster can absorb.
-
-Three consequences follow, and they drive most of the code below.
-
-1. The run directory must be visible from every node. miniwdl's model is
-   filesystem-mediated: it writes the command file, bind-mounts inputs, and reads
-   outputs and stderr back from the same paths. We don't try to hide that behind
-   object-store staging; we require shared storage and check for it at startup
-   (``/mnt/cluster_storage`` on Anyscale, an NFS/EFS/Lustre mount elsewhere).
-   This keeps miniwdl's call cache, output globs and live stderr tailing working
-   untouched.
-
-2. The resource ceiling is one node, not the whole cluster. miniwdl clamps
-   ``runtime.cpu``/``runtime.memory`` to whatever ``detect_resource_limits``
-   reports. A WDL task is one container on one node, so reporting the cluster
-   *total* would let a task ask for 64 CPUs on a fleet of 8-CPU nodes and then
-   sit unschedulable forever. See :meth:`RayContainer.detect_resource_limits`.
-
-3. Node loss is a WDL-level interruption. Ray reports a dead worker or a
-   reclaimed spot node as a task error. Mapping those onto miniwdl's
-   ``Interrupted`` makes WDL's own ``runtime.preemptible`` counter do the
-   retrying, with a clean working directory each attempt: the same budget a
-   Cromwell pipeline sets for preemptible VMs.
-"""
+"""A miniwdl container backend that runs each WDL task as a Ray task."""
 
 from __future__ import annotations
 
@@ -61,8 +25,6 @@ from wdl_on_ray import config as ray_config
 from wdl_on_ray import envs, resources, runtimes
 from wdl_on_ray import job as ray_job
 
-#: Path prefixes that are shared across the nodes of a cluster. Anyscale mounts
-#: the first two; the rest are conventional mount points for NFS/EFS/FSx.
 SHARED_STORAGE_PREFIXES = (
     "/mnt/cluster_storage",
     "/mnt/shared_storage",
@@ -73,15 +35,9 @@ SHARED_STORAGE_PREFIXES = (
     "/mnt/fsx",
 )
 
-#: Grace period between a polite and a forced ``ray.cancel``.
 _CANCEL_GRACE_SECONDS = 15.0
 
-#: What :meth:`RayContainer.detect_resource_limits` reports for a dimension with no ceiling.
-#: It is miniwdl's own "do not apply a limit" (``[task_runtime] cpu_max = -1``), and miniwdl's
-#: clamp (``TaskContainer.process_runtime``) reads a negative limit the same way. Not a large
-#: number: for a WDL 1.2 task that sets no ``cpu``, miniwdl reports the limit as ``task.cpu``
-#: (``build_task_runtime_info_struct``), where a huge value would reach the command, as a thread
-#: count say. It floors -1 there to 1, which is the one CPU this backend reserves for that task.
+#: miniwdl's own "no limit"; not a big number, which could reach a WDL 1.2 task's command as cpu.
 NO_LIMIT = -1
 
 #: Ray errors that mean "the node or worker went away", not "the task failed".
@@ -96,18 +52,7 @@ _INTERRUPTION_ERRORS = (
 
 
 def _is_interruption(exn: BaseException) -> bool:
-    """Did the node or worker go away, as opposed to the task failing on its merits?
-
-    ``isinstance``, not a name comparison. ``ObjectLostError`` has subclasses, such as
-    ``ObjectReconstructionFailedError``, that are not named in the tuple above. Ray
-    raises them when an object is lost *because* the node holding it died, which is the
-    reclaimed-spot case, so they should spend the WDL's ``runtime.preemptible`` budget.
-    Matching on the exact name would treat them as ordinary failures, spending
-    ``maxRetries`` instead and bypassing the pipeline's own preemption policy.
-
-    The name tuple stays as a fallback, so a Ray release that renames or adds a class
-    still degrades to the previous behaviour rather than to nothing.
-    """
+    # isinstance: ObjectLostError subclasses (ObjectReconstructionFailedError) mean node loss too.
     from ray import exceptions as ray_exceptions
 
     classes = tuple(
@@ -118,34 +63,15 @@ def _is_interruption(exn: BaseException) -> bool:
     return (classes and isinstance(exn, classes)) or type(exn).__name__ in _INTERRUPTION_ERRORS
 
 
-#: Whether :func:`connect` has run in this process.
 _connected = False
 
-#: Modules the Ray worker needs in order to run a task. Serialized *by value*
-#: (see :func:`_pickle_worker_modules_by_value`), so both are deliberately
-#: stdlib-only: adding a miniwdl or Ray import to either would drag it into
-#: every task's payload.
+#: Pickled by value into every task, so both must stay stdlib-only.
 _WORKER_MODULES = (ray_job, runtimes)
 
 
 def _pickle_worker_modules_by_value() -> None:
-    """Ship the worker-side code inside each task instead of importing it there.
-
-    Otherwise cloudpickle serializes the task function and its ``ContainerJob``
-    argument *by reference* (module path plus qualname) and every Ray worker
-    has to be able to ``import wdl_on_ray``. Arranging that is a surprising amount
-    of deployment surface: installing the package in the cluster image works, but
-    on an uploaded ``working_dir`` it does not, and the resulting error names an
-    argument-deserialization failure, giving no hint of the real cause. Attaching the
-    package via ``ray.init(runtime_env={"py_modules": ...})`` works too, until the
-    submitting job declares ``py_modules`` of its own, and Ray then refuses to merge
-    two declarations of the same field and the run dies at the first task.
-
-    Serializing by value sidesteps all of it: the worker needs nothing but Ray.
-    The cost is a few KB of module bytecode per task, against a container launch.
-
-    Idempotent, and safe when the package *is* installed: by-value simply wins.
-    """
+    # By value, so workers need only Ray: importing wdl_on_ray fails from an uploaded working_dir,
+    # and a runtime_env py_modules clashes with a job's own py_modules.
     from ray.cloudpickle import register_pickle_by_value
 
     for module in _WORKER_MODULES:
@@ -153,12 +79,7 @@ def _pickle_worker_modules_by_value() -> None:
 
 
 def connect(ray_cfg: ray_config.RayConfig, logger: logging.Logger) -> None:
-    """Connect to Ray. Idempotent.
-
-    The single place this package calls ``ray.init()``, so that connection-time
-    decisions are made once and cannot be pre-empted by something else touching
-    Ray first.
-    """
+    """Connect to Ray. Idempotent."""
     global _connected
     import ray
 
@@ -171,8 +92,7 @@ def connect(ray_cfg: ray_config.RayConfig, logger: logging.Logger) -> None:
     kwargs: dict[str, Any] = {
         "namespace": ray_cfg.namespace,
         "ignore_reinit_error": True,
-        # miniwdl owns the console; Ray worker stdout would interleave with (and
-        # drown out) the per-task logs.
+        # miniwdl owns the console; worker stdout would drown out the per-task logs.
         "log_to_driver": False,
     }
     address = ray_cfg.address
@@ -186,9 +106,6 @@ def connect(ray_cfg: ray_config.RayConfig, logger: logging.Logger) -> None:
     logger.notice(  # type: ignore[attr-defined]
         _(
             "connected to Ray",
-            # The GCS it actually joined, not what was asked for, so a bare ray.init() that
-            # started a new, empty local instance reads differently in the log from one that
-            # joined the running cluster.
             address=ray.get_runtime_context().gcs_address,
             nodes=len([n for n in ray.nodes() if n.get("Alive")]),
             cluster_cpus=int(ray.cluster_resources().get("CPU", 0)),
@@ -198,13 +115,7 @@ def connect(ray_cfg: ray_config.RayConfig, logger: logging.Logger) -> None:
 
 
 def find_cluster(ray_cfg: ray_config.RayConfig) -> str | None:
-    """The address of the cluster :func:`connect` would join, found without joining it.
-
-    None means ``connect`` would start a new local instance instead. The lookup is the one
-    ``ray.init()`` makes: ``[ray] address``, then ``RAY_ADDRESS``, which a job sets, then the
-    address file ``ray start`` leaves under the Ray temp dir, which is how a workspace, with no
-    ``RAY_ADDRESS``, finds its cluster.
-    """
+    """The address :func:`connect` would join, found without joining; None means a new local one."""
     ray = sys.modules.get("ray")  # not imported, then not initialized either
     if ray is not None and ray.is_initialized():
         return str(ray.get_runtime_context().gcs_address)
@@ -219,9 +130,7 @@ def find_cluster(ray_cfg: ray_config.RayConfig) -> str | None:
 
 
 def _ray_address_file() -> str:
-    """Where ``ray start`` records the cluster address, by Ray's rule for its temp dir
-    (``ray._common.utils.get_default_system_temp_dir``): ``RAY_TMPDIR``, else ``TMPDIR`` on
-    Linux only, else ``/tmp``."""
+    # Ray's temp-dir rule, as in ray._common.utils.get_default_system_temp_dir.
     if "RAY_TMPDIR" in os.environ:
         base = os.environ["RAY_TMPDIR"]
     elif sys.platform.startswith("linux") and "TMPDIR" in os.environ:
@@ -234,13 +143,8 @@ def _ray_address_file() -> str:
 
 
 def task_ceiling(nodes: list[dict[str, Any]], limit_source: str) -> tuple[float, float] | None:
-    """The CPUs and memory one task can have, from ``ray.nodes()``; None if no node can run one.
-
-    Only alive nodes with CPUs count. Every task this backend submits asks for at least one CPU,
-    so a node without any, such as a head started with ``CPU: 0``, runs none of them, and its
-    memory is no task's to have. ``max_node`` takes the most CPUs and, separately, the most memory
-    of any such node; ``cluster`` sums them.
-    """
+    """``(cpu, memory)`` one task can have, from ``ray.nodes()``; None if no node can run one."""
+    # Every task asks for at least one CPU, so a node without CPUs (a ``CPU: 0`` head) runs none.
     usable = [
         resources
         for resources in (n.get("Resources", {}) for n in nodes if n.get("Alive"))
@@ -255,11 +159,7 @@ def task_ceiling(nodes: list[dict[str, Any]], limit_source: str) -> tuple[float,
 def limits_from(
     found: tuple[float, float] | None, ray_cfg: ray_config.RayConfig
 ) -> dict[str, int]:
-    """miniwdl's resource limits from a measured ``(cpu, memory)`` ceiling, or from none.
-
-    ``[ray] max_cpu`` / ``max_memory_bytes`` win. A dimension with neither a setting nor a
-    measurement gets :data:`NO_LIMIT`, never a guess: guessing one CPU clamps every task to one.
-    """
+    """miniwdl's resource limits from a measured ``(cpu, memory)``; ``[ray] max_*`` settings win."""
     cpu, mem = found or (0.0, 0.0)
     limits = {
         "cpu": max(1, int(cpu)) if cpu > 0 else NO_LIMIT,
@@ -273,12 +173,7 @@ def limits_from(
 
 
 class RayContainer(SubprocessBase):
-    """Dispatch WDL task containers onto a Ray cluster.
-
-    Inherits :class:`~WDL.runtime.backend.cli_subprocess.SubprocessBase` for its
-    mount preparation and input-copy bookkeeping, and replaces
-    :meth:`_run`, the part that would otherwise spawn a local subprocess.
-    """
+    """Dispatch WDL task containers onto a Ray cluster."""
 
     _ray_cfg: ray_config.RayConfig
     _runtime: runtimes.ContainerRuntime
@@ -287,8 +182,6 @@ class RayContainer(SubprocessBase):
     _limits_lock = threading.Lock()
     _sif_cache_dir: str | None = None
     _checked_shared_run_dir = False
-
-    # ------------------------------------------------------------------ startup
 
     @classmethod
     def global_init(cls, cfg: wdl_config.Loader, logger: logging.Logger) -> None:
@@ -347,17 +240,6 @@ class RayContainer(SubprocessBase):
 
     @classmethod
     def _warn_unless_task_images_usable(cls, logger: logging.Logger) -> None:
-        """Check ``container_runtime = ray``'s configuration before the first task.
-
-        Two things are worth catching here rather than one task in. An empty image
-        map with the default ``error`` fallback cannot dispatch *anything*, so it is
-        a configuration mistake rather than a per-task condition and is raised as
-        one. And the version lockstep (a task image's Ray and Python must match the
-        cluster's exactly, Python to the patch) cannot be checked from the driver
-        without pulling every image, so the next best thing is to state the versions
-        an image has to be built against, in the run log, where the person building
-        them will look.
-        """
         if not cls._ray_cfg.task_image_map and cls._ray_cfg.task_image_fallback == "error":
             raise Error.RuntimeError(
                 "container_runtime=ray with an empty [ray] task_image_map: every task would"
@@ -379,11 +261,6 @@ class RayContainer(SubprocessBase):
             )
         )
 
-        # miniwdl passes files between tasks by path, so every task image has to see
-        # the run directory at the same absolute path the driver wrote it to. That
-        # holds when the platform propagates the node's mounts into the nested worker
-        # container, and fails one task late when it does not, as a missing input
-        # file, naming a path that plainly exists.
         logger.info(
             "container_runtime=ray requires the run directory to be visible at the same path"
             " inside each task image; a task that cannot see its inputs is the symptom when"
@@ -392,19 +269,8 @@ class RayContainer(SubprocessBase):
 
     @classmethod
     def _warn_unless_wheelhouse_usable(cls, logger: logging.Logger) -> None:
-        """Check the wheel directory before any task tries to install from it.
-
-        A ``tool_wheel_dir`` that is missing, empty, or not visible from this node makes every
-        task's environment resolve against a package index instead, where the pinned
-        ``wdl-on-ray-tools-*`` versions do not exist, so the first task fails inside Ray's
-        runtime_env setup, nowhere near anything that names the directory. Cheap to check,
-        and the mistake is easy to make: a wheelhouse left somewhere ``.gitignore`` excludes
-        never reaches the cluster at all.
-
-        A URL is left alone (only a local path can be inspected) and an empty setting is a
-        deliberate "resolve from an index", not a mistake.
-        """
         wheel_dir = cls._ray_cfg.tool_wheel_dir
+        # Empty means "resolve from an index" on purpose; a URL cannot be inspected.
         if not wheel_dir or "://" in wheel_dir:
             return
         import glob
@@ -426,17 +292,7 @@ class RayContainer(SubprocessBase):
 
     @staticmethod
     def _warn_unless_env_plugin_usable(logger: logging.Logger) -> None:
-        """Check the two things Ray's ``pip``/``uv`` plugins need, before any task runs.
-
-        Both import ``virtualenv`` and then materialize one, cloning the base environment when
-        the driver already sits in a venv, so a base environment without ``pip`` produces a
-        clone without ``pip`` and the install fails. Neither failure is discovered until the
-        first task dispatches, and both report as a ``RuntimeEnvSetupError`` several frames
-        deep, so checking here converts a confusing mid-run failure into a startup warning.
-
-        Only a warning, and only about *this* node: the driver's environment is a good proxy for
-        the workers' on a homogeneous cluster and no guarantee on any other.
-        """
+        # Ray's pip/uv plugins clone the base venv, so a base without pip gives a clone without it.
         import importlib.util
 
         missing = [name for name in ("virtualenv", "pip") if not importlib.util.find_spec(name)]
@@ -453,13 +309,7 @@ class RayContainer(SubprocessBase):
     def _resolve_runtime(
         cls, ray_cfg: ray_config.RayConfig, logger: logging.Logger
     ) -> runtimes.ContainerRuntime:
-        """Pick a container runtime, probing the host when configured ``auto``.
-
-        The probe necessarily runs on the node hosting the workflow driver. On a
-        heterogeneous cluster where the workers differ, name the runtime
-        explicitly with ``[ray] container_runtime`` instead of relying on
-        ``auto``.
-        """
+        # auto probes the driver's node only; on a heterogeneous cluster name the runtime.
         if ray_cfg.container_runtime != "auto":
             candidate = runtimes.get(ray_cfg.container_runtime)
             exe = ray_cfg.container_exe or candidate.default_exe
@@ -510,20 +360,7 @@ class RayContainer(SubprocessBase):
     def detect_resource_limits(
         cls, cfg: wdl_config.Loader, logger: logging.Logger
     ) -> dict[str, int]:
-        """Report the ceiling miniwdl clamps ``runtime.cpu``/``memory`` against.
-
-        Deliberately *not* the cluster total. A WDL task runs as a single
-        container on a single node, so admitting a request larger than any node
-        can satisfy produces a task that Ray will never schedule. ``max_node``
-        (the default) therefore reports the largest live node that can run a
-        task, which means one with CPUs: a head started with ``CPU: 0`` is not.
-
-        Until such a node is up, as when a job's entrypoint starts before its
-        first worker joins, there is nothing to measure, so there is no ceiling
-        (:data:`NO_LIMIT`) rather than a guess. ``[ray] max_cpu`` /
-        ``[ray] max_memory_bytes`` set it by hand, for that case and for an
-        autoscaling cluster whose big workers are not up yet.
-        """
+        """The ceiling miniwdl clamps each task's cpu/memory to: one node, not the cluster."""
         with cls._limits_lock:
             if cls._limits is not None:
                 return cls._limits
@@ -556,7 +393,6 @@ class RayContainer(SubprocessBase):
     def _probe_limits(
         cls, ray_cfg: ray_config.RayConfig, logger: logging.Logger
     ) -> tuple[float, float] | None:
-        """The measured ceiling, before any ``[ray]`` override; None if nothing can run a task."""
         if ray_cfg.limit_source == "local":
             import multiprocessing
 
@@ -569,31 +405,17 @@ class RayContainer(SubprocessBase):
         connect(ray_cfg, logger)
         return task_ceiling(ray.nodes(), ray_cfg.limit_source)
 
-    # ------------------------------------------------------------- per-instance
-
     def __init__(self, cfg: wdl_config.Loader, run_id: str, host_dir: str) -> None:
         super().__init__(cfg, run_id, host_dir)
         if not self._runtime.isolated:
-            # No filesystem namespace, so container paths *are* host paths.
-            # Setting this before add_paths() runs means miniwdl's own path
-            # mapping resolves to real locations with no translation.
+            # No filesystem namespace, so container paths are host paths.
             self.container_dir = self.host_dir
-        # First task construction is the earliest moment that knows both the run
-        # location and the live cluster shape, so the shared-storage check fires
-        # here, once. (A benign race could emit it twice; that costs a duplicate
-        # log line, not a lock.)
         if not RayContainer._checked_shared_run_dir:
             RayContainer._checked_shared_run_dir = True
             warn_if_not_shared(host_dir, logging.getLogger("wdl-on-ray"))
 
     def process_runtime(self, logger: logging.Logger, runtime_eval: dict[str, Any]) -> None:
-        """Extend miniwdl's ``runtime {}`` handling with the keys Ray can use.
-
-        The WDL spec only has a Boolean ``gpu``. Real pipelines, including the
-        one this template ships, use Cromwell's Google-backend extensions
-        (``gpuCount``, ``gpuType``, ``disks``), so those are read here rather
-        than dropped, which is what lets such a WDL run on Ray unedited.
-        """
+        """Also read Cromwell's ``gpuCount``/``gpuType``/``disks`` and the ``ray_*`` keys."""
         super().process_runtime(logger, runtime_eval)
         ans = self.runtime_values
 
@@ -611,11 +433,6 @@ class RayContainer(SubprocessBase):
 
     @property
     def cli_name(self) -> str:
-        """Names the container CLI in log messages and log filenames.
-
-        Required by :class:`SubprocessBase`; here it tracks whichever runtime was
-        configured or auto-detected.
-        """
         return self._runtime.name
 
     @property
@@ -623,20 +440,11 @@ class RayContainer(SubprocessBase):
         return list(self._exe)
 
     def reset(self, logger: logging.Logger) -> None:
-        """Prepare a fresh working directory for a retry.
-
-        miniwdl advances the host-side work directory (``work`` -> ``work2``)
-        between attempts so the failed attempt stays around for inspection, and
-        relies on the bind mount to keep the *container* path at
-        ``{container_dir}/work`` regardless. Without a container there is no
-        mount to do that, and the task command, already rendered with absolute
-        paths that say ``work``, would keep writing into the previous attempt's
-        directory. Redirecting ``work`` as a symlink to the current attempt
-        restores the invariant while still preserving attempt 1 (as ``work1``).
-        """
+        """Prepare a retry's working directory."""
         super().reset(logger)
         if self._runtime.isolated:
             return
+        # The rendered command says .../work and there is no bind mount, so symlink it to this try.
         stable = os.path.join(self.host_dir, "work")
         if os.path.islink(stable):
             os.unlink(stable)
@@ -654,14 +462,7 @@ class RayContainer(SubprocessBase):
         )
 
     def _ray_env(self, command: str) -> envs.Resolved:
-        """The Ray ``runtime_env`` for this task, for runtimes that supply one.
-
-        Two shapes, split on :attr:`ContainerRuntime.env_is_image`. ``ray`` resolves
-        ``runtime.docker`` to an ``image_uri`` and needs nothing from the command;
-        ``native`` derives a package set and needs the *rendered* command, because
-        the environment comes from the executables the task actually invokes. See
-        :mod:`wdl_on_ray.envs`.
-        """
+        # native needs the rendered command: its environment comes from the executables it runs.
         if self._runtime.env_is_image:
             return envs.resolve_image(
                 self.runtime_values,
@@ -679,27 +480,14 @@ class RayContainer(SubprocessBase):
             extra_requirements=tuple(self._ray_cfg.env_extra_requirements),
         )
 
-    # ------------------------------------------------------------- invocation
-
     def _image_ref(self) -> tuple[str, str]:
-        """``(source, local_ref)`` for this task's image.
-
-        ``source`` is the WDL ``runtime.docker`` value; ``local_ref`` is how the
-        chosen runtime names it locally (identical for OCI CLIs, a ``.sif`` path
-        or ``docker://`` URI for Apptainer).
-        """
         source = self.runtime_values.get(
             "docker", self.cfg.get_dict("task_runtime", "defaults")["docker"]
         )
         return source, self._runtime.image_ref(source, cache_dir=self._sif_cache_dir)
 
     def _link_inputs(self, logger: logging.Logger) -> None:
-        """Stand in for bind mounts when running without a container.
-
-        Symlinks, because genomics inputs are routinely tens of GB,
-        and both ends of the link are on the shared filesystem the cluster
-        already requires.
-        """
+        # Stands in for bind mounts; symlinks, as inputs run to tens of GB on shared storage.
         if not self._bind_input_files:
             return  # copy_input_files() already put real files in place
         linked = 0
@@ -716,8 +504,6 @@ class RayContainer(SubprocessBase):
         logger.info(_("linked task inputs", count=linked, mode="symlink"))
 
     def _run_invocation(self, logger: logging.Logger, cleanup: ExitStack, image: str) -> list[str]:
-        """Container invocation *without* the trailing command, per the
-        :class:`SubprocessBase` contract."""
         return self._build_argv(logger, cleanup, image, entry=[])
 
     def _build_argv(
@@ -750,11 +536,7 @@ class RayContainer(SubprocessBase):
         return self._runtime.run_argv(self._exe, spec)
 
     def _apptainer_scratch(self, cleanup: ExitStack) -> list[runtimes.Mount]:
-        """Give Apptainer real directories for ``/tmp`` and ``/var/tmp``.
-
-        Its in-memory session directory is small and easily overrun by
-        bioinformatics tools; miniwdl's own Singularity backend does the same.
-        """
+        # Apptainer's in-memory session directory is small and easily overrun.
         tempdir = cleanup.enter_context(
             tempfile.TemporaryDirectory(prefix="_apptainer_tmpdir_", dir=self.host_dir)
         )
@@ -766,17 +548,10 @@ class RayContainer(SubprocessBase):
         ]
 
     def _entry(self) -> list[str]:
-        """Shell invocation that runs the task's command file.
-
-        With a container, miniwdl's own relative-path convention works because
-        ``stdout.txt``/``stderr.txt``/``command`` are individually bind-mounted.
-        Without one there are no mounts, so the redirections have to name the
-        real host paths (which also keeps retries, ``stdout2.txt`` and friends,
-        pointing at the right files).
-        """
         shell = self.cfg.get("task_runtime", "command_shell")
         if self._runtime.isolated:
             return ["/bin/sh", "-c", f"{shell} ../command >> ../stdout.txt 2>> ../stderr.txt"]
+        # No mounts, so the redirections name the real host paths (stdout2.txt on a retry too).
         return [
             "/bin/sh",
             "-c",
@@ -786,20 +561,13 @@ class RayContainer(SubprocessBase):
         ]
 
     def _write_command_file(self, command: str) -> str:
-        """Materialize the task command, prefixed with its environment.
-
-        Same approach as miniwdl's subprocess backends: exporting inside the
-        script sidesteps both command-line length limits and the inconsistent
-        quoting of ``--env-file`` across runtimes.
-        """
+        # Exported in the script, as miniwdl does: no argv length limit, no --env-file quoting.
         path = os.path.join(self.host_dir, "command")
         with open(path, "w") as outfile:
             for key, value in self.runtime_values.get("env", {}).items():
                 outfile.write(f"export {key}={shlex.quote(value)}\n")
             outfile.write(command)
         return path
-
-    # --------------------------------------------------------------- execution
 
     def _run(self, logger: logging.Logger, terminating: Callable[[], bool], command: str) -> int:
         import ray
@@ -812,8 +580,6 @@ class RayContainer(SubprocessBase):
             if self._runtime.isolated:
                 argv = self._build_argv(logger, cleanup, image_ref, self._entry())
             else:
-                # prepare_mounts() is what normally creates these; without it we
-                # make the stream files and input links ourselves.
                 for stream in (self.host_stdout_txt(), self.host_stderr_txt()):
                     if not os.path.exists(stream):
                         self.touch_mount_point(stream)
@@ -823,20 +589,13 @@ class RayContainer(SubprocessBase):
             cli_log_filename = os.path.join(self.host_dir, f"{self.cli_name}.log.txt")
             placement_path = os.path.join(self.host_dir, "ray_placement.json")
 
-            # The worker writes this as the task starts, and _await takes its appearance as
-            # the start. miniwdl retries in this same directory (work2, stdout2.txt), so the
-            # previous attempt's copy would make a queued retry look started, on the old node.
-            # Removed before submitting, so only this attempt's worker can write it again; the
-            # driver, which also polls it, sees its own removal at once, NFS included. What
-            # is left at the end is the final attempt's, which is what the notebook reads.
+            # _await takes this file's appearance as the start, and a retry reuses this directory,
+            # so remove the previous attempt's copy before submitting.
             with suppress(FileNotFoundError):
                 os.unlink(placement_path)
 
-            # Create the log now, on the driver. The worker appends to it, but the
-            # driver starts tailing it immediately, and if the task fails before
-            # ever running (unschedulable, a lost node, a bad argument) the file
-            # would never exist, and Pygtail's FileNotFoundError buries the actual
-            # error under an unrelated traceback.
+            # Created here: a task that never starts would leave no file, and Pygtail's
+            # FileNotFoundError would bury the real error.
             with open(cli_log_filename, "a"):
                 pass
 
@@ -863,10 +622,6 @@ class RayContainer(SubprocessBase):
 
             resolved = self._ray_env(command) if self._runtime.provides_env else envs.Resolved()
 
-            # Three different things `image` can mean, so say which. Under an OCI or
-            # apptainer runtime it is what this backend runs; under `ray` it is the
-            # key the image map was looked up with, and `resolved.describe()` carries
-            # the image that actually starts; under `none`/`native` nothing uses it.
             if self._runtime.isolated:
                 image_note = source
             elif self._runtime.env_is_image:
@@ -883,9 +638,7 @@ class RayContainer(SubprocessBase):
                 )
             )
             if resolved.unresolved:
-                # Not an error: the cluster image may well supply these, and an unpackaged
-                # tool must not fail a run that would otherwise work. But it is the single
-                # most likely cause of a later exit 127, so it is worth saying out loud.
+                # Not an error: the cluster image may supply them.
                 logger.warning(
                     _(
                         "no tool wheel provides these commands; they must already be on the"
@@ -895,7 +648,6 @@ class RayContainer(SubprocessBase):
                 )
 
             if self._ray_cfg.dispatch == "inprocess":
-                # Stay inside `cleanup` for the same reason the Ray path does.
                 return self._run_inprocess(logger, job)
 
             options: dict[str, Any] = {
@@ -909,29 +661,16 @@ class RayContainer(SubprocessBase):
 
             remote = ray.remote(ray_job.execute_and_record).options(**options)
             ref = remote.remote(job, placement_path)
-            # Stay inside `cleanup` while the task runs: it owns the Apptainer
-            # scratch directories the container is mounting.
+            # Inside `cleanup`: it owns the Apptainer scratch directories the container mounts.
             exit_code = self._await(logger, terminating, ref, cli_log_filename, placement_path)
         return exit_code
 
     def _run_inprocess(self, logger: logging.Logger, job: ray_job.ContainerJob) -> int:
-        """Run the task command here, without submitting a Ray task.
-
-        For a caller that has already scheduled the workflow graph itself, so that *this*
-        process is the Ray task. Dispatching again would submit a task from inside a task:
-        correct, but it would double the scheduling and hold two workers' resources for one
-        WDL task. This template never selects it (``[ray] dispatch`` stays at ``ray``) but
-        the branch is kept so the backend behaves the same here as it does upstream.
-
-        Everything else stays shared with the dispatching path (the argv, the environment,
-        the input symlinks, the retry directory handling) so this is a change of *where* the
-        command runs, nothing more.
-        """
+        # For a caller that already scheduled the workflow graph, so this process is the Ray task.
         with ExitStack() as cleanup:
             poll_stderr = cleanup.enter_context(self.poll_stderr_context(logger))
             cleanup.enter_context(self.task_running_context())
             result = ray_job.execute(job)
-            # The command has already exited, so this drains what is left.
             poll_stderr()
 
         if result.chown_error:
@@ -986,7 +725,6 @@ class RayContainer(SubprocessBase):
         cli_log_filename: str,
         placement_path: str,
     ) -> int:
-        """Block on the Ray task, tailing its streams and honouring termination."""
         import ray
 
         cli_logger = logger.getChild(self._runtime.name or "ray")
@@ -1010,8 +748,7 @@ class RayContainer(SubprocessBase):
                 if done:
                     break
                 if not started and os.path.exists(placement_path):
-                    # Only now does the task hold real resources, so this is the
-                    # right moment to count it in the status bar's "running".
+                    # Only now does the task hold resources, so count it as running.
                     running.enter_context(self.task_running_context())
                     started = True
                     logger.info(
@@ -1039,8 +776,6 @@ class RayContainer(SubprocessBase):
             if not started:
                 running.enter_context(self.task_running_context())
             result = self._collect(logger, ref)
-            # Final drain, so a task that wrote and exited immediately still gets
-            # its stderr into the log.
             poll_stderr()
             poll_cli_log()
 
@@ -1078,7 +813,6 @@ class RayContainer(SubprocessBase):
             return {}
 
     def _collect(self, logger: logging.Logger, ref: Any) -> ray_job.JobResult:
-        """Turn a Ray outcome into either a result or the right miniwdl error."""
         import ray
 
         try:
@@ -1088,8 +822,7 @@ class RayContainer(SubprocessBase):
         except ray.exceptions.TaskCancelledError:
             raise Terminated() from None
         except ray.exceptions.RayTaskError as exn:
-            # Our worker code raised. That is a genuine failure of this task --
-            # not an interruption, so it must not consume a `preemptible` try.
+            # Our worker code raised: a real failure, which must not spend a preemptible try.
             cause = exn.cause if isinstance(getattr(exn, "cause", None), BaseException) else exn
             if isinstance(cause, ray_job.PullFailed) or "PullFailed" in str(exn):
                 logger.error(_("image pull failed on Ray worker", error=str(cause)))
@@ -1098,10 +831,7 @@ class RayContainer(SubprocessBase):
             logger.error(_("Ray task raised", error=str(exn)))
             raise Error.RuntimeError(f"Ray task failed: {exn}") from None
         except Exception as exn:
-            # Node loss, worker crash, raylet death, lost objects: the task never
-            # got to fail on its own merits. Reporting it as Interrupted is what
-            # routes it to WDL's runtime.preemptible retry budget, the correct
-            # behaviour on reclaimed spot capacity.
+            # Node loss, worker crash, lost objects: Interrupted spends runtime.preemptible.
             name = type(exn).__name__
             if _is_interruption(exn):
                 logger.warning(_("Ray worker or node lost", error=name, detail=str(exn)))
@@ -1110,57 +840,25 @@ class RayContainer(SubprocessBase):
 
 
 def register_backend(cfg: wdl_config.Loader) -> None:
-    """Make the ``ray`` backend selectable without an installed distribution.
-
-    Normally miniwdl finds this class through the ``miniwdl.plugin.container_backend``
-    entry point declared in pyproject.toml, but entry points only exist for an
-    *installed* package. On a Ray cluster the code frequently arrives as an
-    uploaded ``working_dir`` on ``sys.path`` instead, with nothing installed, and
-    discovery then silently comes up empty: the run fails with "missing backend
-    ray", which points at nothing useful.
-
-    Registering explicitly closes that gap and costs nothing when the entry point
-    *did* resolve. Discovery still runs first, so the built-in backends
-    (docker_swarm, singularity, podman, udocker) stay available; miniwdl only
-    performs discovery when the registry is empty, so seeding it blindly would
-    hide them.
-    """
+    """Register the ``ray`` backend, which entry points miss on an uploaded working_dir."""
     from WDL.runtime import task_container
 
+    # miniwdl only discovers plugins into an empty registry, so discover before adding ours.
     with task_container._backends_lock:
         if not task_container._backends:
             for name, plugin in wdl_config.load_plugins(cfg, "container_backend"):
-                # load_plugins is typed as yielding callables because it serves
-                # several plugin groups; for this group every entry is a
-                # TaskContainer subclass.
                 task_container._backends[name] = cast("type[task_container.TaskContainer]", plugin)
         task_container._backends["ray"] = RayContainer
 
 
 def warn_if_not_shared(run_dir: str, logger: logging.Logger) -> None:
-    """Warn when the run directory may not be visible from every node.
-
-    miniwdl passes files between tasks by path: task B reads task A's outputs from
-    A's working directory. So a run directory that only exists on the driver's node
-    produces a workflow that starts fine and fails at the *second* task, with a
-    missing-input error naming a path that plainly exists, one of the more
-    expensive ways to lose an hour.
-
-    The check does not fail the run, because it cannot tell the difference between a
-    genuinely local setup and a shared mount at a path this list does not know. It is
-    deliberately noisy in the ambiguous case instead.
-
-    Node count is only used to pick the severity, never to skip the check. An
-    autoscaling cluster with ``min_nodes: 1``, which is this template's shape,
-    has one node at startup and three by the time the assemblies dispatch, so a
-    check gated on "more than one node right now" would be silent precisely when it
-    is needed.
-    """
+    """Warn when the run directory may not be visible from every node."""
     import ray
 
     if any(os.path.abspath(run_dir).startswith(p) for p in SHARED_STORAGE_PREFIXES):
         return
 
+    # Node count sets severity only: an autoscaling cluster starts with one node.
     nodes = [n for n in ray.nodes() if n.get("Alive")] if ray.is_initialized() else []
     multi_node = len(nodes) > 1
 
@@ -1174,8 +872,6 @@ def warn_if_not_shared(run_dir: str, logger: logging.Logger) -> None:
         recognized_prefixes=list(SHARED_STORAGE_PREFIXES),
     )
     if multi_node:
-        # Already multi-node: this is not a risk, it is a defect waiting for the
-        # scheduler to place one task elsewhere.
         logger.error(message)
     else:
         logger.warning(message)

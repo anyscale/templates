@@ -1,31 +1,4 @@
-"""The worker side of the dispatch: run one container invocation on a Ray node.
-
-Everything in this module executes inside a Ray task, so it is deliberately
-policy-free and dependency-light. The driver (:mod:`wdl_on_ray.backend`) resolves
-every decision (which image, which mounts, which flags) into a
-:class:`ContainerJob` of plain strings; this module only pulls the image if
-needed, spawns the process, and reports the exit code.
-
-This module is serialized **by value** into every Ray task (see
-:func:`wdl_on_ray.backend._pickle_worker_modules_by_value`), which is what frees the
-workers from needing this package installed. Two constraints follow, and any change
-here must preserve both: keep the module-level imports to the standard library plus
-:mod:`wdl_on_ray.runtimes`, and import Ray lazily inside the one function that
-needs it.
-
-Two further details:
-
-* Image pulls are serialized per node. A scatter of 40 tasks over the same
-  image would otherwise start 40 concurrent pulls on each node it lands on. A
-  ``flock``-based lock in a node-local directory collapses that to one, and an
-  in-process cache short-circuits it entirely for the (common) case of a reused
-  Ray worker process.
-* Standard streams go to the shared filesystem, not through Ray. miniwdl
-  tails ``stderr.txt`` from the driver to produce live task logs, so the
-  container writes there directly and the driver's tailing keeps working
-  unchanged. This is also why the run directory has to be on storage visible
-  from every node.
-"""
+"""Worker side of the dispatch. Pickled by value: stdlib and runtimes only, Ray imported lazily."""
 
 from __future__ import annotations
 
@@ -38,8 +11,7 @@ from dataclasses import dataclass, field, replace
 
 from wdl_on_ray import runtimes
 
-#: Images this worker process has already made local. Ray reuses worker
-#: processes between tasks, so this saves even the lock acquisition.
+#: Images this worker already made local. Ray reuses worker processes, so this skips the lock too.
 _PULLED: set[str] = set()
 
 
@@ -97,11 +69,7 @@ def _lock_path(lock_dir: str, image_ref: str) -> str:
 
 
 def ensure_image(job: ContainerJob) -> tuple[bool, float]:
-    """Make ``job.image_ref`` available on this node.
-
-    Returns ``(pulled, seconds_spent)``; ``pulled`` is False when the image was
-    already present or the runtime needs no pull at all.
-    """
+    """Make ``job.image_ref`` local, one pull per node at a time. Returns ``(pulled, seconds)``."""
     if job.pull_argv is None or job.image_ref is None:
         return False, 0.0
     if job.image_ref in _PULLED:
@@ -135,12 +103,7 @@ def ensure_image(job: ContainerJob) -> tuple[bool, float]:
 
 
 def _terminate(proc: subprocess.Popen[bytes]) -> None:
-    """Tear down the container CLI *and* whatever it spawned.
-
-    The CLI is started in its own session, so signalling the process group
-    reaches the container runtime's children too; without that, cancelling a
-    workflow can leave orphaned containers holding the node's CPUs.
-    """
+    # The CLI runs in its own session; signal the group so no orphaned container holds the CPUs.
     for sig, grace in ((signal.SIGTERM, 10.0), (signal.SIGKILL, 5.0)):
         if proc.poll() is not None:
             return
@@ -156,17 +119,7 @@ def _terminate(proc: subprocess.Popen[bytes]) -> None:
 
 
 def execute_and_record(job: ContainerJob, placement_path: str) -> JobResult:
-    """Ray task body: record where this landed, then run the container.
-
-    ``placement_path`` is how the driver learns the task stopped queueing and
-    actually started; Ray offers no callback for that, and the distinction is
-    what separates "my cluster is too small" from "my task is slow".
-
-    Lives here, and not in :mod:`wdl_on_ray.backend`, so that the code shipped
-    to a Ray worker pulls in only this module and :mod:`wdl_on_ray.runtimes` --
-    both pure-stdlib. That is what lets the backend serialize them *by value* and
-    keep the workers free of any dependency on this package being installed.
-    """
+    """Ray task body: record where it landed, which tells the driver it started, then run it."""
     import json
 
     import ray
@@ -206,8 +159,7 @@ def execute(job: ContainerJob) -> JobResult:
         try:
             exit_code = proc.wait()
         except BaseException:
-            # Covers ray.cancel() (KeyboardInterrupt in the task) as well as
-            # worker teardown.
+            # ray.cancel() (KeyboardInterrupt in the task) or worker teardown.
             _terminate(proc)
             raise
 
@@ -227,21 +179,7 @@ def execute(job: ContainerJob) -> JobResult:
 
 
 def probe_image(run_dir: str, marker: str) -> dict[str, object]:
-    """Runs *inside* a candidate task image. Stdlib plus Ray only.
-
-    Answers the two questions that decide whether ``container_runtime = ray`` can work
-    on a given cluster: does the nested container agree with the driver about Ray and
-    Python versions, and can it read and write the shared run directory at the same
-    absolute path the driver uses? A "no" to the second is fatal to the mode, because
-    miniwdl passes files between tasks by path, so a task that cannot see the run
-    directory cannot consume the previous task's outputs.
-
-    Lives here rather than next to its CLI command so that ``register_pickle_by_value``
-    covers it. Serialized by reference, the probe would need ``wdl_on_ray`` and miniwdl
-    importable *inside the image being probed* -- which the small per-task images
-    tools/BUILDING.md tells you to build deliberately do not have, so the probe would
-    fail to deserialize and report the candidate image unusable for the wrong reason.
-    """
+    """Runs inside a candidate task image: do versions match, and is the run directory shared?"""
     import platform
     import socket
     import tempfile

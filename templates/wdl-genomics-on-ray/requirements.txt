@@ -1,25 +1,5 @@
-# Driver-side Python dependencies for this template.
-#
-# The image (see Dockerfile) already carries these plus the bioinformatics toolchain and
-# `wdl-on-ray` itself, so a workspace launched from this template needs nothing installed.
-# The file is here so the template is reproducible off Anyscale, and so the versions the
-# notebook talks about have one place to live.
-#
-# Workers need no Python dependency of ours: the backend registers `wdl_on_ray.job` and
-# `wdl_on_ray.runtimes` with cloudpickle *by value*, so a Ray worker deserializes the task
-# body without importing this package at all. What workers do need is the command-line
-# tools, and under `--container-runtime none` those come from the image.
+# Driver-side dependencies, for running off Anyscale; the image already carries them.
 miniwdl==1.15.0
-# A dependency check against the base image reports two overrides that are not ours to fix:
-# miniwdl 1.15.0 requires `ruamel.yaml~=0.19` and `python-json-logger>=3.1,<5`. The 2.58.0 image
-# ships ruamel.yaml 0.18.10, so installing miniwdl necessarily upgrades it; its python-json-logger
-# is 4.1.0, which already satisfies the range (2.56.0 shipped 2.0.7, and that one was upgraded
-# too). Noted here so the next person reading that output does not go looking for a pin to relax.
-# The notebook's plot cells. On the cluster image this is already present -- QUAST's manifest
-# entry depends on it (see tools/manifest.toml) -- so this pin is for running the notebook off
-# Anyscale, and it is deliberately the *image's* version rather than the newest release. Pinning
-# newer would make an off-Anyscale run silently render its plots with a different matplotlib
-# than the cluster does, which is the one thing this file exists to prevent.
-# `docker run --rm -v "$PWD":/w anyscale/ray:2.58.0-py312 pip install --dry-run -r /w/requirements.txt`
-# reports what it would change when the two disagree; matplotlib should not appear.
+# miniwdl upgrades the image's ruamel.yaml (0.18.10 to ~=0.19); expected, not a pin to relax.
+# The image's version, so plots off Anyscale match the cluster's.
 matplotlib==3.10.8

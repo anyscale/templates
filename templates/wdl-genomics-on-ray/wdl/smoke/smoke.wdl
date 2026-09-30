@@ -1,19 +1,7 @@
 version 1.0
 
-# A deliberately tiny workflow whose only job is to exercise the parts of the
-# WDL <-> Ray contract that are easy to break:
-#
-#   * scatter -> many Ray tasks in flight at once
-#   * runtime cpu/memory        -> Ray resource requests
-#   * File inputs               -> bind mounts (or symlinks, without a container)
-#   * File and Array[File] outputs, including glob()
-#   * a gathering task that consumes every scattered output
-#   * stdout()/stderr capture   -> streams tailed from the driver
-#
-# It declares a stock debian image instead of a bioinformatics one so it runs in
-# seconds and on both arm64 and amd64 under an isolating container runtime. With
-# `--container-runtime none` the image is advisory, and the commands need only the
-# standard shell tools on the worker. The README's Step 3 runs it.
+# Exercises the WDL <-> Ray contract: scatter, resource requests, File I/O and glob(), a
+# gathering task, and stderr tailing. A stock debian image, so it runs in seconds anywhere.
 
 workflow Smoke {
     meta {
@@ -86,8 +74,7 @@ task Shard {
         String docker
     }
 
-    # Two CPUs so the request is distinguishable from the default in Ray's
-    # resource accounting: a scatter of these should visibly consume 2N CPUs.
+    # Not the default 1, so a scatter visibly consumes 2N CPUs in Ray's accounting.
     Int cpu = 2
 
     command <<<

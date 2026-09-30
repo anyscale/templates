@@ -5,32 +5,10 @@ import "../../structs/Structs.wdl"
 # A two-task subset of broadinstitute/long-read-pipelines wdl/tasks/Utility/Utils.wdl
 # (which is ~2200 lines), carrying only what ONTAssembleWithFlye calls.
 # Licensed BSD-3-Clause; see wdl/LICENSE.
-#
-# The upstream pipeline also calls Utils.ListFilesOfType to expand a GCS
-# directory with `gsutil ls`. That task is deliberately absent here: it hardcodes
-# both a cloud vendor and a CLI, and the workflow takes an explicit
-# `Array[File]+ fastqs` instead. miniwdl localizes gs://, s3:// and https:// URIs
-# for File inputs on its own, so a caller keeps cloud input without the pipeline
-# needing to know which cloud it is.
-#
-# Two other changes from upstream:
-#
-#   * ComputeGenomeLength's final awk prints with `printf "%.0f\n"` where upstream
-#     uses `print`. mawk, which is /usr/bin/awk on Debian and Ubuntu and therefore
-#     on the cluster image, formats any value above INT_MAX through OFMT, so
-#     upstream emits GRCh38's 3,099,922,541 as "3.09992e+09". read_float parses
-#     that, so upstream's genome size is only rounded to six significant figures;
-#     the exact integer costs nothing, and ReadStats.wdl, where read_int rejects the
-#     exponent form outright, needs the same fix.
-#
-#     Note "%.0f" and not "%d". "%d" also avoids OFMT, but mawk 1.3.4-20200120
-#     converts %d through a 32-bit int and clamps: GRCh38 comes back as exactly
-#     2147483647, read_float accepts it, and the genome is then wrong by 31% with
-#     nothing failing. "%.0f" formats the double and is exact to 2^53.
-#     wdl/tasks/QC/ReadStats.wdl carries the same fix, and its comment has the
-#     measurement.
-#   * MergeFastqs' docker moved from gcr.io/cloud-marketplace/google/ubuntu2004 to
-#     docker.io/library/ubuntu:20.04: no GCP credentials needed, and multi-arch.
+
+# Unlike upstream: no ListFilesOfType (inputs are explicit Files), ComputeGenomeLength prints
+# with "%.0f" (mawk mangles values above INT_MAX under print and clamps them under "%d"), and
+# MergeFastqs uses Docker Hub's multi-arch ubuntu.
 
 task ComputeGenomeLength {
 
@@ -42,23 +20,7 @@ task ComputeGenomeLength {
         fasta:  "FASTA file. Every sequence is counted and gaps count as sequence; see the note below"
     }
 
-    # What this measures, stated because callers use it as a genome size estimate.
-    #
-    # It sums `LN:` over every `@SQ` record, which is the FASTA's *sequence* length
-    # and not the assemblable genome. Two consequences:
-    #
-    #   * N runs count. A reference with modelled centromeres or unclosed gaps
-    #     reports more bases than an assembler can produce, so a `--genome-size`
-    #     derived from it runs high and a coverage derived from it runs low. GRCh38
-    #     chr20 is a few percent N; a draft reference can be far more.
-    #   * Every sequence counts. A full GRCh38 with alts, decoys and unplaced contigs
-    #     returns more than the primary assembly's length, and handing it a whole
-    #     genome when the reads cover one chromosome is wrong by two orders of
-    #     magnitude, which is why the region slices ship with a matching reference.
-    #
-    # Neither matters for those slices; both matter for real inputs. Callers that
-    # care should pass the size explicitly (ONTAssembleWithFlye exposes
-    # `flye_genome_size` for exactly this).
+    # Sums every @SQ LN:, so N runs and alt or decoy contigs count; pass a size where it matters.
     input {
         File fasta
 
@@ -81,7 +43,6 @@ task ComputeGenomeLength {
         Float length = read_float("length.txt")
     }
 
-    #########################
     RuntimeAttr default_attr = object {
         cpu_cores:          1,
         mem_gb:             1,
@@ -142,9 +103,6 @@ task MergeFastqs {
         File merged_fastq = "~{prefix}.fq.gz"
     }
 
-    #########################
-    # Upstream uses gcr.io/cloud-marketplace/google/ubuntu2004:latest. Swapped for
-    # Docker Hub's ubuntu, which needs no GCP credentials and is multi-arch.
     RuntimeAttr default_attr = object {
         cpu_cores:          2,
         mem_gb:             memory,

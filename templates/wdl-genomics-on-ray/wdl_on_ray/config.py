@@ -1,16 +1,4 @@
-"""Typed access to the ``[ray]`` section of miniwdl's configuration.
-
-miniwdl's :class:`WDL.runtime.config.Loader` merges, in decreasing priority:
-explicit overrides, ``MINIWDL__<SECTION>__<KEY>`` environment variables, a
-``miniwdl.cfg`` file, and the built-in defaults. Sections that miniwdl doesn't
-know about, like ours, work fine as long as every read supplies a fallback,
-which is what the helpers here do. So all of these are equivalent ways to pick
-the container runtime:
-
-    MINIWDL__RAY__CONTAINER_RUNTIME=podman miniwdl run ...
-    miniwdl run --cfg my.cfg ...        # with [ray] container_runtime = podman
-    wdl-on-ray run --container-runtime podman ...
-"""
+"""Typed access to the ``[ray]`` section of miniwdl's configuration."""
 
 from __future__ import annotations
 
@@ -23,10 +11,6 @@ if TYPE_CHECKING:
 
 SECTION = "ray"
 
-#: Container runtimes this backend knows how to drive. ``none`` runs task
-#: commands directly on the Ray worker with no nested container, and ``native``
-#: does the same but has Ray supply each task's tools; see
-#: :mod:`wdl_on_ray.runtimes` for why those modes exist.
 CONTAINER_RUNTIMES = (
     "auto",
     "podman",
@@ -38,25 +22,20 @@ CONTAINER_RUNTIMES = (
     "ray",
 )
 
-#: How ``container_runtime = native`` installs a task's tool wheels.
 ENV_INSTALLERS = ("pip", "uv")
 
-#: What ``container_runtime = ray`` does with a task whose ``runtime.docker`` is not in
-#: ``task_image_map``. ``error`` refuses to dispatch it; ``cluster`` runs it in the
-#: cluster image without an ``image_uri``. See :attr:`RayConfig.task_image_fallback`.
+#: For a task not in ``task_image_map``: ``error`` refuses it, ``cluster`` runs the cluster image.
 TASK_IMAGE_FALLBACKS = ("error", "cluster")
 
-#: Where a task's command runs. ``ray`` submits a Ray task per WDL task, which is the
-#: backend's whole point and what this template uses. ``inprocess`` runs it here instead,
-#: for a caller that has already scheduled the graph so this process *is* the Ray task.
+#: Where a task's command runs: a Ray task per WDL task, or in this process.
 DISPATCH_MODES = ("ray", "inprocess")
 
-#: How to derive the per-task ceiling that miniwdl clamps ``runtime.cpu`` and
-#: ``runtime.memory`` against.
+#: How to derive the per-task ceiling miniwdl clamps ``runtime.cpu``/``runtime.memory`` to.
 LIMIT_SOURCES = ("max_node", "cluster", "local")
 
 
 def _raw(cfg: Loader, key: str, default: str) -> str:
+    # miniwdl reads a section it does not know only with a fallback on every read.
     return cfg.get(SECTION, key, default=default).strip()
 
 
@@ -107,150 +86,47 @@ class RayConfig:
     """Resolved ``[ray]`` settings."""
 
     address: str
-    """Ray cluster address. ``auto`` honours ``RAY_ADDRESS`` and otherwise starts
-    a local instance; anything else is passed to ``ray.init(address=...)``."""
-
     namespace: str
-
     container_runtime: str
-    """One of :data:`CONTAINER_RUNTIMES`. ``auto`` probes the cluster once, at
-    startup, for the first usable runtime."""
-
+    #: e.g. ``["sudo", "podman"]``; empty means the runtime's own default.
     container_exe: list[str]
-    """Override the executable for the chosen runtime, e.g. ``["sudo", "podman"]``.
-    Empty means "use the runtime's own default"."""
-
     limit_source: str
-    """See :data:`LIMIT_SOURCES`. ``max_node`` is the default and the only one
-    that's generally correct: a single WDL task runs inside a single container on
-    a single node, so the ceiling that matters is the *largest node*, not the sum
-    across the cluster (a 64-CPU request is unschedulable on 8 x 8-CPU nodes no
-    matter what the cluster total says). ``max_node`` and ``cluster`` count only
-    nodes with CPUs, the ones that run tasks, so a ``CPU: 0`` head is left out;
-    with no such node up there is no ceiling."""
-
+    #: 0 derives it. Set it to the worker shape when workers may not be up at startup.
     max_cpu: int
-    """Hard override for the per-task CPU ceiling; 0 means "derive it from
-    ``limit_source``". Set this to the worker shape when the workers may not be
-    up at startup: with none up there is no ceiling, and with only smaller ones
-    up it is too low."""
-
     max_memory_bytes: int
-    """Hard override for the per-task memory ceiling; 0 means "derive it"."""
-
+    #: Request ``runtime.memory`` from Ray, so it does not pack a node past its RAM.
     reserve_memory: bool
-    """Whether to pass ``runtime.memory`` to Ray as a ``memory`` resource
-    request. On by default: it keeps Ray from packing more tasks onto a node than
-    its RAM can serve."""
-
+    #: ``DEFAULT`` or ``SPREAD``.
     scheduling_strategy: str
-    """Ray scheduling strategy for task placement: ``DEFAULT`` or ``SPREAD``."""
-
+    #: 0: miniwdl's own retries reset the working directory, where Ray's would reuse a dirty one.
     task_max_retries: int
-    """Ray-level retries on *worker or node failure*. Defaults to 0 because
-    miniwdl already implements WDL's ``runtime.maxRetries``/``preemptible``, and
-    it resets the task's working directory between attempts, whereas a Ray-level retry
-    would instead re-enter a dirty directory."""
-
+    #: Demanded by every task, e.g. ``{"wdl_node": 1}`` to confine WDL work to a node group.
     extra_resources: dict[str, float]
-    """Custom Ray resources demanded by *every* task, e.g. ``{"wdl_node": 1}`` to
-    confine WDL work to a labelled node group."""
-
     extra_container_args: list[str]
-    """Extra arguments spliced into every container run invocation."""
-
+    #: For GPU tasks whose WDL names none.
     accelerator_type: str
-    """Ray accelerator type demanded by every GPU task, when the WDL doesn't name
-    one itself."""
-
     image_pull_timeout: int
-    """Seconds to allow for an image pull on a worker node."""
-
+    #: Node-local, so N tasks landing on one node at once pull once.
     pull_lock_dir: str
-    """Node-local directory for image-pull locks, so that N tasks landing on one
-    node at once produce one pull instead of N."""
-
+    #: Tiny image that hands rootless-container outputs back to the invoking user.
     chown_image: str
-    """Tiny image used to hand rootless-container output files back to the
-    invoking user. See :meth:`wdl_on_ray.runtimes.ContainerRuntime.chown_argv`."""
-
     sif_cache_dir: str
-    """Where Apptainer/Singularity SIF conversions are cached. Pointing this at
-    shared storage makes each image a once-per-cluster conversion instead of
-    once-per-node."""
-
+    #: If set, ``runtime.disks`` is also demanded as this custom resource; else it is only logged.
     disk_resource_name: str
-    """When set, ``runtime.disks`` is also demanded as this custom Ray resource,
-    so disk-hungry tasks can be steered onto node groups labelled with it. Empty
-    (the default) means ``runtime.disks`` only gets logged."""
-
     dispatch: str
-    """One of :data:`DISPATCH_MODES`. Leave at ``ray``: ``inprocess`` exists for a
-    caller that has already scheduled the workflow graph itself, so that *this*
-    process is the Ray task; see :meth:`wdl_on_ray.backend.RayContainer._run_inprocess`."""
-
+    #: For ``native``: a shared directory or a ``--find-links`` index; empty resolves from an index.
     tool_wheel_dir: str
-    """Where ``container_runtime = native`` finds the tool wheels: a directory on
-    the shared storage this backend already requires, or a published
-    ``--find-links`` index. Empty means resolve from a package index alone. Set
-    ``env_offline`` as well for a cluster with no egress."""
-
+    #: ``runtime.docker`` -> ``runtime_env`` for ``native``; wins over deriving it from the command.
     image_env_map: dict[str, Any]
-    """``runtime.docker`` value -> Ray ``runtime_env``, for ``native`` mode. Lets
-    a task's declared image select an environment without editing the WDL. Takes
-    precedence over deriving the environment from the task's command."""
-
+    #: ``--no-index``; a ``kind = pypi`` tool then needs its dependencies vendored too.
     env_offline: bool
-    """Resolve tool wheels with ``--no-index``, for a cluster with no egress. Off by
-    default: a ``kind = pypi`` tool such as ``quast`` ships only a dependency edge onto
-    real distributions, so an index has to stay reachable unless those have been
-    vendored into ``tool_wheel_dir`` too."""
-
     env_installer: str
-    """One of :data:`ENV_INSTALLERS`. ``uv`` is faster; ``pip`` is the default
-    because it is what Ray's own plugin reaches for first. Both require
-    ``virtualenv`` (and ``pip``) in every node's base Python."""
-
     tool_manifest: str
-    """Override the location of ``tools/manifest.toml``. Needed only when the
-    package is installed without the template directory alongside it (as it is
-    inside this template's image), since the default is discovered relative to
-    this module."""
-
+    #: Added to every environment ``native`` derives, not to explicitly named ones.
     env_extra_requirements: list[str]
-    """Distributions added to every environment ``native`` mode *derives*, e.g. to
-    ship a library each task's command expects. Per task, not per wheel, so
-    a task needing no tool wheels still gets them. An environment named explicitly
-    by ``runtime.ray_runtime_env`` or ``image_env_map`` is left exactly as given."""
-
+    #: ``runtime.docker`` -> image URI for ``container_runtime = ray``; ``"*"`` matches the rest.
     task_image_map: dict[str, str]
-    """``runtime.docker`` value -> the image URI Ray should run that task in, for
-    ``container_runtime = ray``.
-
-    A map and not a passthrough, because the two values name different things. The
-    WDL declares a portable image (``us.gcr.io/broad-dsp-lrma/lr-flye:2.8.3``); Ray
-    needs one whose Ray and Python versions match the cluster's exactly, which means
-    an image rebuilt on the cluster's own base. The map is where that correspondence
-    is written down and version-controlled, so the WDL keeps declaring what it means
-    and the deployment supplies what will run.
-
-    Keys are matched exactly against ``runtime.docker``. An entry may also be the
-    literal ``"*"``, which matches any image not otherwise listed."""
-
     task_image_fallback: str
-    """What ``container_runtime = ray`` does with a task whose ``runtime.docker`` has
-    no entry in :attr:`task_image_map`. One of :data:`TASK_IMAGE_FALLBACKS`.
-
-    ``error`` (the default) refuses to dispatch. That is deliberate and is the whole
-    reason to choose this runtime: silently running an unmapped task in the cluster
-    image is exactly the "declared tag is advisory" behaviour of ``none``, and
-    getting it by accident, on one task in a run that otherwise looks isolated, is
-    worse than getting it on purpose.
-
-    ``cluster`` opts back into that, per deployment and in writing: unmapped tasks
-    run in the cluster image with no ``image_uri``. Reasonable when most tasks need
-    only standard shell tools and a few need a real toolchain. (A ``"*"`` entry in
-    :attr:`task_image_map` is different: it sends unmapped tasks to that one image.)"""
 
 
 def load(cfg: Loader) -> RayConfig:

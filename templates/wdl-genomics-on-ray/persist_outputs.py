@@ -32,15 +32,13 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-#: Mounts that survive cluster termination. Not present on every Anyscale cloud, hence probed
-#: rather than assumed.
+#: Mounts that survive cluster termination; probed, since not every cloud has them.
 DURABLE_MOUNTS = ("/mnt/user_storage", "/mnt/shared_storage")
 
 Json = str | int | float | bool | None | list["Json"] | dict[str, "Json"]
 
 
 def durable_mount() -> str | None:
-    """The first durable mount this cluster actually has and can write to."""
     for mount in DURABLE_MOUNTS:
         path = Path(mount)
         if path.is_dir() and os.access(path, os.W_OK):
@@ -49,14 +47,7 @@ def durable_mount() -> str | None:
 
 
 def local_files(value: Json) -> list[str]:
-    """Every existing local file path reachable in ``value``.
-
-    A WDL output is a `File`, or an array or map of them, or a scalar that is not a path at
-    all: `quast_summary` is a `Map[String, String]` of metrics whose values are numbers as
-    strings. Rather than consult the declared types, this takes any string that names a file
-    which exists: a metric never does, and a `File` output always does, because miniwdl has
-    already collected it into the run directory.
-    """
+    """Every existing local file path reachable in ``value``."""
     if isinstance(value, str):
         return [value] if value.startswith("/") and Path(value).is_file() else []
     if isinstance(value, dict):
@@ -67,15 +58,7 @@ def local_files(value: Json) -> list[str]:
 
 
 def _destination_names(sources: list[str]) -> list[str]:
-    """A unique name under the output's directory for each source, in order.
-
-    Two files in one output can share a basename: an ``Array[Array[File]]`` from a scatter
-    is the usual way, and every shard names its file the same thing. Flattening those into
-    one directory has the last copy silently overwrite the rest, and the persisted JSON then
-    points several entries at one file. Colliding names get an index directory; names that
-    are already unique keep the flat path they had, which is the common case and the one
-    people read.
-    """
+    # Scatter shards share basenames: colliding names get an index directory, unique ones stay flat.
     totals = Counter(Path(source).name for source in sources)
     seen: dict[str, int] = {}
     names = []
@@ -97,9 +80,7 @@ def copy_out(sources: list[str], dest: str, prefix: str) -> list[str]:
     if dest.startswith("s3://"):
         target = f"{dest.rstrip('/')}/{prefix}"
         for source, name in zip(sources, names):
-            # One `cp` per file rather than a recursive sync: the sources are scattered across
-            # per-task run directories, not a tree, and naming each one keeps the copy limited
-            # to declared outputs.
+            # One cp per file: the sources are scattered over per-task directories, not a tree.
             destination = f"{target}/{name}"
             subprocess.run(["aws", "s3", "cp", source, destination], check=True)
             written.append(destination)
@@ -115,15 +96,7 @@ def copy_out(sources: list[str], dest: str, prefix: str) -> list[str]:
 
 
 def rewrite(value: Json, moved: dict[str, str]) -> Json:
-    """``value`` with every copied path replaced, and its shape preserved.
-
-    The old code reassembled the result as ``copied if isinstance(value, list) else copied[0]``,
-    which is right for ``File`` and ``Array[File]`` and wrong for everything else a WDL can
-    declare. A ``Map[String, File]`` copied every file and then recorded only the first, losing
-    the keys and the rest; an ``Array[Array[File]]`` came back flattened, so the persisted JSON
-    no longer had the shape the workflow declared and could not be read by code written against
-    it. Walking the original value fixes both, and needs no knowledge of the declared type.
-    """
+    """``value`` with every copied path replaced and its shape (maps, nested arrays) preserved."""
     if isinstance(value, str):
         return moved.get(value, value)
     if isinstance(value, dict):
@@ -134,16 +107,9 @@ def rewrite(value: Json, moved: dict[str, str]) -> Json:
 
 
 def persist(outputs_json: Path, dest: str) -> dict[str, Json]:
-    """Copy every File output named in ``outputs_json`` to ``dest``.
-
-    Returns the report as written, with paths rewritten to the persisted locations so the
-    surviving JSON points at surviving files rather than at a deleted mount.
-    """
+    """Copy every File output in ``outputs_json`` to ``dest``, rewriting the report's paths."""
     report = json.loads(outputs_json.read_text())
-    # miniwdl's run-root outputs.json is the *bare* name -> value mapping; the {"dir",
-    # "outputs"} envelope appears only on the CLI's stdout. The old default here was {},
-    # which read every real run as having no outputs and "persisted" zero files with a
-    # green exit, measured on the first cluster run that ever reached this step.
+    # miniwdl's run-root outputs.json is the bare name -> value map; the envelope is stdout-only.
     outputs: dict[str, Json] = report.get("outputs", report)
 
     persisted: dict[str, Json] = {}
@@ -153,12 +119,8 @@ def persist(outputs_json: Path, dest: str) -> dict[str, Json]:
         if not sources:
             persisted[name] = outputs[name]
             continue
-        # `ONTAssembleWithFlye.asm_polished` -> `asm_polished`, which is enough to be
-        # unambiguous within one workflow and reads better as a directory name.
         prefix = name.split(".")[-1]
         copied = copy_out(sources, dest, prefix)
-        # Same shape as the original, whatever that shape was, so the persisted JSON can be
-        # read by code written against the workflow's declared outputs.
         persisted[name] = rewrite(outputs[name], dict(zip(sources, copied)))
         total += len(copied)
         print(f"  {name} -> {len(copied)} file(s)")
@@ -177,9 +139,7 @@ def persist(outputs_json: Path, dest: str) -> dict[str, Json]:
             ["aws", "s3", "cp", str(local_copy), f"{dest.rstrip('/')}/outputs.json"], check=True
         )
     else:
-        # Created here rather than relying on copy_out having done it: a workflow whose outputs
-        # are all non-File, or a failed run that produced none, copies nothing, and the
-        # report should still be written.
+        # Also when nothing was copied: the report is still written.
         Path(dest).mkdir(parents=True, exist_ok=True)
         (Path(dest) / "outputs.json").write_text(summary)
 
@@ -194,8 +154,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if not args.outputs.is_file():
-        # The program failed before reporting, which its own exit status already says. Copying
-        # nothing is correct; masking that with an error here is not.
+        # The program's own exit status already reports the failure; copying nothing is correct.
         print(f"no outputs JSON at {args.outputs}; nothing to persist", file=sys.stderr)
         return 0
 

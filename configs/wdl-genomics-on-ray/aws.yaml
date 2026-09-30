@@ -3,18 +3,8 @@ head_node:
   resources:
     CPU: 0
 worker_nodes:
-# 32 vCPU / 128 GiB, sized with the notebook's runtime_attr_flye (30 cpu_cores, and
-# flye_num_threads 30): change the instance type and those together. min_nodes: 1 so the
-# first WDL task does not wait on a cold autoscale.
-#
-# max_nodes: 3, one worker per concurrent assembly, since each sample's Flye task holds 30 of a
-# node's 32 vCPUs. Fewer still completes, less concurrently, because every per-task request fits
-# one node.
-#
-# market_type: PREFER_SPOT. Every task carries preemptible_tries: 3 (the inputs JSONs and the
-# notebook's inputs), and the backend maps a reclaimed node to miniwdl's Interrupted, so a lost
-# task reruns from its start. The schema allows market_type on worker groups only, so the head
-# stays on demand. No real reclaim has hit this yet.
+# Sized with the notebook's runtime_attr_flye and flye_num_threads (30): change them together.
+# One worker per concurrent assembly. On spot, a lost node spends the task's preemptible_tries.
 - name: assembly-worker
   instance_type: m5.8xlarge
   min_nodes: 1

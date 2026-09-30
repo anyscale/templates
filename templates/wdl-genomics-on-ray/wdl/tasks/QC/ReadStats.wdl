@@ -2,64 +2,8 @@ version 1.0
 
 import "../../structs/Structs.wdl"
 
-# Measure the properties of a read set that an assembler's parameters should be derived
-# from. Not adapted from upstream: broadinstitute/long-read-pipelines has no equivalent,
-# because there the parameters are hardcoded per pipeline. ONTAssembleWithFlye.wdl's
-# header has the run that motivated measuring them.
-#
-# Two tasks instead of one, because they cost very different amounts and want different
-# resources: FastqStats is a single gzip pass on one core, MeasureDivergence runs an
-# aligner. They take the same input and neither feeds the other, so miniwdl runs them
-# concurrently.
-#
-# Both assume 4-line FASTQ records, which is what every ONT basecaller emits. Wrapped
-# sequence lines would need a state machine to parse and nothing in this corpus produces
-# them.
-#
-# ---------------------------------------------------------------------------------
-# What MeasureDivergence's number is good for, and what it is not.
-#
-# It is a cheap consistency check on a read set's label. Flye's read-mode flags select
-# different algorithms, and Flye's own guidance selects between them by *chemistry and
-# basecaller* ("for R10 data, use --nano-hq"), not by a divergence reading. Both are
-# known metadata for any real read set. This task makes a read set that does not behave
-# like its label visible before the assembly rather than after it, and records the
-# reading in the outputs. It does not overrule the tool's documented guidance, and
-# nothing branches on it.
-#
-# It is also weaker than a bare number suggests, in three ways:
-#
-#   * `dv:f` is minimap2's *approximate* per-base divergence, estimated from the
-#     minimizer chain. Without `-c` there is no base-level alignment behind it. It is
-#     the right tag for this purpose and far better than the matches/blocklen formula
-#     it replaced (see the command block), but it is an estimate.
-#   * `ava-ont` is tuned to *find overlaps*, not to measure them. Its divergences skew
-#     high on ONT because homopolymer indels dominate the error and are not
-#     gap-compressed here, and because chimeric reads and adapters survive into the
-#     probe.
-#   * The result is a median over overlapping read pairs in one subsample, so it
-#     inherits whatever that subsample's coverage and repeat content give it. Over a
-#     whole chromosome, repeats dominate: the same HG002 reads measure 0.0721 over
-#     2 Mbp of chr20 and 0.1532 over all of it (see ONTAssembleWithFlye.wdl).
-#
-# On an earlier 54.6x cut of the HG002 chr20 dorado sup reads it measured 0.061
-# pairwise, which the x2 rule reads as ~3% per read. Two things explain the gap from the
-# ~1% "sup" suggests, and neither is a bad basecaller:
-#
-#   * The published set is quality-filtered at Q10, not Q20. The source CRAMs carry
-#     `@PG ... CL:samtools view -e [qs] >= 10 --output ...pass.cram`, so `.pass` admits
-#     reads down to 10% mean error, and the median overlap is drawn from all of them.
-#   * The x2 conversion is an upper bound rather than a calibration. It holds when the
-#     two reads' errors are independent; ONT's dominant errors are homopolymer and
-#     context effects that are *correlated* between reads, so two reads often make the
-#     same wrong call and agree. Real pairwise divergence therefore runs below 2x the
-#     per-read rate, and dividing by 2 understates per-read error.
-#
-# Both biases push the same way, so treat the derived per-read figure as an upper
-# bound on a lower bound. Three per cent is well inside Flye's --nano-hq band (<5% per
-# read), so on that read set the measurement agreed with the chemistry. It would take a
-# much larger disagreement than this, corroborated by something with base-level
-# alignment behind it, to conclude that a basecaller's Q scores are wrong.
+# Read-set measurements for Flye's parameters; both tasks assume 4-line FASTQ records.
+# MeasureDivergence is QC only: ava-ont's approximate dv:f also tracks repeat content.
 
 task FastqStats {
 
@@ -121,7 +65,6 @@ task FastqStats {
         Int read_n50 = read_int("read_n50.txt")
     }
 
-    #########################
     RuntimeAttr default_attr = object {
         cpu_cores:          1,
         mem_gb:             4,
@@ -165,9 +108,7 @@ task MeasureDivergence {
         Int min_overlap_bp = 1000
         Int min_overlaps = 100
 
-        # Feeds default_attr's cpu_cores below, so the reservation and the flag agree unless a
-        # runtime_attr_override disagrees with it, in which case set both, as AlignAsPAF's
-        # num_cpus has the same arrangement for the same reason.
+        # Also default_attr's cpu_cores; a runtime_attr_override setting cpu_cores should match.
         Int num_threads = 4
 
         RuntimeAttr? runtime_attr_override
@@ -228,7 +169,6 @@ task MeasureDivergence {
         Int num_overlaps = read_int("num_overlaps.txt")
     }
 
-    #########################
     RuntimeAttr default_attr = object {
         cpu_cores:          num_threads,
         mem_gb:             16,

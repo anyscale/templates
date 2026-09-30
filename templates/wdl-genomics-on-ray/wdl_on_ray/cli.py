@@ -1,23 +1,4 @@
-"""``wdl-on-ray``: a thin wrapper that points miniwdl at the Ray backend.
-
-Nothing here is required: ``miniwdl run --cfg ...`` with
-``[scheduler] container_backend = ray`` does the same job, and that is the escape
-hatch when you need a miniwdl feature this wrapper doesn't mention. What the
-wrapper adds is the handful of defaults that are easy to get wrong and expensive
-to get wrong quietly:
-
-* selecting the ``ray`` backend;
-* putting the run directory on shared storage, because the backend's filesystem
-  contract requires it (see :mod:`wdl_on_ray.backend`);
-* raising miniwdl's task concurrency to 200 whenever there is a Ray cluster to
-  join, however few nodes are up yet: Ray queues the tasks that do not fit, and
-  the autoscaler scales on that queue. miniwdl's default is the driver's
-  ``nproc``, which silently caps a 500-core cluster at however many cores the
-  head node happens to have.
-
-Unrecognized arguments are forwarded to miniwdl verbatim, so
-``wdl-on-ray run pipeline.wdl -i inputs.json --verbose`` works as expected.
-"""
+"""``wdl-on-ray``: a thin miniwdl wrapper that selects the Ray backend and sets run defaults."""
 
 from __future__ import annotations
 
@@ -34,9 +15,7 @@ from wdl_on_ray import runtimes
 from wdl_on_ray._version import __version__
 from wdl_on_ray.backend import SHARED_STORAGE_PREFIXES
 
-#: miniwdl's guideline ceiling for its own thread pool; beyond roughly this many
-#: concurrent tasks the driver's Python process becomes the bottleneck. Each task
-#: holds one thread while it is queued or running, waking once a second to poll Ray.
+#: miniwdl's guideline ceiling for its thread pool; past it the driver process is the bottleneck.
 MAX_TASK_CONCURRENCY = 200
 
 
@@ -52,17 +31,12 @@ def default_run_dir() -> str:
 
 
 def _setenv(key: str, value: str, *, force: bool = False) -> None:
-    """Set a ``MINIWDL__*`` override without clobbering the caller's own."""
     if force or key not in os.environ:
         os.environ[key] = value
 
 
 def _find_cluster() -> str | None:
-    """The Ray cluster a run would join, or None if it would start a local instance.
-
-    Only looks, through :func:`wdl_on_ray.backend.find_cluster`: sizing a thread pool is no
-    reason to start a local Ray instance, or to join the cluster before the backend does.
-    """
+    # Only looks: sizing a thread pool is no reason to start or join Ray.
     import logging
 
     from WDL.runtime.config import Loader
@@ -73,11 +47,6 @@ def _find_cluster() -> str | None:
 
 
 def _quiet_logger() -> Any:
-    """A logger with miniwdl's NOTICE level, for use before miniwdl's own setup.
-
-    ``connect`` logs at NOTICE, which the stdlib does not define; miniwdl installs
-    it at import time, so borrow that instead of reimplementing it.
-    """
     import logging
 
     logger = logging.getLogger("wdl-on-ray.connect")
@@ -87,7 +56,6 @@ def _quiet_logger() -> Any:
 
 
 def _apply_run_defaults(args: argparse.Namespace, passthrough: list[str]) -> list[str]:
-    """Translate our flags into miniwdl env overrides and argv."""
     _setenv("MINIWDL__SCHEDULER__CONTAINER_BACKEND", "ray", force=True)
     if args.container_runtime:
         _setenv("MINIWDL__RAY__CONTAINER_RUNTIME", args.container_runtime, force=True)
@@ -98,10 +66,7 @@ def _apply_run_defaults(args: argparse.Namespace, passthrough: list[str]) -> lis
     if args.tool_wheel_dir:
         _setenv("MINIWDL__RAY__TOOL_WHEEL_DIR", args.tool_wheel_dir, force=True)
     if args.call_cache:
-        # miniwdl's call cache ships off (`put`/`get` both false) and defaults to a
-        # node-local `~/.cache/miniwdl`, which on a multi-node cluster caches results
-        # where the next task will not look for them. Both have to move together, so
-        # this is one flag rather than three env vars.
+        # miniwdl's cache ships off and node-local; dir, put and get have to move together.
         _setenv("MINIWDL__CALL_CACHE__DIR", args.call_cache, force=True)
         _setenv("MINIWDL__CALL_CACHE__PUT", "true", force=True)
         _setenv("MINIWDL__CALL_CACHE__GET", "true", force=True)
@@ -109,42 +74,24 @@ def _apply_run_defaults(args: argparse.Namespace, passthrough: list[str]) -> lis
     if args.task_concurrency:
         _setenv("MINIWDL__SCHEDULER__TASK_CONCURRENCY", str(args.task_concurrency), force=True)
     elif _find_cluster():
-        # Not sized to the nodes up now: Ray queues the tasks that do not fit, and the queue
-        # is what the autoscaler scales on, so a smaller pool caps how far the cluster grows.
-        # Not forced either, so a MINIWDL__SCHEDULER__TASK_CONCURRENCY of the caller's stays.
+        # Not sized to the nodes up now: the autoscaler scales on Ray's queue of what doesn't fit.
+        # Not forced, so the caller's own MINIWDL__SCHEDULER__TASK_CONCURRENCY stays.
         _setenv("MINIWDL__SCHEDULER__TASK_CONCURRENCY", str(MAX_TASK_CONCURRENCY))
-    # With no cluster to join, miniwdl's own default, the driver's nproc, is right: the run
-    # starts a local Ray instance on this one machine.
 
     argv = list(passthrough)
     if not any(a == "--dir" or a.startswith("--dir=") for a in argv):
-        # No mkdir: miniwdl creates the run directory (and any missing parents)
-        # itself, and a mkdir here would make merely *computing* the argv a filesystem
-        # write, which fails wherever the working directory is read-only, as it is
-        # inside a Nix build sandbox.
+        # No mkdir: miniwdl creates it, and building argv must not write to a read-only cwd.
         argv += ["--dir", args.dir or default_run_dir()]
     return argv
 
 
 def _warn_missing_downloaders(argv: list[str]) -> None:
-    """Report remote-input schemes this node cannot localize, before the run starts.
-
-    miniwdl downloads a remote `File` input inside a synthesised WDL task that shells
-    out to `aws`/`gsutil`/`aria2c`, expecting the binary from that task's container
-    image. Under `none` and `native` there is no image, so the binary has to be on the
-    node, and when it is not, the run fails with exit 127 from a task named something
-    like `aws_s3_cp`, several directories deep, naming no scheme and no URI.
-    `envs.missing_downloaders` answers the question here, before the run, as well as
-    in `doctor`.
-    """
     import json
     import pathlib
 
     from wdl_on_ray import envs
 
-    # The URIs live in the inputs JSON and in bare `key=s3://...` arguments. Read
-    # whatever is cheaply available and stay quiet if anything is unparseable: this
-    # is a pre-flight courtesy, not a validator, and must never block a run.
+    # Best effort, from the inputs JSON and bare key=uri arguments; must never block a run.
     values: list[object] = [a for a in argv if "://" in a]
     for flag in ("-i", "--input"):
         if flag not in argv:
@@ -176,7 +123,7 @@ def _cmd_run(args: argparse.Namespace, passthrough: list[str]) -> int:
 
     argv = _apply_run_defaults(args, passthrough)
     _warn_missing_downloaders(argv)
-    # Works whether or not this package is pip-installed; see register_backend.
+    # Needed when this package is not installed.
     register_backend(Loader(logging.getLogger("wdl-on-ray")))
     return int(CLI.main(["run", *argv]) or 0)
 
@@ -189,7 +136,6 @@ def _cmd_check(args: argparse.Namespace, passthrough: list[str]) -> int:
 
 
 def _dist(name: str) -> str:
-    """Installed version of a distribution, or ``MISSING``."""
     from importlib.metadata import PackageNotFoundError
     from importlib.metadata import version as pkg_version
 
@@ -219,9 +165,7 @@ def _cmd_doctor(args: argparse.Namespace, passthrough: list[str]) -> int:
         runtime = runtimes.get(name)
         exe = runtime.default_exe
         if runtime.env_is_image:
-            # Ray starts the nested container itself, so there is no executable to
-            # probe. What decides whether this mode can run is the image map, and
-            # whether images have been built against this cluster's versions.
+            # Ray starts the nested container, so there is no executable to probe.
             mapped = len(resolved.task_image_map)
             state = (
                 f"{mapped} image(s) mapped" if mapped
@@ -234,9 +178,7 @@ def _cmd_doctor(args: argparse.Namespace, passthrough: list[str]) -> int:
                   f"python {sys.version.split()[0]} exactly")
             continue
         if runtime.provides_env:
-            # Not "always available" like `none`: this one needs Ray's env plugins to
-            # work, and those have prerequisites better reported before a run rather
-            # than discovering them when the first task dispatches.
+            # Needs Ray's env plugins, whose prerequisites otherwise fail at first dispatch.
             missing = [n for n in ("virtualenv", "pip") if not importlib.util.find_spec(n)]
             state = f"MISSING {', '.join(missing)} in this Python" if missing else "ready"
             print(f"  {name:<12} {state} (Ray supplies each task's tools)")
@@ -253,10 +195,6 @@ def _cmd_doctor(args: argparse.Namespace, passthrough: list[str]) -> int:
             print(f"  {declared}")
             print(f"    -> {actual}")
 
-    # Which remote input schemes this node can actually localize. Not the pipeline's tools:
-    # miniwdl downloads a remote input with a synthesised WDL task that shells out to these,
-    # expecting the binary from that task's container image, so under `native`, with no
-    # container, the node has to have them. Reported here because nothing declares them.
     from wdl_on_ray import envs
 
     print("\ninput downloaders (miniwdl shells out to these; native mode needs them on PATH):")
@@ -273,8 +211,6 @@ def _cmd_doctor(args: argparse.Namespace, passthrough: list[str]) -> int:
     print(f"\ndefault run dir  {run_dir}")
     print(f"  on shared storage: {'yes' if shared else 'NO (single-node runs only)'}")
 
-    # Reported because it is off unless asked for, and because a long assembly that
-    # dies without it starts again from nothing.
     cache_on = cfg["call_cache"].get_bool("get") and cfg["call_cache"].get_bool("put")
     cache_dir = cfg["call_cache"]["dir"] if cache_on else None
     print(f"\ncall cache       {'on' if cache_on else 'off (--call-cache DIR turns it on)'}")
@@ -288,11 +224,7 @@ def _cmd_doctor(args: argparse.Namespace, passthrough: list[str]) -> int:
 
 
 def _print_cluster(resolved: ray_config.RayConfig) -> None:
-    """The cluster a run would join, and what the backend would decide on it.
-
-    Found the way a run finds it, so a workspace, which sets no ``RAY_ADDRESS``, reports its
-    cluster too. Joined only when there is one: joining nothing would start a local instance.
-    """
+    # Joined only if found: joining nothing would start a local instance.
     from wdl_on_ray import backend
 
     address = backend.find_cluster(resolved)
@@ -325,7 +257,6 @@ def _print_cluster(resolved: ray_config.RayConfig) -> None:
 
 
 def _describe_ceiling(limits: dict[str, int], found: tuple[float, float] | None) -> str:
-    """The ceiling miniwdl would clamp ``runtime.cpu`` and ``runtime.memory`` to, in words."""
     from wdl_on_ray.backend import NO_LIMIT
 
     cpu, mem = limits["cpu"], limits["mem_bytes"]
@@ -361,11 +292,7 @@ def _cmd_probe_image(args: argparse.Namespace, passthrough: list[str]) -> int:
     driver = {"python": sys.version.split()[0], "ray": ray.__version__}
     print(f"driver    ray {driver['ray']}, python {driver['python']}\n")
 
-    # Ship the probe's code inside the task. Without this cloudpickle sends a module
-    # path, and the image being probed would have to import wdl_on_ray (and, through
-    # it, miniwdl) before it could answer whether it can run a task at all -- so a
-    # perfectly good task image would fail deserialization and be reported unusable.
-    # Same mechanism the real dispatch path uses; see backend._pickle_worker_modules_by_value.
+    # By value, so the probed image need not import wdl_on_ray (or miniwdl) to answer.
     from wdl_on_ray.backend import _pickle_worker_modules_by_value
 
     _pickle_worker_modules_by_value()

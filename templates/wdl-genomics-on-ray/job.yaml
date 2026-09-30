@@ -1,17 +1,9 @@
-# The GIAB Ashkenazi trio over all 64 Mbp of chr20, as an Anyscale Job. Submit it from this
-# directory: `working_dir: .` is relative to the shell, so from the repo root the job fails within
-# seconds on a missing WDL.
-#
+# The GIAB Ashkenazi trio over all of chr20, as an Anyscale Job. Submit from this directory,
+# since `working_dir: .` is relative to the shell:
 #   cd templates/wdl-genomics-on-ray && anyscale job submit --config-file job.yaml
-#
-# One measured run (Ray 2.56.0 image, on-demand workers): 2h03m56s, against 2h01m15s for the
-# slowest sample and 5h28m for the three end to end in series. The inputs pass s3:// URIs, which
-# miniwdl downloads once per run. For one sample, run ONTAssembleWithFlye.wdl with
-# -i inputs.chr20.json.
 name: wdl-genomics-on-ray-chr20-trio
 
-# Carries the toolchain, which `--container-runtime none` needs on every node before the first
-# task. No `requirements:`: a job installs those before working_dir is staged (tools/BUILDING.md).
+# The toolchain is baked in; a job's requirements: would install before working_dir is staged.
 image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.58.0
 
 working_dir: .
@@ -23,37 +15,18 @@ env_vars:
   # persist_outputs.py copies the declared outputs here; without it they go with the cluster.
   WDL_ON_RAY_RESULTS: /mnt/user_storage/wdl-on-ray/results/chr20-trio
 
-# POSIX sh: jobs run entrypoints under dash, where `set -o pipefail` fails before anything runs.
-# No `exec`, so the persist step runs and the job exits with the workflow's status.
+# POSIX sh: jobs use dash, where `set -o pipefail` fails. No exec, so the persist step runs.
 entrypoint: |
   set -u
-  # This TMPDIR is the driver's only. Ray workers on other nodes have their own environment,
-  # so a task's temporary files land in the worker's /tmp, on node-local disk: usually faster,
-  # but bounded by that node's disk. To give each task a temporary directory inside its own
-  # working directory on shared storage, set miniwdl's `[file_io] mount_tmpdir = true`, or
-  # pass TMPDIR through `[task_runtime] env`.
+  # The driver's TMPDIR only; tasks use their node's /tmp unless [file_io] mount_tmpdir = true.
   export TMPDIR=/mnt/cluster_storage/wdl-on-ray/tmp
   RUN_DIR=/mnt/cluster_storage/wdl-on-ray/runs
   CACHE_DIR=/mnt/cluster_storage/wdl-on-ray/cache
   mkdir -p "$TMPDIR" "$RUN_DIR" "$CACHE_DIR"
 
-  # --call-cache records finished tasks so a rerun can skip them. miniwdl's cache entry
-  # points at the output files in RUN_DIR and invalidates itself when they are gone
-  # (WDL/runtime/cache.py, _check_files_coherence). Both paths here are under
-  # /mnt/cluster_storage, which the platform recreates per job, so as configured the cache
-  # only helps a rerun on the same cluster, which a job does not get. That is why
-  # max_retries stays 0 below.
-  #
-  # For resume that survives cluster replacement, put BOTH on a durable mount and let
-  # the job retry:
-  #     RUN_DIR=/mnt/user_storage/wdl-on-ray/runs
-  #     CACHE_DIR=/mnt/user_storage/wdl-on-ray/cache
-  # with max_retries: 1. The cost is that the run tree's intermediates, several GB per
-  # sample, stay on durable storage instead of dying with the cluster.
-  #
-  # Under --container-runtime none the toolchain is not part of the cache key: WDL task
-  # inputs and the task's own source are. Rebuilding the image with a different Flye
-  # will reuse assemblies made by the old one. Clear CACHE_DIR when the image changes.
+  # /mnt/cluster_storage is recreated per job, so this cache only helps a rerun on the same
+  # cluster. To resume across job retries, put RUN_DIR and CACHE_DIR on /mnt/user_storage and
+  # set max_retries: 1. The toolchain is not in the cache key: clear CACHE_DIR on a new image.
   wdl-on-ray run wdl/pipelines/ONT/Assembly/ONTAssembleCohort.wdl \
     -i wdl/pipelines/ONT/Assembly/inputs.chr20.cohort.json \
     --container-runtime none \
@@ -76,20 +49,15 @@ compute_config:
     resources:
       CPU: 0
   worker_nodes:
-    # 32 vCPU / 128 GiB, sized with the inputs file's runtime_attr_flye and flye_num_threads
-    # (30 each): change them together.
+    # Sized with the inputs' runtime_attr_flye and flye_num_threads (30): change them together.
     - instance_type: m5.8xlarge
       min_nodes: 1
       max_nodes: 3
       market_type: PREFER_SPOT  # workers only; the head stays on demand
 
-# 24 h against the measured 2h03m56s: room for a slower instance type, a whole genome or spot
-# retries.
+# 24 h: room for a slower instance type, a whole genome or spot retries.
 timeout_s: 86400
 
-# Node loss is retried inside the workflow, from each task's runtime.preemptible budget: the
-# inputs file sets preemptible_tries: 3 on every task, while the WDL keeps upstream's defaults,
-# mostly 0. Check your own WDL, since a task with preemptible and maxRetries both 0 fails the run
-# on its first reclaim. A job-level retry gets a new cluster and an empty call cache, so keep this
-# at 0 unless RUN_DIR and CACHE_DIR move to durable storage, as the entrypoint shows.
+# Node loss is retried inside the workflow, from the inputs' preemptible_tries: 3. A job retry
+# gets a new cluster and an empty call cache; see the entrypoint before raising this.
 max_retries: 0

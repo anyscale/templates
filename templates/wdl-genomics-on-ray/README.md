@@ -62,22 +62,19 @@ if SCALE not in SCALES:
     raise ValueError(f"WDL_DEMO_SCALE must be one of {sorted(SCALES)}, got {SCALE!r}")
 CFG = SCALES[SCALE]
 
-# The GIAB Ashkenazi trio (son, father, mother), assembled independently. One sample's task
-# graph is a chain, which leaves the scheduler nothing to pack.
+# The GIAB Ashkenazi trio (son, father, mother), assembled independently.
 SAMPLES = ["HG002", "HG003", "HG004"]
 
 TEMPLATE_DIR = pathlib.Path.cwd()
 DATA_URI = f"s3://anyscale-public-materials/genomics/giab-trio-chr20/{SCALE}"
 
 # Must be shared storage: a task reads the previous task's outputs by path, from any node.
-# /mnt/local_storage fails with "file not found" on the second task.
 WORK = pathlib.Path("/mnt/cluster_storage/wdl-on-ray")
 DATA_DIR, RUN_DIR, SMOKE_DIR = WORK / "data", WORK / "runs", WORK / "smoke"
 for d in (DATA_DIR, RUN_DIR, SMOKE_DIR):
     d.mkdir(parents=True, exist_ok=True)
-# Required, and before TMPDIR moves. Ray finds the running cluster under <TMPDIR>/ray, and a
-# workspace sets no RAY_ADDRESS (a job does), so moving TMPDIR alone makes `wdl-on-ray run`
-# start a second, empty Ray on the head (CPU: 0), where every task waits forever.
+# Before TMPDIR moves: Ray finds the cluster under <TMPDIR>/ray, and without this
+# `wdl-on-ray run` starts an empty Ray on the CPU: 0 head, where every task waits.
 os.environ.setdefault("RAY_TMPDIR", os.environ.get("TMPDIR", "/tmp"))
 os.environ["TMPDIR"] = str(WORK / "tmp")
 pathlib.Path(os.environ["TMPDIR"]).mkdir(parents=True, exist_ok=True)
@@ -116,7 +113,6 @@ sample_wdl = wdl_dir / "ONTAssembleWithFlye.wdl"
 # miniwdl's own type checker; nothing Ray-specific.
 run(["wdl-on-ray", "check", str(cohort_wdl)])
 
-# The calls, in the order each file declares them.
 for path in (cohort_wdl, sample_wdl):
     print(f"\ncalls in {path.stem}:")
     for line in path.read_text().splitlines():
@@ -140,8 +136,7 @@ ran them from each task's `ray_placement.json`: expect one until a second worker
 
 
 ```python
-# SPREAD is best-effort, over the workers up at dispatch. Ray's default packs first, which
-# suits the real pipeline, so the override is on this command only.
+# SPREAD for this demo only; Ray's default packs, which suits the real pipeline.
 run([
     "wdl-on-ray", "run", str(TEMPLATE_DIR / "wdl/smoke/smoke.wdl"),
     "shards=8",
@@ -149,7 +144,7 @@ run([
     "--dir", str(SMOKE_DIR),
 ], env={**os.environ, "MINIWDL__RAY__SCHEDULING_STRATEGY": "SPREAD"})
 
-# Which node ran each shard, in the latest run only; miniwdl gives each run its own directory.
+# Which node ran each shard, in the latest run.
 smoke_run = max((p.parent for p in SMOKE_DIR.glob("*/outputs.json")), key=lambda p: p.stat().st_mtime)
 placements = sorted(smoke_run.glob("**/ray_placement.json"))
 nodes = {}
@@ -194,7 +189,6 @@ for entry in manifest["samples"]:
     print(f"{entry['sample']:<8}{entry['reads']:>10,}{entry['bases']:>14,}"
           f"{entry['read_n50']:>10,}{entry['coverage']:>9}x")
 
-# Check each FASTQ against the manifest's sha256 before anything runs on it.
 import hashlib
 
 for entry in manifest["samples"]:
@@ -222,8 +216,7 @@ inputs = {
     "ONTAssembleCohort.flye_num_threads": 30,
     "ONTAssembleCohort.quast_num_threads": 8,
     "ONTAssembleCohort.align_num_threads": 8,
-    # medaka is not in the image. MedakaPolish still runs and passes the draft through, so
-    # Flye's own round is the only polish.
+    # medaka is not in the image; MedakaPolish passes the draft through.
     "ONTAssembleCohort.medaka_rounds": 0,
     "ONTAssembleCohort.medaka_use_gpu": False,
     "ONTAssembleCohort.runtime_attr_fastq_stats":     {"cpu_cores": 1,  "mem_gb": 4,  "disk_gb": 50, "preemptible_tries": 3},
@@ -261,9 +254,7 @@ import matplotlib.pyplot as plt
 
 run_dir = max(RUN_DIR.glob("*/outputs.json"), key=lambda p: p.stat().st_mtime).parent
 
-# One row per task, from ray_placement.json's mtime to task.log's. Each attempt rewrites the
-# placement file, so a retried task shows its last attempt. The scatter shard in the path
-# (.../call-assemble/shard-1/...) gives the sample.
+# One row per task, ray_placement.json's mtime to task.log's; a retry shows its last attempt.
 rows = []
 for placement in run_dir.glob("**/ray_placement.json"):
     task_dir = placement.parent
@@ -274,7 +265,6 @@ for placement in run_dir.glob("**/ray_placement.json"):
                  json.loads(placement.read_text()).get("node_id", "?")[-6:],
                  placement.stat().st_mtime, (task_dir / "task.log").stat().st_mtime))
 
-# By sample, then by start time.
 rows.sort(key=lambda r: (SAMPLES.index(r[0]) if r[0] in SAMPLES else -1, r[3]))
 
 t0 = min(r[3] for r in rows)
@@ -296,7 +286,6 @@ for i, (sample, name, node, started, finished) in enumerate(rows):
 
 ax.set_yticks(range(len(rows)), [f"{s}  {n}" for s, n, *_ in rows], fontsize=7.5)
 ax.invert_yaxis()
-# A rule between samples.
 for i in range(1, len(rows)):
     if rows[i][0] != rows[i - 1][0]:
         ax.axhline(i - 0.5, color=GRID, linewidth=1)
@@ -382,8 +371,7 @@ METRICS = (
 names = outputs["ONTAssembleCohort.sample_names"]
 summaries = outputs["ONTAssembleCohort.quast_summaries"]
 
-# Without the minimap2 it builds at install, QUAST exits 0 with contiguity only. Quast.wdl fails
-# the task then; this is a second check.
+# Without its minimap2, QUAST exits 0 with contiguity only; Quast.wdl fails the task too.
 for name, summary in zip(names, summaries):
     assert quast_key("Genome fraction (%)") in summary, (
         f"{name}: QUAST produced no reference-based metrics; its minimap2 is missing. "
@@ -511,8 +499,7 @@ import ray
 # The cluster the WDL tasks ran on; nothing new is provisioned here.
 vcfs = dict(zip(names, outputs["ONTAssembleCohort.vcfs"]))
 
-# Normalize first: in a homopolymer, two assemblies can place one indel differently.
-# `-m -any` splits multiallelic records, so sites compare allele by allele.
+# Normalize first: two assemblies can place one homopolymer indel differently.
 NORM_DIR = WORK / "vcf-normalized"
 NORM_DIR.mkdir(parents=True, exist_ok=True)
 if not pathlib.Path(f"{reference}.fai").exists():
@@ -557,8 +544,7 @@ variants = (
 )
 
 if variants.empty:
-    # 2 Mbp of collapsed human assembly carries ~1,500 SNVs against GRCh38. Empty means no
-    # alignment, or every block fell under `paftools call -L` (50 kb default), which exits 0.
+    # No alignment, or every block fell under `paftools call -L` (50 kb), which exits 0.
     raise AssertionError(
         "no variant calls in any sample. Check the QUAST genome fraction above, then "
         "min_alignment_length_call in CallAssemblyVariants.wdl against this run's NGA50."
@@ -567,7 +553,6 @@ if variants.empty:
 print(f"{len(variants):,} normalized calls across {variants['sample'].nunique()} samples")
 print(variants.groupby("sample").size().to_string(header=False))
 
-# A call is identified by (chrom, pos, ref, alt).
 def keyset(sample):
     rows = variants[variants["sample"] == sample]
     return set(zip(rows["chrom"], rows["pos"], rows["ref"], rows["alt"]))

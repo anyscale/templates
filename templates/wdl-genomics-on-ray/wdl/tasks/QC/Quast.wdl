@@ -4,32 +4,10 @@ import "../../structs/Structs.wdl"
 
 # From broadinstitute/long-read-pipelines wdl/tasks/QC/Quast.wdl.
 # Licensed BSD-3-Clause; see wdl/LICENSE.
-#
-# Changes from upstream:
-#   * `--threads` comes from an explicit `Int num_threads` instead of
-#     `num_core=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | wc -l)`.
-#     /proc/cpuinfo lists the *host's* CPUs under both a container CPU quota and
-#     no-container mode, so upstream's QUAST ran with every core on the machine no
-#     matter what `runtime.cpu` reserved, and this task runs concurrently with
-#     AlignAsPAF, whose cores it was stealing. Same fix, and same cpu_cores
-#     arrangement, as wdl/tasks/Assembly/Flye.wdl.
-#   * `tree -h quast_results/` is now `|| true`. It is a debugging aid, but the
-#     task runs under `set -eux`, so on an image without tree(1) it would fail the
-#     task *after* QUAST had already succeeded.
-#   * `--large` is passed as a real flag or not at all. Upstream interpolates a
-#     single space and quotes it (`"~{size_optimization}"`), which hands QUAST an
-#     empty argument.
-#   * SummarizeQuastReport's image moved from gcr.io/cloud-marketplace to Docker
-#     Hub's ubuntu (no GCP credentials needed, and multi-arch), and the task gained
-#     the same `RuntimeAttr? runtime_attr_override` / `default_attr` / `select_first`
-#     block every other task here has. Upstream declares a bare `runtime { disks;
-#     docker }`, so it cannot be re-sized and inherits whatever the engine defaults
-#     to for cpu and memory.
-#   * Quast now fails when its report carries no `Genome fraction` line. This adds a
-#     failure mode upstream does not have, deliberately: QUAST exits 0 and writes a
-#     contiguity-only report when its bundled minimap2 is missing, so without the
-#     guard a run that measured nothing about correctness is indistinguishable from
-#     one that did. See the note at the check itself.
+
+# Unlike upstream: explicit num_threads, `tree ... || true`, --large as a real flag, a
+# re-sizable SummarizeQuastReport on Docker Hub's ubuntu, and a hard failure when a
+# reference was given but QUAST reported no alignment (its bundled minimap2 was missing).
 
 task Quast {
 
@@ -48,8 +26,7 @@ task Quast {
         Array[File] assemblies
         Boolean is_large = false
 
-        # Feeds default_attr's cpu_cores below, so the reservation and the flag agree
-        # unless a runtime_attr_override disagrees with it, in which case set both.
+        # Also default_attr's cpu_cores; a runtime_attr_override setting cpu_cores should match.
         Int num_threads = 16
 
         RuntimeAttr? runtime_attr_override
@@ -106,7 +83,6 @@ task Quast {
         File? contigs_reports = "contigs_reports.tar.gz"
     }
 
-    ###################
     RuntimeAttr default_attr = object {
         cpu_cores:             num_threads,
         mem_gb:                80,

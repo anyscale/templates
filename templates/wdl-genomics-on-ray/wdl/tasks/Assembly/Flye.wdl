@@ -4,59 +4,10 @@ import "../../structs/Structs.wdl"
 
 # From broadinstitute/long-read-pipelines wdl/tasks/Assembly/Flye.wdl.
 # Licensed BSD-3-Clause; see wdl/LICENSE.
-#
-# Six changes from upstream, all about resources and artifacts, none about assembly:
-#
-#   * `--threads` comes from an explicit `Int num_threads` instead of
-#     `num_core=$(cat /proc/cpuinfo | awk '/^processor/{print $3}' | wc -l)`.
-#     /proc/cpuinfo is the *host's* CPU list under both `--cpus` (a CFS quota, not
-#     a CPU mask) and no-container mode, so upstream's Flye plans for every core on
-#     the machine no matter what `runtime.cpu` said, oversubscribing the node
-#     and inflating peak memory with it. wdl/tasks/Preprocessing/Medaka.wdl states
-#     its `-t` the same way and for the same reason.
-#   * `cpu_cores: num_threads` in default_attr, so the Ray request and the flag Flye
-#     actually receives agree by construction. A RuntimeAttr override that sets
-#     cpu_cores should set num_threads to match; wdl/tasks/VariantCalling has the
-#     same arrangement for minimap2's `-t`.
-#   * `String extra_args` spliced into the command line. Flye's memory-reduction
-#     levers live only there: `--asm-coverage N --genome-size G` caps the coverage
-#     used for the initial disjointig assembly, which is the documented way to keep
-#     a large genome inside a node, and `--iterations 0` skips its polishing rounds.
-#     Neither has a `runtime {}` equivalent, so without a passthrough the only way
-#     to run this at a size other than the Broad's is to edit the WDL. Leave it
-#     empty for upstream behaviour.
-#   * `String read_mode` replaces a hardcoded `--nano-raw`, defaulting to exactly
-#     that so an unset caller gets upstream's command line. Flye 2.9 added
-#     `--nano-hq` for Guppy 5+ / Q20 basecalls. Which one a read set needs is a
-#     property of the reads, not of this task, and passing it through `extra_args`
-#     would hand Flye two conflicting read-type flags. ONTAssembleWithFlye.wdl sets it
-#     from the reads' declared chemistry.
-#   * The sub-workflow takes a `RuntimeAttr? runtime_attr_override` of its own and
-#     falls back to upstream's `100 + genome_size/1e7` GiB formula when none is
-#     given. Upstream hardcodes that formula at its own call site, so the
-#     sub-workflow has no runtime input at all and a caller cannot set `cpu_cores`.
-#     The fallback is all-or-nothing: an override replaces it wholesale, so state
-#     `mem_gb` even when you only mean to change `cpu_cores`. See `sized_attr` below.
-#   * `assembly_info.txt` and `flye.log` are kept as outputs. Upstream moves only
-#     the fasta and the gfa out of Flye's run directory and lets the rest go with
-#     it, which discards the per-contig coverage/circularity/repeat table, the
-#     one artifact that distinguishes a collapsed repeat from a real contig.
-#
-# `preemptible_tries: 0` in default_attr is upstream's value, kept so this file stays
-# upstream's; it is not advice. Under this workflow's defaults a full chr20 assembly takes
-# 1h19m25s of Flye on c6i.16xlarge and 1h55m33s on m5.8xlarge (the README's trio run), so a
-# reclaimed node costs a fraction of a spot node-hour to redo. inputs.chr20.json and
-# inputs.chr20.cohort.json therefore set `preemptible_tries: 3` on every task, which is the
-# right place for it: a spot policy belongs to the fleet you rent, not to the assembler.
-#
-# Flye does not checkpoint across a WDL retry. `--resume` reads its own `--out-dir`, and
-# miniwdl gives every attempt a fresh working directory, so a retry starts from
-# `configure`. Reaching the previous attempt is possible and deliberately not done; the
-# README's spot estimate says at what assembly length restarts eat the saving.
-#
-# So the backend's Ray-node-loss -> `Interrupted` -> `runtime.preemptible` mapping does not
-# make this task retry by default. As declared here it does not; it retries because an
-# inputs file gives it a budget.
+
+# Unlike upstream: explicit num_threads (/proc/cpuinfo lists the host's cores, not the task's),
+# read_mode and extra_args inputs, a runtime_attr_override, and assembly_info/log as outputs.
+# Flye does not resume across a WDL retry: each attempt gets a fresh directory.
 
 workflow Flye {
 
@@ -84,21 +35,8 @@ workflow Flye {
         RuntimeAttr? runtime_attr_override
     }
 
-    # Upstream instead writes, inline at the call site:
-    #
-    #     runtime_attr_override = { 'mem_gb': 100.0 + (genome_size/10000000.0) }
-    #
-    # which leaves a caller of this sub-workflow no way in at all: there is no
-    # `runtime_attr_override` input to set, so cpu_cores is unreachable and the
-    # memory request is whatever the formula says. On Cromwell that sizes a VM to
-    # order; on Ray it is a request against nodes that already exist, and 100 GiB is
-    # sized for the Broad's fleet rather than for a small cluster.
-    #
-    # Keeping the formula as the *fallback* preserves upstream's behaviour exactly
-    # when nothing is passed. Note that it is all-or-nothing: an override supplied
-    # by the caller replaces it wholesale, and the task's own default_attr (a flat
-    # 100 GiB) is what unset fields then fall back to, so an override should state
-    # mem_gb even when it only means to change cpu_cores.
+    # Upstream's call-site formula, as the fallback. An override replaces it wholesale, so
+    # state mem_gb even when only changing cpu_cores.
     RuntimeAttr sized_attr = object {
         mem_gb: 100.0 + (genome_size/10000000.0)
     }
@@ -168,7 +106,6 @@ task Assemble {
         File log = "~{prefix}.flye.log"
     }
 
-    #########################
     RuntimeAttr default_attr = object {
         cpu_cores:          num_threads,
         mem_gb:             100,

@@ -2,38 +2,11 @@ version 1.0
 
 import "ONTAssembleWithFlye.wdl" as Single
 
-# `RuntimeAttr` is not imported here. WDL 1.0 hoists imported structs into a
-# document-global namespace, so it arrives with the sub-workflow above; importing
-# Structs.wdl directly as well type-checks but trips miniwdl's UnusedImport lint,
-# and this template's notebook shows `wdl-on-ray check` output to the reader.
+# RuntimeAttr arrives with the sub-workflow (WDL 1.0 hoists imported structs); importing
+# Structs.wdl too trips miniwdl's UnusedImport lint.
 
-# Assemble a cohort: one ONTAssembleWithFlye per sample, all in one workflow.
-#
-# Not adapted from upstream: broadinstitute/long-read-pipelines has no cohort
-# wrapper. On Cromwell's Google backend there is little to gain from one, since each
-# task gets its own VM either way and N samples can be N independent submissions.
-#
-# On Ray the wrapper matters. `scatter` puts every sample's task graph in one
-# workflow, so the whole cohort's tasks draw on one autoscaling pool: sample B's
-# 2-CPU ComputeGenomeLength packs onto the node already running sample A's 30-CPU
-# assembly instead of waiting for a VM of its own, and the pool grows and shrinks
-# with the *cohort's* demand rather than each sample's. A single-sample run cannot
-# show this: one sample's graph is a chain with one long task in the middle, and a
-# chain has nothing to pack.
-#
-# The wrapper is deliberately thin. Every per-sample decision stays in
-# ONTAssembleWithFlye, and everything here is either the sample list or a knob that
-# has to be identical across the cohort for the results to be comparable. Anything
-# that should vary per sample belongs in `Sample`, not in an input.
-#
-# On what a "cohort" means scientifically: these are independent single-sample
-# assemblies that happen to share a cluster. Nothing here is a joint analysis: no
-# trio-aware assembly, no pedigree-informed phasing, no joint variant calling.
-# Assembling the GIAB Ashkenazi trio this way gives three haplotype-collapsed
-# assemblies, not a phased family callset. Trio binning (as in TrioCanu or hifiasm's
-# trio mode, where parental k-mers phase the child's reads) is a different pipeline and
-# would need the parents' reads as an *input* to the child's assembly rather than
-# as a sibling scatter shard.
+# One ONTAssembleWithFlye per sample in one workflow, so the whole cohort draws on one pool.
+# Anything that varies per sample belongs in Sample; the inputs here apply to every sample.
 
 struct Sample {
     String name
@@ -89,10 +62,6 @@ workflow ONTAssembleCohort {
         RuntimeAttr? runtime_attr_paftools
     }
 
-    # One sub-workflow call per sample. The resource requests are per *task*, not
-    # per sample, so this does not multiply the cluster's size requirement; it
-    # multiplies how many tasks are eligible to run at once, which is what gives the
-    # scheduler something to pack.
     scatter (sample in samples) {
         call Single.ONTAssembleWithFlye as assemble {
             input:

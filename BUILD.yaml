@@ -793,9 +793,7 @@
   owner_team: general
   dir: templates/wdl-genomics-on-ray
   cluster_env:
-    # Custom image, not a stock one: the workflow runs with `--container-runtime none`, so the
-    # bioinformatics toolchain has to be on every node before the first task dispatches, and a
-    # job's `requirements:` resolves before working_dir is staged. See the template's Dockerfile.
+    # Custom image: --container-runtime none needs the toolchain on every node at boot.
     byod:
       docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.58.0
       ray_version: 2.58.0
@@ -803,8 +801,7 @@
     AWS: configs/wdl-genomics-on-ray/aws.yaml
     GCP: configs/wdl-genomics-on-ray/gce.yaml
   test:
-    # Runs the notebook at WDL_DEMO_SCALE=quick, about 15 min end to end with workspace start.
-    # The Buildkite step allows this value plus a 30 min startup allowance.
+    # The notebook at WDL_DEMO_SCALE=quick; Buildkite adds a 30 min startup allowance.
     tests_path: tests/wdl-genomics-on-ray/
     command: bash tests.sh
     timeout_in_sec: 3600

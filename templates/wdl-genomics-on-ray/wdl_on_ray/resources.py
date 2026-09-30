@@ -1,26 +1,4 @@
-"""Translate a WDL ``runtime {}`` section into a Ray resource request.
-
-miniwdl has already normalized the ``runtime`` expressions into
-``TaskContainer.runtime_values`` by the time we see them: ``cpu`` is an int,
-``memory`` has become ``memory_reservation``/``memory_limit`` in bytes, and both
-have been clamped to the ceiling our backend reported from
-``detect_resource_limits``. What's left is deciding which Ray resources to
-demand, which is where the WDL spec and the wider WDL ecosystem disagree enough
-to need explicit handling:
-
-* ``gpu`` is a *Boolean* in the WDL 1.1+ spec: it says "this task wants a GPU"
-  without saying how many.
-* ``gpuCount``/``gpuType``/``nvidiaDriverVersion`` are Cromwell's Google-backend
-  extensions. The Broad long-read pipelines use them (``MedakaPolish`` asks for
-  one ``nvidia-tesla-t4``), so honouring them is what makes real-world WDL run
-  unchanged.
-* ``disks`` is likewise a Cromwell-ism (``"local-disk 500 HDD"``). Ray has no
-  disk resource, so we parse it for logging and optional node selection rather
-  than silently dropping it.
-
-Anything Ray-specific that WDL has no vocabulary for can be passed through with
-a ``ray_resources`` entry in ``runtime {}`` (a JSON object).
-"""
+"""Translate a WDL ``runtime {}`` section (Cromwell extensions too) into a Ray resource request."""
 
 from __future__ import annotations
 
@@ -29,9 +7,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-#: Cromwell/GCE accelerator names mapped onto Ray ``accelerator_type`` values.
-#: Unrecognized names are passed through unchanged, so Ray's own spellings
-#: ("A10G", "L40S", ...) work directly in a WDL ``gpuType``.
+#: Cromwell/GCE accelerator names -> Ray ``accelerator_type``; others pass through ("A10G", "L40S").
 GPU_TYPE_TO_RAY_ACCELERATOR = {
     "nvidia-tesla-k80": "K80",
     "nvidia-tesla-p4": "P4",
@@ -59,9 +35,8 @@ class RayRequest:
     memory: int | None = None
     resources: dict[str, float] = field(default_factory=dict)
     accelerator_type: str | None = None
+    #: From ``runtime.disks``: logged, and a resource only with ``disk_resource_name``.
     disk_gb: int | None = None
-    """Parsed from ``runtime.disks``. Not a Ray resource, carried for logging
-    and for :data:`RayRequest.resources` when the operator opts in."""
 
     def options(self) -> dict[str, Any]:
         """The subset that ``ray.remote(...).options()`` accepts."""
@@ -77,7 +52,6 @@ class RayRequest:
         return opts
 
     def describe(self) -> dict[str, Any]:
-        """Log-friendly summary (used in the miniwdl task log)."""
         out: dict[str, Any] = {"num_cpus": self.num_cpus}
         if self.num_gpus:
             out["num_gpus"] = self.num_gpus
@@ -93,11 +67,7 @@ class RayRequest:
 
 
 def parse_disk_gb(disks: Any) -> int | None:
-    """Extract the largest size (GB) from a Cromwell-style ``runtime.disks``.
-
-    Returns ``None`` when the value doesn't parse, since ``disks`` is free-form
-    in practice and a bad parse must not fail the run.
-    """
+    """Largest size (GB) in a Cromwell-style ``runtime.disks``; None if it does not parse."""
     if disks is None:
         return None
     if isinstance(disks, (int, float)):
@@ -115,7 +85,6 @@ def ray_accelerator_type(gpu_type: Any) -> str | None:
 
 
 def _custom_resources(runtime_values: dict[str, Any]) -> dict[str, float]:
-    """Read a ``ray_resources`` escape hatch out of ``runtime {}``."""
     raw = runtime_values.get("ray_resources")
     if raw in (None, ""):
         return {}
@@ -133,19 +102,8 @@ def build_request(
     default_accelerator_type: str = "",
     disk_resource_name: str = "",
 ) -> RayRequest:
-    """Build the Ray request for one WDL task.
-
-    :param runtime_values: miniwdl's normalized ``runtime {}`` values.
-    :param reserve_memory: request ``runtime.memory`` as Ray's ``memory``
-        resource, so Ray won't overcommit a node's RAM.
-    :param extra_resources: custom resources demanded of every task.
-    :param default_accelerator_type: used for GPU tasks that don't name a type.
-    :param disk_resource_name: when set, ``runtime.disks`` is also demanded as
-        this custom Ray resource, letting operators steer disk-hungry tasks onto
-        node groups labelled with it.
-    """
-    # miniwdl omits `cpu` entirely when the task's runtime section does not set
-    # it; WDL's default is one core.
+    """Build the Ray request for one WDL task from miniwdl's normalized runtime values."""
+    # miniwdl omits `cpu` when the task does not set it; WDL's default is one core.
     num_cpus = float(runtime_values.get("cpu", 1) or 1)
 
     memory: int | None = None
@@ -153,8 +111,7 @@ def build_request(
         reservation = int(runtime_values.get("memory_reservation", 0) or 0)
         memory = reservation or None
 
-    # `gpu` (spec, Boolean) and `gpuCount` (Cromwell, Int) can both appear; take
-    # whichever asks for more so neither is silently ignored.
+    # `gpu` (spec, Boolean) and `gpuCount` (Cromwell, Int) can both appear; take the larger.
     num_gpus = 0.0
     if runtime_values.get("gpu"):
         num_gpus = 1.0

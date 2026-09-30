@@ -1,20 +1,6 @@
 #!/usr/bin/env bash
-# Install the bioinformatics toolchain described by manifest.toml into a prefix.
-#
-#   usage: build_tools.sh [PREFIX]        (default: /opt/wdl-tools)
-#
-# The Dockerfile runs this to bake the toolchain into the template's image, which is what
-# `--container-runtime none` needs: that mode runs each WDL task's command directly in the Ray
-# worker's environment, so every tool must already be on every node. Nothing is fetched at run
-# time and nothing is installed per task.
-#
-# Versions, URLs and hashes come from manifest.toml and appear nowhere else. The *build
-# recipes* for the two `kind = "source"` tools live here, in build_one(), because they are
-# genuinely bespoke -- a `build =` string in the manifest would only be this shell code moved
-# somewhere it can't be read as shell.
-#
-# Every download is checksum-verified before it is unpacked. A mismatch is fatal and leaves
-# nothing behind.
+# Install the toolchain in manifest.toml into PREFIX (default /opt/wdl-tools), checksum-verified.
+# The Dockerfile runs it: under --container-runtime none every tool must be on every node.
 set -euo pipefail
 
 PREFIX="${1:-/opt/wdl-tools}"
@@ -24,9 +10,7 @@ trap 'rm -rf "$WORK"' EXIT
 
 mkdir -p "$PREFIX/bin" "$PREFIX/lib"
 
-# Emit one `name|kind|url|sha256|strip` record per tool. Reading TOML with the stdlib keeps
-# this dependency-free: tomllib is in the standard library from Python 3.11, and the base
-# image is 3.12.
+# One name|kind|url|sha256|strip record per tool, read with the stdlib's tomllib.
 records() {
   python3 - "$MANIFEST" <<'PY'
 import sys, tomllib
@@ -71,7 +55,6 @@ fetch() {
     || { echo "FATAL: sha256 mismatch for $url" >&2; exit 1; }
 }
 
-# Unpack into a fresh directory, honouring the manifest's `strip`.
 unpack() {
   local archive="$1" into="$2" strip="$3"
   mkdir -p "$into"
@@ -95,30 +78,22 @@ build_one() {
       unpack "$archive" "$src" "$strip"
       case "$name" in
         samtools)
-          # No --with-htslib flag: configure's default search finds the htslib-1.21 source
-          # bundled inside this exact release tarball, which is the version-matched copy the
-          # manifest's comment describes. (There is no "builtin" keyword -- naming one makes
-          # configure look for a directory literally called that, and fail.) curses is only
-          # needed by `samtools tview`, which no task calls, and it drags in a dev package.
+          # No --with-htslib: the default search builds the bundled htslib ("builtin" would
+          # name a directory). curses is only for `samtools tview`.
           ( cd "$src" \
             && ./configure --prefix="$PREFIX/lib/$name" --without-curses \
             && make -j"$(nproc)" \
             && make install )
           ;;
         bcftools)
-          # Same shape as samtools: the release tarball bundles the matching htslib and
-          # configure's default search builds it. --disable-bcftools-plugins because only
-          # `norm` is called, and the plugins want a dlopen path resolved at run time that a
-          # relocatable payload cannot promise.
+          # --disable-bcftools-plugins: only norm is used, and plugins need a run-time dlopen path.
           ( cd "$src" \
             && ./configure --prefix="$PREFIX/lib/$name" --disable-bcftools-plugins \
             && make -j"$(nproc)" \
             && make install )
           ;;
         flye)
-          # Flye is a Python distribution with C++ submodules. Installing it with pip puts
-          # `flye` on the environment's PATH directly, so no shim is needed -- but the shim
-          # loop below is still driven off `provides`, so point it at what pip produced.
+          # pip puts flye on PATH itself; the symlink only feeds the provides loop below.
           ( cd "$src" && pip install --no-cache-dir . )
           mkdir -p "$PREFIX/lib/$name/bin"
           ln -sf "$(command -v flye)" "$PREFIX/lib/$name/bin/flye"
@@ -142,8 +117,7 @@ build_one() {
       ;;
   esac
 
-  # Put each provided name on PATH. For `pypi` the target is already in the environment's
-  # bin, so resolve it there rather than inside a payload that doesn't exist.
+  # pypi targets are already in the environment's bin, not in a payload.
   while IFS='=' read -r inside on_path; do
     [ -n "$inside" ] || continue
     local target
@@ -165,9 +139,7 @@ while IFS='|' read -r name kind url sha strip; do
   build_one "$name" "$kind" "$url" "$sha" "$strip"
 done < <(records)
 
-# Verify every declared name actually runs. A tool that installed but cannot execute -- a
-# missing shared library is the usual cause -- would otherwise surface as a failed WDL task
-# an hour into a run.
+# A tool that cannot execute (a missing shared library, say) would otherwise fail a task mid-run.
 echo "== verify"
 export PATH="$PREFIX/bin:$PATH"
 for exe in minimap2 "paftools.js" samtools bcftools flye quast; do

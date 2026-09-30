@@ -4,74 +4,10 @@ import "../../structs/Structs.wdl"
 
 # From broadinstitute/long-read-pipelines wdl/tasks/Preprocessing/Medaka.wdl.
 # Licensed BSD-3-Clause; see wdl/LICENSE.
-#
-# Changes from upstream, both about making the GPU request optional:
-#
-#   * `Boolean use_gpu = false` gates gpuCount/gpuType. Upstream requests one
-#     nvidia-tesla-t4 unconditionally, which on a CPU-only Ray cluster produces a
-#     task Ray can never schedule: it waits forever instead of failing. medaka
-#     runs correctly (just slower) on CPU, so CPU is the safer default here and
-#     `use_gpu = true` restores upstream behaviour.
-#   * `gpuType` is passed through as-is; wdl_on_ray.resources maps the GCE
-#     accelerator names ("nvidia-tesla-t4") onto Ray's ("T4"), so either spelling
-#     works.
-#
-# Also dropped: `zones`, `cpuPlatform` and `nvidiaDriverVersion`, which are
-# Google-backend-only Cromwell keys with no meaning outside GCP.
-#
-# Three smaller edits: `-t 8` became `-t ~{threads}` so thread count can track the
-# runtime cpu_cores; the polishing loop uses `$(seq 1 N)` instead of brace
-# expansion `{1..N}`: with N=0 brace expansion counts *down* (1, 0) and would
-# run a bogus round, whereas `seq 1 0` is empty, making `n_rounds = 0` a clean
-# pass-through of the draft assembly; and `source /medaka/venv/bin/activate` (the
-# venv inside upstream's lr-medaka image) is guarded with a file test, so the
-# pass-through works on a worker that has no medaka at all without logging a
-# spurious `No such file or directory` first.
-#
-# Three further edits are not about scheduling. `n_rounds` defaults to 1 rather than
-# upstream's 3, for the reason below. `disk_size` gained a `10 +` floor, so a small
-# input cannot round the request down to 0 GB. And `meta.description` plus two
-# `parameter_meta` strings are rewritten, because upstream's describe the GPU-only
-# arrangement this task no longer has.
-#
-# The model default is changed from upstream's `r941_prom_high_g360`, and that is
-# the divergence in this file most likely to change results rather than scheduling.
-#
-# medaka does not validate the model against the data. Handed an R9.4.1 model and
-# R10.4.1 reads it runs to completion, exits 0, and can emit a consensus *worse* than
-# the unpolished draft, because the error model it corrects for is not the error model
-# in the reads. Nothing downstream notices; QUAST reports a number and the number is
-# bad for a reason nobody can see from the outputs. A default that is wrong for the
-# data it ships with is a trap for the first person who sets n_rounds > 0, so the
-# default here matches this template's reads (r1041_e82_400bps_sup_v4.1.0: R10.4.1
-# pore, E8.2 chemistry, 400 bps, dorado sup v4.1.0).
-# Change the model whenever you change the data, and run `medaka tools list_models`
-# for the set your medaka build actually carries. Match the sampling rate too, not
-# just the pore and kit: 4 kHz and 5 kHz R10.4.1 runs take different model lines
-# (v4.1.0 against v4.2.0 and later), and the CRAM headers of the reads this template
-# ships carry no @RG basecall_model record to settle it from the data.
-#
-# Two more things to know before turning this on:
-#
-#   * One round, not three. Upstream's n_rounds = 3 applies the model to its own
-#     output, which after the first round is no longer the kind of input medaka was
-#     trained on: it was trained to correct draft assemblies, and the guidance that
-#     did call for iteration called for iterating *racon* before a single medaka
-#     pass. Rounds two and three cost wall clock and feed the model an
-#     out-of-distribution input.
-#   * For a *human* assembly, medaka is no longer ONT's recommendation. Since dorado
-#     0.9.0 (Dec 2024) ONT points large-genome consensus polishing at `dorado
-#     polish`, and keeps medaka as the recommendation for small genomes on CPU. This
-#     task is retained because it is what upstream's pipeline calls; a chr20-scale
-#     or larger assembly is the case ONT would send to dorado polish instead.
-#
-# Packaging, for anyone turning this on. medaka is not in the cluster image because of
-# its size: 2.2.2 ships cp312 wheels and declares python >=3.10,<3.14, so it installs on
-# this image's 3.12.13, but it adds 1.2 GB even with CPU-only torch, and GPU polishing
-# needs a CUDA base. (On the 2.56.0 base it also forced a numpy 1.26.4 -> 2.5.2 bump
-# that broke cupy; the 2.58.0 base, on numpy 2.2.6, does not.) It gets its own per-task
-# image, tools/Dockerfile.medaka-gpu, selected under `--container-runtime ray` by
-# mapping the tag this task already declares. tools/BUILDING.md has the worked example.
+
+# Unlike upstream: GPU opt-in (use_gpu), n_rounds 1, an R10.4.1 sup model, and `seq 1 N`
+# rather than {1..N}, which counts down at N = 0. medaka does not check the model against
+# the reads, so a mismatch silently degrades the consensus.
 
 task MedakaPolish {
 
@@ -104,28 +40,8 @@ task MedakaPolish {
         RuntimeAttr? runtime_attr_override
     }
 
-    # Upstream's formula, with a floor. n_rounds = 0 makes the product 0, and a
-    # zero disk request is a request for nothing rather than a request for the
-    # pass-through copy's worth of space. The floor costs nothing and stops a
-    # backend that honours `disks` from scheduling this task onto no disk at all.
+    # The floor keeps n_rounds = 0 from requesting no disk at all.
     Int disk_size = 10 + (4 * n_rounds * ceil(size([basecalled_reads, draft_assembly], "GB")))
-
-    ###
-    # Medaka models. This list is upstream's and is kept only as a record of what
-    # upstream targeted: every entry predates R10.4.1 (R9.4.1, R10 and R10.3 pores),
-    # and none of them is correct for R10.4.1 data:
-    #
-    #   r103_*, r10_*, r941_*  (Guppy 3.0-3.6 era)
-    #
-    # Current model names read
-    # `r<pore>_e<chemistry>_<translocation speed>_<accuracy>_v<basecaller model version>`,
-    # e.g. r1041_e82_400bps_sup_v4.1.0 for the R10.4.1 pore, E8.2 chemistry (Kit 14),
-    # 400 bps, dorado sup v4.1.0.
-    # Do not copy a name from here or from any doc, including this one: model
-    # availability is a property of the installed medaka build, so run
-    # `medaka tools list_models` on the workers and pick the entry whose basecaller
-    # version is closest to (and not newer than) the one that produced the reads.
-    ###
 
     command <<<
         # Present inside upstream's lr-medaka image; absent (and safely skipped) when the
@@ -150,7 +66,6 @@ task MedakaPolish {
         File polished_assembly = "~{prefix}.fasta"
     }
 
-    ###################
     RuntimeAttr default_attr = object {
         cpu_cores:              8,
         mem_gb:                 24,

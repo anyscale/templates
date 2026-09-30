@@ -1,19 +1,6 @@
 #!/usr/bin/env bash
-# Package the toolchain as pip wheels, for running this template on a *stock* Anyscale image
-# instead of the custom one the Dockerfile builds.
-#
-#   usage: build_wheels.sh [OUTDIR]       (default: ./wheelhouse)
-#
-# Read tools/BUILDING.md before using the result -- the wheels alone are not enough, because
-# a job's `requirements:` is installed before its `working_dir` is staged. BUILDING.md covers
-# the staging step that makes them resolvable.
-#
-# This reuses build_tools.sh for the builds, so a wheel contains exactly what the image
-# contains: one build path, two delivery formats, one manifest.
-#
-# Must run on linux x86_64 -- the wheels carry Linux ELF binaries and hatchling tags a
-# non-pure wheel from the building platform. The easy way is inside the template's own image:
-#
+# Package the toolchain as pip wheels, for a stock Anyscale image instead of this template's.
+# Linux x86_64 only, since the wheels carry ELF binaries; the image is the easy place:
 #   docker run --rm -v "$PWD:/w" -w /w <image> bash tools/build_wheels.sh /w/wheelhouse
 set -euo pipefail
 
@@ -98,6 +85,7 @@ def build(tool: str, spec: dict) -> None:
                 if target.is_file():
                     path.write_bytes(target.read_bytes())
                     path.chmod(target.stat().st_mode)
+        # Whole: samtools and quast find their lib/ and share/ relative to the executable.
         rel = os.path.relpath(payload, project)
         shared_data[rel] = f"lib/{DIST_PREFIX}/{tool}"
         for on_path, inside in provides.items():
