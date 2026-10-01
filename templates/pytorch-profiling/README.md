@@ -471,7 +471,7 @@ Open the TensorBoard profile URL in a browser and you can see the Profiler plugi
 
 <div style="display: flex; gap: 40px; align-items: flex-start;">
   <div style="text-align: center;">
-    <img src="https://raw.githubusercontent.com/ray-project/ray/master/doc/source/train/examples/pytorch/pytorch-profiling/images/tensorboard_overview.png" width="600"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/pytorch-profiling/images/tensorboard_overview.png" width="600"/>
   </div>
 </div>
 
@@ -480,14 +480,14 @@ The following page shows worker-specific memory profiles showing memory usage ov
 
 <div style="display: flex; gap: 40px; align-items: flex-start;">
   <div style="text-align: center;">
-    <img src="https://raw.githubusercontent.com/ray-project/ray/master/doc/source/train/examples/pytorch/pytorch-profiling/images/memory_html.png" width="600"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/pytorch-profiling/images/memory_html.png" width="600"/>
   </div>
 </div>
 
 The advanced section uses `record_function` context to profile individual operations, which you can view in the trace section:
 <div style="display: flex; gap: 40px; align-items: flex-start;">
   <div style="text-align: center;">
-    <img src="https://raw.githubusercontent.com/ray-project/ray/master/doc/source/train/examples/pytorch/pytorch-profiling/images/trace_annotation.png" width="600"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/pytorch-profiling/images/trace_annotation.png" width="600"/>
   </div>
 </div>
 

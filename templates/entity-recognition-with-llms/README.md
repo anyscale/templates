@@ -274,7 +274,7 @@ The `ray.data.llm` module integrates with key large language model (LLM) inferen
 - **optimized autoscaling** where Jobs can kick off before waiting for the entire cluster to start
 - **high reliability** where entire failed jobs, like head node, cluster, uncaptured exceptions, etc., can resume from checkpoints. OSS Ray can only recover from worker node failures.
 
-Start by defining the [vLLM engine processor config](https://docs.ray.io/en/latest/data/api/doc/ray.data.llm.vLLMEngineProcessorConfig.html#ray.data.llm.vLLMEngineProcessorConfig) where you can select the model to use and the [engine behavior](https://docs.vllm.ai/en/stable/serving/engine_args.html). The model can come from [Hugging Face (HF) Hub](https://huggingface.co/models) or a local model path `/path/to/your/model`. Anyscale supports GPTQ, GGUF, or LoRA model formats.
+Start by defining the [vLLM engine processor config](https://docs.ray.io/en/latest/data/api/doc/ray.data.llm.vLLMEngineProcessorConfig.html#ray.data.llm.vLLMEngineProcessorConfig) where you can select the model to use and the [engine behavior](https://docs.vllm.ai/en/stable/configuration/engine_args/). The model can come from [Hugging Face (HF) Hub](https://huggingface.co/models) or a local model path `/path/to/your/model`. Anyscale supports GPTQ, GGUF, or LoRA model formats.
 
 <img src="https://raw.githubusercontent.com/anyscale/e2e-llm-workflows/refs/heads/main/images/data_llm.png" width=800>
 
@@ -307,7 +307,7 @@ config = vLLMEngineProcessorConfig(
         "enable_chunked_prefill": True,
         "max_num_batched_tokens": 4096,
         "max_model_len": 4096,  # or increase KV cache size
-        # complete list: https://docs.vllm.ai/en/stable/serving/engine_args.html
+        # complete list: https://docs.vllm.ai/en/stable/configuration/engine_args/
     },
     concurrency=1,
     batch_size=16,
@@ -415,7 +415,7 @@ from ray import serve
 from ray.serve.llm import LLMConfig, build_openai_app
 ```
 
-Define an [LLM config](https://docs.ray.io/en/latest/serve/api/doc/ray.serve.llm.LLMConfig.html#ray.serve.llm.LLMConfig) where you can define where the model comes from, its [autoscaling behavior](https://docs.ray.io/en/latest/serve/autoscaling-guide.html#serve-autoscaling), what hardware to use and [engine arguments](https://docs.vllm.ai/en/stable/serving/engine_args.html).
+Define an [LLM config](https://docs.ray.io/en/latest/serve/api/doc/ray.serve.llm.LLMConfig.html#ray.serve.llm.LLMConfig) where you can define where the model comes from, its [autoscaling behavior](https://docs.ray.io/en/latest/serve/autoscaling-guide.html#serve-autoscaling), what hardware to use and [engine arguments](https://docs.vllm.ai/en/stable/configuration/engine_args/).
 
 **Note**: If you're using AWS S3, replace `AWS_REGION` in the `runtime_env`'s `env_vars` below with the cloud storage and respective region you saved your model artifacts to. Do the same if using other cloud storage options as well.
 
@@ -445,7 +445,7 @@ llm_config = LLMConfig(
         "max_model_len": 4096,  # Or increase KV cache size.
         "tensor_parallel_size": 1,
         "enable_lora": True,
-        # complete list: https://docs.vllm.ai/en/stable/serving/engine_args.html
+        # complete list: https://docs.vllm.ai/en/stable/configuration/engine_args/
     },
 )
 ```

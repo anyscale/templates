@@ -78,7 +78,7 @@ Redis serves as both the message broker (task queue) and result backend.
 
 - **macOS:** `brew install redis && brew services start redis`
 - **Docker:** `docker run -d -p 6379:6379 redis:latest`
-- **Other platforms:** [Official Redis Installation Guide](https://redis.io/docs/getting-started/installation/)
+- **Other platforms:** [Official Redis Installation Guide](https://redis.io/docs/latest/operate/oss_and_stack/install/)
 
 If you're using a hosted Redis instance, ensure that your Ray Serve cluster can access it. For example, when using AWS ElastiCache for Redis:
 
