@@ -1,5 +1,12 @@
 # Multi-model frame enrichment on one GPU
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/ray-data-multimodel-frame-enrichment"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/ray-data-multimodel-frame-enrichment" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
+**⏱️ Time to complete**: about 7 min without a Hugging Face token, including cluster start. The gated run takes longer, and the optional co-residency measurement adds about 20 min.
+
 An enrichment pass over video frames often runs several models per frame. Each holds a
 different amount of VRAM and runs at a different rate, so a whole GPU per model leaves most of
 each card unused, and packing them by `num_gpus` fractions alone can run a card out of memory.

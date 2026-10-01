@@ -1,5 +1,12 @@
 # Incremental batch classification with Ray Data
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/ray-data-incremental-batch-classification"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/ray-data-incremental-batch-classification" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
+**⏱️ Time to complete**: about 12 min, including cluster start.
+
 A daily Ray Data job that classifies only the rows it hasn't classified before, on GPUs, writes them as partitioned Parquet with one completion marker, and ends at a time bound. The notebook runs each step on synthetic data, three of them beside the usual approach; `run_pipeline.py` and `job.yaml` run the same pipeline as a job.
 
 | Step | Usual approach | This template | What it buys |
