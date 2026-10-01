@@ -712,7 +712,7 @@ The system uses Ray Serve's built-in autoscaling to handle variable load. See th
 - [Ray Serve Documentation](https://docs.ray.io/en/latest/serve/index.html)
 - [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
 - [MCP Specification](https://modelcontextprotocol.io/)
-- [A2A Protocol](https://google.github.io/A2A/)
+- [A2A Protocol](https://a2a-protocol.org/latest/)
 - [Anyscale Services Documentation](https://docs.anyscale.com/services)
 - [Anyscale LLM Serving Documentation](https://docs.anyscale.com/llm/serving) - Detailed guide for deploying and configuring LLM services.
 - [Deploy LLM Template](https://console.anyscale.com/template-preview/deployment-serve-llm) - Template for deploying LLM services on Anyscale.

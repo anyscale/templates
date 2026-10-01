@@ -363,7 +363,7 @@ The `batch_size` parameter controls how many requests Ray Data sends to vLLM at 
 - *Too large `batch_size`:* vLLM scheduler is over-saturated, causing overhead latency. Also increases retry cost on failure since the entire batch is retried.
 
 You can try the following suggestions:
-1. Start with `batch_size` equal to `max_num_seqs` in your vLLM engine parameters. See [vLLM engine arguments](https://docs.vllm.ai/en/stable/serving/engine_args.html) for defaults.
+1. Start with `batch_size` equal to `max_num_seqs` in your vLLM engine parameters. See [vLLM engine arguments](https://docs.vllm.ai/en/stable/configuration/engine_args/) for defaults.
 2. Monitor GPU utilization in the Ray Dashboard (see [Monitor the execution](#monitor-the-execution) section).
 3. Adjust `max_num_seqs` in `engine_kwargs` to optimize GPU utilization, and re-adapt `batch_size` accordingly.
 
@@ -398,7 +398,7 @@ processor_config = vLLMEngineProcessorConfig(
 # Each worker uses: 8 GPUs × 2 nodes = 16 GPUs total
 ```
 
-Each inference worker allocates GPUs based on `tensor_parallel_size × pipeline_parallel_size`. For detailed guidance on parallelism strategies, see the [vLLM parallelism and scaling documentation](https://docs.vllm.ai/en/stable/serving/distributed_serving.html).
+Each inference worker allocates GPUs based on `tensor_parallel_size × pipeline_parallel_size`. For detailed guidance on parallelism strategies, see the [vLLM parallelism and scaling documentation](https://docs.vllm.ai/en/stable/serving/parallelism_scaling/).
 
 ## Summary
 

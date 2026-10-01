@@ -307,11 +307,11 @@ CPU offloading reduces GPU memory footprint by storing model components in the C
 <div style="display: flex; gap: 40px; align-items: flex-start;">
   <div style="text-align: center;">
     <h3>Without CPU offloading</h3>
-    <img src="https://raw.githubusercontent.com/ray-project/ray/master/doc/source/train/examples/pytorch/pytorch-fsdp/images/gpu_memory_profile.png" width="600"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/pytorch-fsdp/images/gpu_memory_profile.png" width="600"/>
   </div>
   <div style="text-align: center;">
     <h3>With CPU offloading</h3>
-    <img src="https://raw.githubusercontent.com/ray-project/ray/master/doc/source/train/examples/pytorch/pytorch-fsdp/images/cpu_offload_profile.png" width="600"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/pytorch-fsdp/images/cpu_offload_profile.png" width="600"/>
   </div>
 </div>
 Note: The above images are generated using PyTorch's Memory Profiler, which this tutorial covers later.
@@ -327,11 +327,11 @@ Learn more about CPU offloading in the [PyTorch documentation](https://docs.pyto
 <div style="display: flex; gap: 40px; align-items: flex-start;">
   <div style="text-align: center;"> 
     <h3><code>reshard_after_forward=False</code></h3>
-    <img src="https://raw.githubusercontent.com/ray-project/ray/master/doc/source/train/examples/pytorch/pytorch-fsdp/images/gpu_memory_profile.png" width="600"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/pytorch-fsdp/images/gpu_memory_profile.png" width="600"/>
   </div>
   <div style="text-align: center;">
     <h3><code>reshard_after_forward=True</code></h3>
-    <img src="https://raw.githubusercontent.com/ray-project/ray/master/doc/source/train/examples/pytorch/pytorch-fsdp/images/reshard_after_forward_memory_profile.png" width="600"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/pytorch-fsdp/images/reshard_after_forward_memory_profile.png" width="600"/>
   </div>
 </div>
 
@@ -349,11 +349,11 @@ Enabling mixed precision accelerates training and reduces GPU memory usage with 
 <div style="display: flex; gap: 40px; align-items: flex-start;">
   <div style="text-align: center;">
     <h3>Without mixed precision</h3>
-    <img src="https://raw.githubusercontent.com/ray-project/ray/master/doc/source/train/examples/pytorch/pytorch-fsdp/images/gpu_memory_profile.png" width="600"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/pytorch-fsdp/images/gpu_memory_profile.png" width="600"/>
   </div>
   <div style="text-align: center;">
     <h3>With mixed precision</h3>
-    <img src="https://raw.githubusercontent.com/ray-project/ray/master/doc/source/train/examples/pytorch/pytorch-fsdp/images/mixed_precision_profile.png" width="600"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/pytorch-fsdp/images/mixed_precision_profile.png" width="600"/>
   </div>
 </div>
 
@@ -368,11 +368,11 @@ The below diagram compares the GPU memory profile of default sharding to when al
 <div style="display: flex; gap: 40px; align-items: flex-start;">
   <div style="text-align: center;">
     <h3>Default Sharding</h3>
-    <img src="https://raw.githubusercontent.com/ray-project/ray/master/doc/source/train/examples/pytorch/pytorch-fsdp/images/gpu_memory_profile.png" width="600"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/pytorch-fsdp/images/gpu_memory_profile.png" width="600"/>
   </div>
   <div style="text-align: center;">
     <h4>Combined CPU Offloading, Mixed Precision, and Resharding</h4>
-    <img src="https://raw.githubusercontent.com/ray-project/ray/master/doc/source/train/examples/pytorch/pytorch-fsdp/images/all_strategies_profile.png" width="600"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/pytorch-fsdp/images/all_strategies_profile.png" width="600"/>
   </div>
 </div>
 
@@ -686,7 +686,7 @@ In this demo, the profiler is configured to generate a profiling file for each w
 <div style="display: flex; gap: 40px; align-items: flex-start;">
   <div style="text-align: center;">
     <h3>Example memory profile</h3>
-    <img src="https://raw.githubusercontent.com/ray-project/ray/master/doc/source/train/examples/pytorch/pytorch-fsdp/images/gpu_memory_profile.png" width="600"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/pytorch-fsdp/images/gpu_memory_profile.png" width="600"/>
   </div>
 </div>
 

@@ -17,7 +17,7 @@ Recommendation systems typically involve multiple stages: feature extraction, ca
 - **Flexible updates**: Update one component without redeploying the entire pipeline.
 - **Resource optimization**: Allocate different resources (CPU/GPU) to each component.
 
-See [Model Composition](https://docs.ray.io/en/latest/serve/model-composition.html) for the core concepts and patterns.
+See [Model Composition](https://docs.ray.io/en/latest/serve/model_composition.html) for the core concepts and patterns.
 
 ## Configure a composed deployment
 
@@ -173,7 +173,7 @@ Each deployment in the composition can scale independently based on its resource
 
 **Warning:** When calling deployment handles inside a deployment, always use `await` instead of `.result()`. The `.result()` method blocks the replica from processing other requests while waiting. Using `await` enables the deployment to handle other requests concurrently.
 
-See [Model Composition](https://docs.ray.io/en/latest/serve/model-composition.html) for details on deployment handles and orchestration patterns.
+See [Model Composition](https://docs.ray.io/en/latest/serve/model_composition.html) for details on deployment handles and orchestration patterns.
 
 ## Deploy locally
 
