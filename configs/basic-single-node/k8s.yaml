@@ -7,6 +7,6 @@ head_node:
 worker_nodes:
 - name: cpu_worker
   required_resources:
-    CPU: 8
-    memory: 32Gi
+    CPU: 7
+    memory: 28Gi
   max_nodes: 1
