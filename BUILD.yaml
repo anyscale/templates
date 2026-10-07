@@ -191,7 +191,6 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
-    K8S: configs/basic-single-node/k8s.yaml
   test:
     tests_path: tests/serve-stable-diffusion-v2/
     command: bash tests.sh
@@ -209,7 +208,6 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
-    K8S: configs/basic-single-node/k8s.yaml
   test:
     tests_path: tests/deployment-serve-llm/
     command: bash tests.sh
@@ -285,7 +283,6 @@
     image_uri: anyscale/ray-llm:2.58.0-py312-cu130
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
-    K8S: configs/basic-single-node/k8s.yaml
     GCP: configs/basic-single-node/gce.yaml
   test:
     tests_path: tests/langchain-agent-ray-serve/
@@ -405,7 +402,6 @@
     image_uri: anyscale/ray-llm:2.58.0-py312-cu130
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
-    K8S: configs/basic-single-node/k8s.yaml
     GCP: configs/basic-single-node/gce.yaml
   test:
     tests_path: tests/llm_finetuning/

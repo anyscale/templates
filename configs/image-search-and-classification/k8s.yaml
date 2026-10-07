@@ -10,3 +10,11 @@ worker_nodes:
     CPU: 7
     memory: 28Gi
   max_nodes: 2
+- name: gpu-worker
+  required_resources:
+    CPU: 3
+    memory: 12Gi
+    GPU: 1
+  required_labels:
+    ray.io/accelerator-type: T4
+  max_nodes: 2
