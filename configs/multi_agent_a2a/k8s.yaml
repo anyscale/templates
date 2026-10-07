@@ -1,0 +1,16 @@
+head_node:
+  required_resources:
+    CPU: 4
+    memory: 8Gi
+  resources:
+    CPU: 0
+worker_nodes:
+- name: 1xL4:16CPU-64GB
+  required_resources:
+    CPU: 15
+    memory: 60Gi
+    GPU: 1
+  required_labels:
+    ray.io/accelerator-type: A10
+  min_nodes: 1
+  max_nodes: 1
