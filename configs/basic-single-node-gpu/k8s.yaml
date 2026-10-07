@@ -12,4 +12,4 @@ worker_nodes:
     GPU: 1
   required_labels:
     ray.io/accelerator-type: A10
-  max_nodes: 1
+  max_nodes: 4
