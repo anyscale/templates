@@ -315,6 +315,7 @@
     image_uri: anyscale/ray-llm:2.58.0-py312-cu130
   compute_config:
     AWS: configs/entity-recognition-with-llms/aws.yaml
+    K8S: configs/entity-recognition-with-llms/k8s.yaml
     GCP: configs/entity-recognition-with-llms/gce.yaml
   test:
     tests_path: tests/entity-recognition-with-llms/
@@ -436,6 +437,7 @@
       ray_version: 2.58.0
   compute_config:
     AWS: configs/e2e-rag-deepdive/aws.yaml
+    K8S: configs/e2e-rag-deepdive/k8s.yaml
     GCP: configs/e2e-rag-deepdive/gce.yaml
   test:
     tests_path: tests/e2e-rag-deepdive/
@@ -453,6 +455,7 @@
   compute_config:
     GCP: configs/skyrl/gce.yaml
     AWS: configs/skyrl/aws.yaml
+    K8S: configs/skyrl/k8s.yaml
   test:
     tests_path: tests/skyrl/
     command: bash tests.sh
@@ -469,6 +472,7 @@
   compute_config:
     GCP: configs/skyrl-opd-template/gce.yaml
     AWS: configs/skyrl-opd-template/aws.yaml
+    K8S: configs/skyrl-opd-template/k8s.yaml
   test:
     tests_path: tests/skyrl-opd-template/
     command: bash tests.sh

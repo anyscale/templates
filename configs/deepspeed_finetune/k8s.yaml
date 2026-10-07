@@ -5,7 +5,7 @@ head_node:
   resources:
     CPU: 0
 worker_nodes:
-- name: 1xL4:8CPU-32GB
+- name: gpu-worker
   required_resources:
     CPU: 7
     memory: 28Gi
