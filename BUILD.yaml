@@ -9,6 +9,7 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+    K8S: configs/basic-single-node/k8s.yaml
   test:
     tests_path: tests/job-intro/
     command: bash tests.sh
@@ -38,6 +39,7 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+    K8S: configs/basic-single-node/k8s.yaml
   test:
     tests_path: tests/workspaces-dev-flow/
     command: bash tests.sh
@@ -52,6 +54,7 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+    K8S: configs/basic-single-node/k8s.yaml
   test:
     tests_path: tests/service-intro/
     command: bash tests.sh
@@ -79,6 +82,7 @@
     image_uri: anyscale/ray:2.58.0-py311
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
+    K8S: configs/basic-single-node/k8s.yaml
     GCP: configs/basic-single-node/gce.yaml
   test:
     tests_path: tests/storage-access-large-datasets/
@@ -93,6 +97,7 @@
     image_uri: anyscale/ray:2.58.0-py311
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
+    K8S: configs/basic-single-node/k8s.yaml
     GCP: configs/basic-single-node/gce.yaml
   test:
     tests_path: tests/ray-serve-observability/
@@ -152,6 +157,7 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+    K8S: configs/basic-single-node/k8s.yaml
   test:
     tests_path: tests/model-multiplexing/
     command: bash tests.sh
@@ -166,6 +172,7 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+    K8S: configs/basic-single-node/k8s.yaml
   test:
     tests_path: tests/model-composition-recsys/
     command: bash tests.sh
@@ -224,6 +231,7 @@
     image_uri: anyscale/ray:2.58.0-slim-py312-cu129
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
+    K8S: configs/basic-single-node/k8s.yaml
     GCP: configs/basic-single-node/gce.yaml
   test:
     tests_path: tests/xgboost-training-and-serving/
@@ -531,6 +539,7 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+    K8S: configs/basic-single-node/k8s.yaml
   test:
     tests_path: tests/parallel-experiments/
     command: bash tests.sh
@@ -674,6 +683,7 @@
     image_uri: anyscale/ray:2.58.0-slim-py312-cu129
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
+    K8S: configs/basic-single-node/k8s.yaml
     GCP: configs/basic-single-node/gce.yaml
   test:
     tests_path: tests/asynchronous_inference/
