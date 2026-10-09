@@ -113,6 +113,7 @@
     image_uri: anyscale/ray:2.58.0-slim-py312-cu129
   compute_config:
     AWS: configs/intro-ray-libraries/aws.yaml
+    K8S: configs/intro-ray-libraries/k8s.yaml
     GCP: configs/intro-ray-libraries/gce.yaml
   test:
     tests_path: tests/intro-ray-libraries/
@@ -145,6 +146,7 @@
   compute_config:
     GCP: configs/unstructured_data_ingestion/gce.yaml
     AWS: configs/unstructured_data_ingestion/aws.yaml
+    K8S: configs/unstructured_data_ingestion/k8s.yaml
   test:
     tests_path: tests/unstructured_data_ingestion/
     command: bash tests.sh
@@ -187,8 +189,9 @@
   cluster_env:
     image_uri: anyscale/ray:2.58.0-py312-cu129
   compute_config:
-    GCP: configs/basic-single-node/gce.yaml
-    AWS: configs/basic-single-node/aws.yaml
+    GCP: configs/basic-single-node-gpu/gce.yaml
+    AWS: configs/basic-single-node-gpu/aws.yaml
+    K8S: configs/basic-single-node-gpu/k8s.yaml
   test:
     tests_path: tests/serve-stable-diffusion-v2/
     command: bash tests.sh
@@ -204,8 +207,9 @@
   cluster_env:
     image_uri: anyscale/ray-llm:2.58.0-py312-cu130
   compute_config:
-    GCP: configs/basic-single-node/gce.yaml
-    AWS: configs/basic-single-node/aws.yaml
+    GCP: configs/basic-single-node-gpu/gce.yaml
+    AWS: configs/basic-single-node-gpu/aws.yaml
+    K8S: configs/basic-single-node-gpu/k8s.yaml
   test:
     tests_path: tests/deployment-serve-llm/
     command: bash tests.sh
@@ -219,6 +223,7 @@
     image_uri: anyscale/ray:2.58.0-py312-cu129
   compute_config:
     AWS: configs/vla-fine-tuning/aws.yaml
+    K8S: configs/vla-fine-tuning/k8s.yaml
     GCP: configs/vla-fine-tuning/gce.yaml
   test:
     tests_path: tests/vla-fine-tuning/
@@ -248,6 +253,7 @@
     image_uri: anyscale/ray:2.58.0-slim-py312-cu129
   compute_config:
     AWS: configs/e2e-timeseries-forecasting/aws.yaml
+    K8S: configs/e2e-timeseries-forecasting/k8s.yaml
     GCP: configs/e2e-timeseries-forecasting/gce.yaml
   test:
     tests_path: tests/e2e-timeseries-forecasting/
@@ -264,6 +270,7 @@
       ray_version: 2.58.0
   compute_config:
     AWS: configs/object-detection-video-processing/aws.yaml
+    K8S: configs/object-detection-video-processing/k8s.yaml
     GCP: configs/object-detection-video-processing/gce.yaml
   test:
     tests_path: tests/object-detection-video-processing/
@@ -277,8 +284,9 @@
   cluster_env:
     image_uri: anyscale/ray-llm:2.58.0-py312-cu130
   compute_config:
-    AWS: configs/basic-single-node/aws.yaml
-    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node-gpu/aws.yaml
+    K8S: configs/basic-single-node-gpu/k8s.yaml
+    GCP: configs/basic-single-node-gpu/gce.yaml
   test:
     tests_path: tests/langchain-agent-ray-serve/
     command: bash tests.sh
@@ -307,6 +315,7 @@
     image_uri: anyscale/ray-llm:2.58.0-py312-cu130
   compute_config:
     AWS: configs/entity-recognition-with-llms/aws.yaml
+    K8S: configs/entity-recognition-with-llms/k8s.yaml
     GCP: configs/entity-recognition-with-llms/gce.yaml
   test:
     tests_path: tests/entity-recognition-with-llms/
@@ -321,6 +330,7 @@
     image_uri: anyscale/ray-llm:2.58.0-py312-cu130
   compute_config:
     AWS: configs/audio-dataset-curation-llm-judge/aws.yaml
+    K8S: configs/audio-dataset-curation-llm-judge/k8s.yaml
     GCP: configs/audio-dataset-curation-llm-judge/gce.yaml
   test:
     tests_path: tests/audio-dataset-curation-llm-judge/
@@ -335,6 +345,7 @@
     image_uri: anyscale/ray:2.58.0-slim-py312-cu129
   compute_config:
     AWS: configs/distributing-pytorch/aws.yaml
+    K8S: configs/distributing-pytorch/k8s.yaml
     GCP: configs/distributing-pytorch/gce.yaml
   test:
     tests_path: tests/distributing-pytorch/
@@ -364,6 +375,7 @@
     image_uri: anyscale/ray:2.58.0-py311-cu128
   compute_config:
     AWS: configs/deepspeed_finetune/aws.yaml
+    K8S: configs/deepspeed_finetune/k8s.yaml
     GCP: configs/deepspeed_finetune/gce.yaml
   test:
     tests_path: tests/deepspeed_finetune/
@@ -378,6 +390,7 @@
     image_uri: anyscale/ray:2.58.0-py312-cu129
   compute_config:
     AWS: configs/pytorch-profiling/aws.yaml
+    K8S: configs/pytorch-profiling/k8s.yaml
     GCP: configs/pytorch-profiling/gce.yaml
   test:
     tests_path: tests/pytorch-profiling/
@@ -391,8 +404,9 @@
   cluster_env:
     image_uri: anyscale/ray-llm:2.58.0-py312-cu130
   compute_config:
-    AWS: configs/basic-single-node/aws.yaml
-    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node-gpu/aws.yaml
+    K8S: configs/basic-single-node-gpu/k8s.yaml
+    GCP: configs/basic-single-node-gpu/gce.yaml
   test:
     tests_path: tests/llm_finetuning/
     command: bash tests.sh
@@ -406,6 +420,7 @@
     image_uri: anyscale/ray:2.58.0-slim-py312-cu129
   compute_config:
     AWS: configs/image-search-and-classification/aws.yaml
+    K8S: configs/image-search-and-classification/k8s.yaml
     GCP: configs/image-search-and-classification/gce.yaml
   test:
     tests_path: tests/image-search-and-classification/
@@ -422,6 +437,7 @@
       ray_version: 2.58.0
   compute_config:
     AWS: configs/e2e-rag-deepdive/aws.yaml
+    K8S: configs/e2e-rag-deepdive/k8s.yaml
     GCP: configs/e2e-rag-deepdive/gce.yaml
   test:
     tests_path: tests/e2e-rag-deepdive/
@@ -439,6 +455,7 @@
   compute_config:
     GCP: configs/skyrl/gce.yaml
     AWS: configs/skyrl/aws.yaml
+    K8S: configs/skyrl/k8s.yaml
   test:
     tests_path: tests/skyrl/
     command: bash tests.sh
@@ -455,6 +472,7 @@
   compute_config:
     GCP: configs/skyrl-opd-template/gce.yaml
     AWS: configs/skyrl-opd-template/aws.yaml
+    K8S: configs/skyrl-opd-template/k8s.yaml
   test:
     tests_path: tests/skyrl-opd-template/
     command: bash tests.sh
@@ -471,6 +489,7 @@
   compute_config:
     GCP: configs/groot-ray-serve/gce.yaml
     AWS: configs/groot-ray-serve/aws.yaml
+    K8S: configs/groot-ray-serve/k8s.yaml
   test:
     tests_path: tests/groot-ray-serve/
     command: bash tests.sh
@@ -485,6 +504,7 @@
   compute_config:
     GCP: configs/text-embeddings/gce.yaml
     AWS: configs/text-embeddings/aws.yaml
+    K8S: configs/text-embeddings/k8s.yaml
   test:
     tests_path: tests/text-embeddings/
     command: bash tests.sh
@@ -499,6 +519,7 @@
   compute_config:
     GCP: configs/finetune-stable-diffusion/gce.yaml
     AWS: configs/finetune-stable-diffusion/aws.yaml
+    K8S: configs/finetune-stable-diffusion/k8s.yaml
   test:
     tests_path: tests/finetune-stable-diffusion/
     command: bash tests.sh
@@ -527,6 +548,7 @@
     image_uri: anyscale/ray:2.58.0-py311-cu128
   compute_config:
     AWS: configs/stable-diffusion-pretraining/aws.yaml
+    K8S: configs/stable-diffusion-pretraining/k8s.yaml
     GCP: configs/stable-diffusion-pretraining/gce.yaml
   test:
     tests_path: tests/stable-diffusion-pretraining/
@@ -558,6 +580,7 @@
     image_uri: anyscale/ray:2.58.0-py311-cu128
   compute_config:
     AWS: configs/vhol-ray-data/aws.yaml
+    K8S: configs/vhol-ray-data/k8s.yaml
     GCP: configs/vhol-ray-data/gce.yaml
   test:
     tests_path: tests/vhol-ray-data/
@@ -587,6 +610,7 @@
     image_uri: anyscale/ray:2.58.0-py312-cu129
   compute_config:
     AWS: configs/ray-summit-core-masterclass/aws.yaml
+    K8S: configs/ray-summit-core-masterclass/k8s.yaml
     GCP: configs/ray-summit-core-masterclass/gce.yaml
   test:
     tests_path: tests/ray-summit-core-masterclass/
@@ -601,6 +625,7 @@
     image_uri: anyscale/ray-llm:2.58.0-py312-cu130
   compute_config:
     AWS: configs/multi_agent_a2a/aws.yaml
+    K8S: configs/multi_agent_a2a/k8s.yaml
     GCP: configs/multi_agent_a2a/gce.yaml
   test:
     tests_path: tests/multi_agent_a2a/
@@ -617,6 +642,7 @@
     image_uri: anyscale/ray-llm:2.58.0-py312-cu130
   compute_config:
     AWS: configs/llm_batch_inference_text/aws.yaml
+    K8S: configs/llm_batch_inference_text/k8s.yaml
     GCP: configs/llm_batch_inference_text/gce.yaml
   test:
     tests_path: tests/llm_batch_inference_text/
@@ -631,6 +657,7 @@
     image_uri: anyscale/ray-llm:2.58.0-py312-cu130
   compute_config:
     AWS: configs/llm_batch_inference_vision/aws.yaml
+    K8S: configs/llm_batch_inference_vision/k8s.yaml
     GCP: configs/llm_batch_inference_vision/gce.yaml
   test:
     tests_path: tests/llm_batch_inference_vision/
@@ -645,6 +672,7 @@
     image_uri: anyscale/ray:2.58.0-py312-cu129
   compute_config:
     AWS: configs/tensor_parallel_dtensor/aws.yaml
+    K8S: configs/tensor_parallel_dtensor/k8s.yaml
     GCP: configs/tensor_parallel_dtensor/gce.yaml
   test:
     tests_path: tests/tensor_parallel_dtensor/
@@ -659,6 +687,7 @@
     image_uri: anyscale/ray:2.58.0-py311-cu128
   compute_config:
     AWS: configs/tensor_parallel_autotp/aws.yaml
+    K8S: configs/tensor_parallel_autotp/k8s.yaml
     GCP: configs/tensor_parallel_autotp/gce.yaml
   test:
     tests_path: tests/tensor_parallel_autotp/
@@ -673,6 +702,7 @@
     image_uri: anyscale/ray:2.58.0-slim-py312-cu129
   compute_config:
     AWS: configs/ray_train_workloads/aws.yaml
+    K8S: configs/ray_train_workloads/k8s.yaml
     GCP: configs/ray_train_workloads/gce.yaml
   test:
     tests_path: tests/ray_train_workloads/
@@ -702,6 +732,7 @@
     image_uri: anyscale/ray:2.58.0-slim-py312-cu129
   compute_config:
     AWS: configs/tune_pytorch_asha/aws.yaml
+    K8S: configs/tune_pytorch_asha/k8s.yaml
     GCP: configs/tune_pytorch_asha/gce.yaml
   test:
     tests_path: tests/tune_pytorch_asha/
@@ -716,6 +747,7 @@
     image_uri: anyscale/ray:2.58.0-py312-cu129
   compute_config:
     AWS: configs/ray-tune-train-integration/aws.yaml
+    K8S: configs/ray-tune-train-integration/k8s.yaml
     GCP: configs/ray-tune-train-integration/gce.yaml
   test:
     tests_path: tests/ray-tune-train-integration/
@@ -730,6 +762,7 @@
     image_uri: anyscale/ray:2.58.0-py311-cu128
   compute_config:
     AWS: configs/creatives_diffusion_finetuning/aws.yaml
+    K8S: configs/creatives_diffusion_finetuning/k8s.yaml
     GCP: configs/creatives_diffusion_finetuning/gce.yaml
   test:
     tests_path: tests/creatives_diffusion_finetuning/
@@ -744,6 +777,7 @@
     image_uri: anyscale/ray:2.58.0-py311-cu128
   compute_config:
     AWS: configs/biotech_boltz_screening/aws.yaml
+    K8S: configs/biotech_boltz_screening/k8s.yaml
     GCP: configs/biotech_boltz_screening/gce.yaml
   test:
     tests_path: tests/biotech_boltz_screening/
@@ -759,6 +793,7 @@
     image_uri: anyscale/ray:2.58.0-py311-cu128
   compute_config:
     AWS: configs/biotech_protein_embeddings/aws.yaml
+    K8S: configs/biotech_protein_embeddings/k8s.yaml
     GCP: configs/biotech_protein_embeddings/gce.yaml
   test:
     tests_path: tests/biotech_protein_embeddings/
@@ -773,6 +808,7 @@
     image_uri: anyscale/ray:2.58.0-py311-cu128
   compute_config:
     AWS: configs/ecommerce_batch_embeddings/aws.yaml
+    K8S: configs/ecommerce_batch_embeddings/k8s.yaml
     GCP: configs/ecommerce_batch_embeddings/gce.yaml
   test:
     tests_path: tests/ecommerce_batch_embeddings/
@@ -787,6 +823,7 @@
     image_uri: anyscale/ray:2.58.0-py311-cu128
   compute_config:
     AWS: configs/ecommerce_multi_model_serving/aws.yaml
+    K8S: configs/ecommerce_multi_model_serving/k8s.yaml
     GCP: configs/ecommerce_multi_model_serving/gce.yaml
   test:
     tests_path: tests/ecommerce_multi_model_serving/
@@ -801,6 +838,7 @@
     image_uri: anyscale/ray:2.58.0-py311
   compute_config:
     AWS: configs/fintech_fraud_risk/aws.yaml
+    K8S: configs/fintech_fraud_risk/k8s.yaml
     GCP: configs/fintech_fraud_risk/gce.yaml
   test:
     tests_path: tests/fintech_fraud_risk/
@@ -815,6 +853,7 @@
     image_uri: anyscale/ray:2.58.0-py311
   compute_config:
     AWS: configs/fintech_quant/aws.yaml
+    K8S: configs/fintech_quant/k8s.yaml
     GCP: configs/fintech_quant/gce.yaml
   test:
     tests_path: tests/fintech_quant/
@@ -832,6 +871,7 @@
       ray_version: 2.58.0
   compute_config:
     AWS: configs/wdl-genomics-on-ray/aws.yaml
+    K8S: configs/wdl-genomics-on-ray/k8s.yaml
     GCP: configs/wdl-genomics-on-ray/gce.yaml
   test:
     # The notebook at WDL_DEMO_SCALE=quick; Buildkite adds a 30 min startup allowance.
@@ -852,6 +892,7 @@
       ray_version: 2.54.0
   compute_config:
     AWS: archive/events/2026-ray-workshop/ray-workshop-2026/configs/aws.yaml
+    K8S: archive/events/2026-ray-workshop/ray-workshop-2026/configs/k8s.yaml
     GCP: archive/events/2026-ray-workshop/ray-workshop-2026/configs/gce.yaml
 
 # owner: @daniel.arrizza
@@ -862,6 +903,7 @@
     image_uri: anyscale/ray:2.58.0-py312
   compute_config:
     AWS: configs/ecommerce_end_to_end/aws.yaml
+    K8S: configs/ecommerce_end_to_end/k8s.yaml
     GCP: configs/ecommerce_end_to_end/gce.yaml
   test:
     tests_path: tests/ecommerce_end_to_end/
@@ -880,6 +922,7 @@
     image_uri: anyscale/ray:2.58.0-py312-cu129
   compute_config:
     AWS: configs/ray-data-multimodel-frame-enrichment/aws.yaml
+    K8S: configs/ray-data-multimodel-frame-enrichment/k8s.yaml
     GCP: configs/ray-data-multimodel-frame-enrichment/gce.yaml
   test:
     tests_path: tests/ray-data-multimodel-frame-enrichment/
@@ -905,6 +948,7 @@
     image_uri: anyscale/ray:2.58.0-py312-cu129
   compute_config:
     AWS: configs/ray-data-sensor-frame-extraction/aws.yaml
+    K8S: configs/ray-data-sensor-frame-extraction/k8s.yaml
     GCP: configs/ray-data-sensor-frame-extraction/gce.yaml
   test:
     tests_path: tests/ray-data-sensor-frame-extraction/
@@ -928,6 +972,7 @@
     image_uri: anyscale/ray:2.58.0-py312-cu129
   compute_config:
     AWS: configs/ray-data-incremental-batch-classification/aws.yaml
+    K8S: configs/ray-data-incremental-batch-classification/k8s.yaml
     GCP: configs/ray-data-incremental-batch-classification/gce.yaml
   test:
     tests_path: tests/ray-data-incremental-batch-classification/
@@ -947,6 +992,7 @@
       ray_version: 2.58.0
   compute_config:
     AWS: configs/nextflow-genomics-on-ray/aws.yaml
+    K8S: configs/nextflow-genomics-on-ray/k8s.yaml
     GCP: configs/nextflow-genomics-on-ray/gce.yaml
   test:
     # Unit checks, main.nf on a synthetic trio (must score 1.0), the notebook at quick; NF_CNN=false.

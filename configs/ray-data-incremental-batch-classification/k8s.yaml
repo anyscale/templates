@@ -5,11 +5,17 @@ head_node:
   resources:
     CPU: 0
 worker_nodes:
-- name: gpu_worker
+- name: gpu-worker
   required_resources:
-    CPU: 8
-    memory: 32Gi
+    CPU: 7
+    memory: 28Gi
     GPU: 1
   required_labels:
     ray.io/accelerator-type: A10
-  max_nodes: 4
+  min_nodes: 1
+  max_nodes: 1
+- name: cpu-worker
+  required_resources:
+    CPU: 7
+    memory: 28Gi
+  max_nodes: 2

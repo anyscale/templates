@@ -1,0 +1,13 @@
+head_node:
+  required_resources:
+    CPU: 4
+    memory: 8Gi
+  resources:
+    CPU: 0
+worker_nodes:
+- name: assembly-worker
+  required_resources:
+    CPU: 31
+    memory: 124Gi
+  min_nodes: 1
+  max_nodes: 3
