@@ -1,11 +1,11 @@
-# What this template adds to anyscale/ray:2.58.0-py312-cu129. Resolved on 2026-08-17 against the
+# What this template adds to anyscale/ray:2.59.0-py312-cu129. Resolved on 2026-08-17 against the
 # 2.57.0 image, which a job declaring no requirements measured as shipping:
 #
 #   torch  ABSENT      numpy    2.2.6      pandas 2.3.3
 #   torchvision ABSENT pyarrow  23.0.1     ray    2.57.0     Pillow 11.3.0
 #   transformers ABSENT
 #
-# The 2.58.0 freeze (dependencies/images/ray-2.58.0-py312-cu129.freeze.txt) lists the same for
+# The 2.59.0 freeze (dependencies/images/ray-2.59.0-py312-cu129.freeze.txt) lists the same for
 # every row but ray. That is read from the freeze, not re-measured on a job.
 #
 # So the three below have to be installed. `-cu129` is the CUDA runtime, not PyTorch.
