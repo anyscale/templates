@@ -1,6 +1,6 @@
 # Use base image.
-FROM anyscale/ray:2.58.0-slim-py312-cu129
-# For open source-ray, use: rayproject/ray:2.58.0-py312-cu129.
+FROM anyscale/ray:2.59.0-slim-py312-cu129
+# For open source-ray, use: rayproject/ray:2.59.0-py312-cu129.
 
 # Install system dependencies.
 RUN sudo apt update && sudo apt install -y \
@@ -10,15 +10,11 @@ RUN sudo apt update && sudo apt install -y \
 
 # Install Python dependencies.
 RUN pip install --no-cache-dir \
-    boto3==1.26.76 \
     imageio-ffmpeg==0.6.0 \
-    opencv-python-headless==4.11.0.86 \
-    pillow==11.1.0 \
-    pycocotools==2.0.8 \
-    requests==2.31.0 \
-    smart-open==6.2.0 \
-    torch==2.6.0 \
-    torchvision==0.21.0 \
-    xmltodict==0.14.2 \
-    torchmetrics==1.6.1 \
+    opencv-python-headless==5.0.0.93 \
+    pycocotools==2.0.11 \
+    torch==2.9.1 \
+    torchvision==0.24.1 \
+    xmltodict==1.0.4 \
+    torchmetrics==1.9.0 \
     decord==0.6.0
