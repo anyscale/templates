@@ -61,10 +61,15 @@ done
 for ev in "${env_vars[@]}"; do export "$ev"; done
 case "$image" in
   docker.io/mcp/brave-search) exec /mnt/cluster_storage/ci-mcp/node20/bin/npx -y --quiet @modelcontextprotocol/server-brave-search "${cmd_args[@]}" ;;
-  # Pin both sides: mcp-server-fetch declares mcp>=1.1.3 with no upper bound,
-  # and mcp 2.0.0 renamed McpError -> MCPError, breaking the import. mcp is
-  # pinned to the template's own version (requirements.txt / python_depset.lock).
-  docker.io/mcp/fetch)        exec uvx --quiet --with "mcp==1.11.0" "mcp-server-fetch==2026.7.10" "${cmd_args[@]}" ;;
+  # Pin all three sides: mcp-server-fetch declares mcp>=1.1.3 with no upper
+  # bound, and mcp 2.0.0 renamed McpError -> MCPError, breaking the import.
+  # mcp 1.11.0 requires pydantic<3,>=2.8 (no upper cap below 3), and pydantic
+  # 2.14 removed `eval_type_backport` from `pydantic._internal._typing_extra`
+  # — mcp 1.11.0 imports it from that exact path, so a fresh uvx env floats
+  # pydantic to 2.14 and the fetch replica fails to import at startup. mcp
+  # is pinned to the template's own version (requirements.txt /
+  # python_depset.lock); pydantic<2.14 restores the import.
+  docker.io/mcp/fetch)        exec uvx --quiet --with "mcp==1.11.0" --with "pydantic<2.14" "mcp-server-fetch==2026.7.10" "${cmd_args[@]}" ;;
   *) echo "podman-shim: unsupported image: $image" >&2; exit 1 ;;
 esac
 PODMAN_SHIM
