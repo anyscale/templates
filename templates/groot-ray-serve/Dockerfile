@@ -10,7 +10,7 @@
 # WORKDIR directives — use sudo for root-only steps.
 # =============================================================================
 
-FROM anyscale/ray:2.58.0-slim-py311-cu129
+FROM anyscale/ray:2.59.0-slim-py311-cu129
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
@@ -74,8 +74,14 @@ RUN git clone --depth 1 --branch v2.3.2 https://github.com/isaac-sim/IsaacLab.gi
 # NOTE: Isaac-GR00T upstream is unpinned and periodically retightens its
 # requires-python (was `==3.10.*`, later `>=3.12,<3.13`); rewrite whatever
 # it currently declares so the build stays on the base image's Python.
-RUN git clone --depth 1 https://github.com/NVIDIA/Isaac-GR00T.git /home/ray/Isaac-GR00T && \
+# Pinned to 51d4c89f72 (Aug 20, 2026). The Oct 7, 2026 "Sync GR00T N1.7
+# staging package to Isaac-GR00T" commit (d2b7e75b93) made Gr00tN1d7Config
+# incompatible with newer transformers' PretrainedConfig base and raises
+# `TypeError: non-default argument 'diffusion_model_cfg' follows default
+# argument` at import time, which crashes the Ray Serve replica.
+RUN git clone https://github.com/NVIDIA/Isaac-GR00T.git /home/ray/Isaac-GR00T && \
     cd /home/ray/Isaac-GR00T && \
+    git checkout 51d4c89f72 && \
     sed -i -E 's|^requires-python = .*|requires-python = ">=3.10"|' pyproject.toml && \
     python -m pip install --no-deps -e .
 
@@ -114,6 +120,36 @@ RUN python -m pip install \
 # in ray/serve/_private/config.py::_proto_to_dict. Ray itself declares
 # `protobuf<7`; keep it aligned with the base image's 4.25.x line.
 RUN python -m pip install --no-deps "protobuf==4.25.8"
+
+# Force-pin pyarrow back to a numpy-1.x-compatible version. Ray 2.59's base image
+# ships pyarrow==23.0.1 (built against numpy 2.0 and raises `ImportError: pyarrow
+# requires NumPy 2.0 or newer` at import), but Isaac Sim 5.1.0 above downgrades
+# numpy to 1.26.0. Ray 2.59 also added an eager pyarrow import in
+# ray/util/serialization_addons.py (via _register_custom_datasets_serializers)
+# whose except clause only catches ModuleNotFoundError, so an incompatible
+# pyarrow blows up the first `ray.get(...)`. pyarrow 17.0.0 is the last line
+# built against numpy<2 and still satisfies Ray's declared `pyarrow>=17.0.0`.
+RUN python -m pip install --no-deps "pyarrow==17.0.0"
+
+# Force-align torchaudio with the cu128 torch wheel installed above. Later pip
+# installs (notably `isaacsim[all]` and the GR00T runtime step) pull a torchaudio
+# wheel from PyPI that was compiled against CUDA 12.6; the first time Ray Serve
+# initializes a replica importing gr00t -> transformers.AutoProcessor it dies
+# with "PyTorch and TorchAudio were compiled with different CUDA versions"
+# (PyTorch 12.8 vs TorchAudio 12.6). Reinstalling against the cu128 index pins
+# the matching 2.7.0 build last, so nothing can displace it.
+RUN python -m pip install --no-deps --force-reinstall \
+    "torchaudio==2.7.0" \
+    --index-url https://download.pytorch.org/whl/cu128
+
+# Pin transformers to the version Isaac-GR00T 51d4c89f72 declares in its
+# pyproject.toml. Newer transformers (>=4.58) turned PretrainedConfig into a
+# dataclass with non-default fields, which breaks `@dataclass class
+# Gr00tN1d7Config(PretrainedConfig)` with
+# `TypeError: non-default argument 'diffusion_model_cfg' follows default argument`
+# at module import. The Ray 2.59 base image happens to resolve transformers
+# higher than this, so the pin has to be applied last.
+RUN python -m pip install --no-deps "transformers==4.57.3" "tokenizers==0.22.2" "huggingface-hub==0.36.2"
 
 # flash-attn is intentionally NOT installed; GR00T falls back to eager attention cleanly.
 # To enable later, install the matching prebuilt wheel post-build:
