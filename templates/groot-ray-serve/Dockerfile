@@ -74,8 +74,14 @@ RUN git clone --depth 1 --branch v2.3.2 https://github.com/isaac-sim/IsaacLab.gi
 # NOTE: Isaac-GR00T upstream is unpinned and periodically retightens its
 # requires-python (was `==3.10.*`, later `>=3.12,<3.13`); rewrite whatever
 # it currently declares so the build stays on the base image's Python.
-RUN git clone --depth 1 https://github.com/NVIDIA/Isaac-GR00T.git /home/ray/Isaac-GR00T && \
+# Pinned to 51d4c89f72 (Aug 20, 2026). The Oct 7, 2026 "Sync GR00T N1.7
+# staging package to Isaac-GR00T" commit (d2b7e75b93) made Gr00tN1d7Config
+# incompatible with newer transformers' PretrainedConfig base and raises
+# `TypeError: non-default argument 'diffusion_model_cfg' follows default
+# argument` at import time, which crashes the Ray Serve replica.
+RUN git clone https://github.com/NVIDIA/Isaac-GR00T.git /home/ray/Isaac-GR00T && \
     cd /home/ray/Isaac-GR00T && \
+    git checkout 51d4c89f72 && \
     sed -i -E 's|^requires-python = .*|requires-python = ">=3.10"|' pyproject.toml && \
     python -m pip install --no-deps -e .
 
