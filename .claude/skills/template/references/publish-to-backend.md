@@ -45,6 +45,27 @@ publish job under it is still `blocked`. Judge a template done by **both** produ
 never by the build's state. Missing the azure half is the easy way to call a template published when
 half of it isn't.
 
+**A template can sit in `BUILD.yaml`, test green, and never reach production.** A wave audit only
+reconciles the builds that wave triggered, so a template whose *first-ever* publish attempt parked at a
+gate is structurally invisible to it. Four were — `ray-data-sensor-frame-extraction`,
+`ray-data-multimodel-frame-enrichment`, `ray-data-incremental-batch-classification` and
+`skyrl-opd-template`, all orphaned 2026-10-01, all reading `build.state=passed` with both production jobs
+`blocked`, all customer-invisible for twelve days. Run this independently of any wave:
+
+> For every maintained `BUILD.yaml` entry, does at least one `tmpl-publish` build exist with **both**
+> production jobs `passed`?
+
+Ask it of the whole manifest, never of a suspect list — querying only the names already suspected is how
+the fourth one was missed on the first pass. One paginated scan of the pipeline's full history (~900
+builds, `include_retried_jobs=true`) answers it in ~2 min.
+
+**Published is not visible.** The console gallery is `backend/workspace-templates.yaml` in
+**anyscale/product**, independent of this repo, so both production jobs green still leaves a template
+absent from the console if it has no tile. Reconcile on `base_url: ascommon:///templates/<name>/...`,
+**not** on the tile key — the key is arbitrary, and matching it against `BUILD.yaml` names manufactures
+dozens of false misses. A tile whose template isn't in `BUILD.yaml` is not evidence the tile is dead;
+flag it, don't delete it.
+
 **Buildkite's REST build endpoint omits retried jobs.** Unless you pass `?include_retried_jobs=true` it
 returns only each job's latest attempt, so a job that failed and then passed on retry — or passed and then
 failed — reads as one wrong outcome. Pass it whenever you audit a build's job states.
