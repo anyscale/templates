@@ -45,6 +45,10 @@ publish job under it is still `blocked`. Judge a template done by **both** produ
 never by the build's state. Missing the azure half is the easy way to call a template published when
 half of it isn't.
 
+**Buildkite's REST build endpoint omits retried jobs.** Unless you pass `?include_retried_jobs=true` it
+returns only each job's latest attempt, so a job that failed and then passed on retry — or passed and then
+failed — reads as one wrong outcome. Pass it whenever you audit a build's job states.
+
 ## Run it (Buildkite MCP)
 
 1. **Trigger build:** `org_slug=anyscale`, `pipeline_slug=tmpl-publish`, `branch=master`,

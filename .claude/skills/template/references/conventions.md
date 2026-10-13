@@ -43,7 +43,8 @@ existing configs and, on a name it already finds, skips — `Compute config %q a
 creation` (`rayapp/compute_config.go`; it only ever calls `CreateComputeConfig`, never an update). The name
 comes from `generateComputeConfigName` and does not track the file's contents, so a changed
 `configs/<name>/{aws,gce}.yaml` keeps resolving to the same, stale config. **Someone must push a new
-compute-config version by hand for the edit to take effect.**
+compute-config version by hand for the edit to take effect.** Read back what is actually registered with
+`anyscale compute-config get -n <name>` — the repo YAML is not evidence of what CI runs.
 
 Budget for this whenever you change an instance type, `market_type`, node counts, or
 `enable_cross_zone_scaling`: the PR looks like it fixed the cluster and hasn't. It cost the 2.57 wave three
