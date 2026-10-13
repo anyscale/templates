@@ -1,4 +1,4 @@
 # ipykernel/ipywidgets sit above the image's 7.2.0/8.1.3, where the old >= floors already resolved.
-ipykernel==7.3.0
+ipykernel==7.4.0
 ipywidgets==8.1.9
 xgboost==3.4.1
