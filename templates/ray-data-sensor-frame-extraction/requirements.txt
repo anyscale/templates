@@ -1,6 +1,6 @@
-# Resolved against `anyscale/ray:2.58.0-py312-cu129`, the image in this template's BUILD.yaml
-# entry. Its freeze (dependencies/images/ray-2.58.0-py312-cu129.freeze.txt) has numpy 2.2.6,
-# pyarrow 23.0.1 and ray 2.58.0, and no torch or torchvision: `-cu129` in the tag is the CUDA
+# Resolved against `anyscale/ray:2.59.0-py312-cu129`, the image in this template's BUILD.yaml
+# entry. Its freeze (dependencies/images/ray-2.59.0-py312-cu129.freeze.txt) has numpy 2.2.6,
+# pyarrow 23.0.1 and ray 2.59.0, and no torch or torchvision: `-cu129` in the tag is the CUDA
 # runtime. Only the `ray-llm` images ship torch.
 torch==2.9.1
 
