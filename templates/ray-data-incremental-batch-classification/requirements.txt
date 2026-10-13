@@ -1,5 +1,5 @@
-# Installed on top of anyscale/ray:2.58.0-py312-cu129. Per
-# dependencies/images/ray-2.58.0-py312-cu129.freeze.txt (not re-measured on a job), the image
+# Installed on top of anyscale/ray:2.59.0-py312-cu129. Per
+# dependencies/images/ray-2.59.0-py312-cu129.freeze.txt (not re-measured on a job), the image
 # ships pyarrow 23.0.1 and no torch, transformers or huggingface-hub. Its `-cu129` tag names
 # the CUDA runtime; torch comes from this file.
 #
