@@ -142,6 +142,15 @@ RUN python -m pip install --no-deps --force-reinstall \
     "torchaudio==2.7.0" \
     --index-url https://download.pytorch.org/whl/cu128
 
+# Pin transformers to the version Isaac-GR00T 51d4c89f72 declares in its
+# pyproject.toml. Newer transformers (>=4.58) turned PretrainedConfig into a
+# dataclass with non-default fields, which breaks `@dataclass class
+# Gr00tN1d7Config(PretrainedConfig)` with
+# `TypeError: non-default argument 'diffusion_model_cfg' follows default argument`
+# at module import. The Ray 2.59 base image happens to resolve transformers
+# higher than this, so the pin has to be applied last.
+RUN python -m pip install --no-deps "transformers==4.57.3"
+
 # flash-attn is intentionally NOT installed; GR00T falls back to eager attention cleanly.
 # To enable later, install the matching prebuilt wheel post-build:
 #   pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.4.post1/\
