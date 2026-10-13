@@ -911,7 +911,7 @@
   owner_team: ray-data
   dir: templates/ray-data-incremental-batch-classification
   cluster_env:
-    image_uri: anyscale/ray:2.58.0-py312-cu129
+    image_uri: anyscale/ray:2.59.0-py312-cu129
   compute_config:
     AWS: configs/ray-data-incremental-batch-classification/aws.yaml
     GCP: configs/ray-data-incremental-batch-classification/gce.yaml

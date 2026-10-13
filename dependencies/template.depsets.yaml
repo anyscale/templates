@@ -703,7 +703,7 @@ depsets:
       - scripts/depsets/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu129.freeze.txt templates/ray-data-sensor-frame-extraction/python_depset.lock
 
   # Same shape as tensor_parallel_dtensor: the cu129 torch index, matching
-  # `anyscale/ray:2.58.0-py312-cu129`, so torch tracks the image's CUDA rather than PyPI's
+  # `anyscale/ray:2.59.0-py312-cu129`, so torch tracks the image's CUDA rather than PyPI's
   # default build. The image ships no torch, transformers or huggingface-hub.
   - name: ray_data_incremental_batch_classification_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -717,6 +717,6 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2580_py312
+      - ray2590_py312
     pre_hooks:
       - scripts/depsets/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu129.freeze.txt templates/ray-data-incremental-batch-classification/python_depset.lock
