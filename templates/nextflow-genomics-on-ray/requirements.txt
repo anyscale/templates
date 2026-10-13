@@ -1,4 +1,4 @@
-# Additions to anyscale/ray:2.58.0-py312-cu128; the template's image already has them. No ray
+# Additions to anyscale/ray:2.59.0-py312-cu128; the template's image already has them. No ray
 # (driver and workers must share the image's) and no matplotlib (the notebook targets 3.10.8).
 
 # For NVScoreVariants' `scorevariants` (torch is in tools/requirements.gpu.txt). Lightning 2.6 is

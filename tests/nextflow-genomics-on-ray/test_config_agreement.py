@@ -33,7 +33,7 @@ INSTANCES = {
     "g2-standard-8-nvidia-l4-1": (8, 32, 1, "L4"),
 }
 
-# Ray 2.58.0 offers tasks ~70% of free memory (the object store takes 0.3); 5% for OS and container.
+# Ray 2.59.0 offers tasks ~70% of free memory (the object store takes 0.3); 5% for OS and container.
 RAY_MEMORY_SHARE = 0.7
 OS_ALLOWANCE = 0.95
 

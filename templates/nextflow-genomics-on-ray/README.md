@@ -48,7 +48,7 @@ project directory.
 
 A request that no node type can satisfy stays pending on Ray instead of failing. So
 `conf/ray.config` declares the largest request a node can schedule, and the executor refuses
-anything bigger at submit time. That is less than the node has: Ray 2.58.0 offers about 70% of free
+anything bigger at submit time. That is less than the node has: Ray 2.59.0 offers about 70% of free
 memory as `memory`, so a 128 GiB worker schedules roughly 85 GiB, and `conf/base.config` clamps
 requests to 80 GB.
 
