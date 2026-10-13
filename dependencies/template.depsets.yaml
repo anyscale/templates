@@ -473,7 +473,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2580_py311
+      - ray2590_py311
     pre_hooks:
       - scripts/depsets/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311.freeze.txt templates/fintech_quant/python_depset.lock
 
