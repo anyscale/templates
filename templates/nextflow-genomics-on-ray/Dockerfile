@@ -1,5 +1,5 @@
 # Cluster image. Ray workers have no container runtime, so the bioconda toolchain and a JRE are
-# baked in; the build asserts Python 3.12 and Ray 2.58.0, which driver and workers must share.
+# baked in; the build asserts Python 3.12 and Ray 2.59.0, which driver and workers must share.
 
 # The nf-ray plugin. JDK 21 for the Gradle plugin's toolchain; the bytecode targets Java 17.
 FROM --platform=$BUILDPLATFORM gradle:8.14-jdk21 AS plugin-build
@@ -14,7 +14,7 @@ RUN gradle --no-daemon installPlugin \
          || test -n "$(find /out/plugins/nf-ray-0.1.0 -name '*.jar' -print -quit)" \
          || (echo 'plugin built but produced no classes or jar' >&2; exit 1)
 
-FROM anyscale/ray:2.58.0-py312-cu128
+FROM anyscale/ray:2.59.0-py312-cu128
 
 USER root
 RUN apt-get update -qq \
@@ -79,7 +79,7 @@ RUN set -eux; \
     test "$(command -v python)" = /home/ray/anaconda3/bin/python; \
     test "$(command -v samtools)" = /opt/nf-tools/envs/main/bin/samtools; \
     python -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"; \
-    python -c "import ray; assert ray.__version__ == '2.58.0', ray.__version__"; \
+    python -c "import ray; assert ray.__version__ == '2.59.0', ray.__version__"; \
     python -c "import numpy; assert numpy.__version__.startswith('2.2.'), numpy.__version__"; \
     python -c "import torch; print('torch', torch.__version__); assert torch.version.cuda.startswith('12.8'), torch.version.cuda"; \
     python -c "import pytorch_lightning, pysam, Bio, scorevariants.models.gatk_1d; print('lightning', pytorch_lightning.__version__, 'pysam', pysam.__version__, 'biopython', Bio.__version__)"; \

@@ -29,7 +29,7 @@ class _Ref:
 class _FakeRay(types.ModuleType):
     """Just the surface nf_ray.daemon touches."""
 
-    __version__ = "2.58.0"
+    __version__ = "2.59.0"
 
     def __init__(self) -> None:
         super().__init__("ray")
