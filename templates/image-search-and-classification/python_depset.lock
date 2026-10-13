@@ -259,9 +259,9 @@ cycler==0.12.1 \
     --hash=sha256:85cef7cff222d8644161529808465972e51340599459b8ac3ccbac5a854e0d30 \
     --hash=sha256:88bb128f02ba341da8ef447245a9e138fae777f6a23943da4540077d3601eb1c
     # via matplotlib
-databricks-sdk==0.103.0 \
-    --hash=sha256:bdc93a2382e5717edd39c2faa92e38606ccc48aead047fe2154243509861eb1a \
-    --hash=sha256:eb6c1cdbe8dfe76590d049cbd03e35c45855d1bbc968d565183fa27b80ac3a76
+databricks-sdk==0.144.0 \
+    --hash=sha256:3a4beaf152f1ccbc1c46fdb59a7f43da7132b157875ef7d63e4b66ab8c606bc7 \
+    --hash=sha256:8f73a8d917b7af5817f2ccb992da0ff80a2c534bbaa3027c597123a5f48ce679
     # via mlflow-skinny
 decorator==5.2.1 \
     --hash=sha256:65f266143752f734b0a7cc83c46f4618af75b8c5911b00ccb61d0ac9b6da0360 \
@@ -1792,6 +1792,7 @@ urllib3==1.26.20 \
     --hash=sha256:0ed14ccfbf1c30a9072c7ca157e4319b70d65f623e91e7b32fadb2853431016e \
     --hash=sha256:40c2dc0c681e47eb8f90e7e27bf6ff7df2e677421fd46756da1161c39ca70d32
     # via
+    #   databricks-sdk
     #   docker
     #   requests
 uvicorn==0.22.0 \
