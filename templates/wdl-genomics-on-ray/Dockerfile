@@ -1,7 +1,7 @@
 # Cluster image. Under --container-runtime none every tool must be on every node at boot, and
 # a job's requirements: resolves before working_dir is staged, so the toolchain is baked in.
 #   anyscale image build -n my-wdl-tools --containerfile Dockerfile
-FROM anyscale/ray:2.58.0-py312
+FROM anyscale/ray:2.59.0-py312
 
 # zlib1g-dev: without it Flye's make fails behind an unrelated setup.py TypeError. bzip2, lzma
 # and libcurl are htslib's (CRAM, https); jq is for tools/stage-demo-data.sh.

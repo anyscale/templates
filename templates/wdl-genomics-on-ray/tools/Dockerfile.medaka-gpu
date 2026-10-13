@@ -3,7 +3,7 @@
 # Select it by mapping lr-medaka:0.1.0 in [ray] task_image_map (container_runtime = ray).
 
 # Ray and Python must match the cluster's exactly: the same base, plus CUDA.
-FROM anyscale/ray:2.58.0-py312-cu128
+FROM anyscale/ray:2.59.0-py312-cu128
 
 # torch pinned: medaka asks only for torch~=2.9, and PyPI's default from 2.11 is CUDA 13.
 # 2.10.0 is the newest on CUDA 12.8. Not yet built with this pin.
