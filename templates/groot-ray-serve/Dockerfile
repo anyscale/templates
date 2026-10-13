@@ -125,6 +125,17 @@ RUN python -m pip install --no-deps "protobuf==4.25.8"
 # built against numpy<2 and still satisfies Ray's declared `pyarrow>=17.0.0`.
 RUN python -m pip install --no-deps "pyarrow==17.0.0"
 
+# Force-align torchaudio with the cu128 torch wheel installed above. Later pip
+# installs (notably `isaacsim[all]` and the GR00T runtime step) pull a torchaudio
+# wheel from PyPI that was compiled against CUDA 12.6; the first time Ray Serve
+# initializes a replica importing gr00t -> transformers.AutoProcessor it dies
+# with "PyTorch and TorchAudio were compiled with different CUDA versions"
+# (PyTorch 12.8 vs TorchAudio 12.6). Reinstalling against the cu128 index pins
+# the matching 2.7.0 build last, so nothing can displace it.
+RUN python -m pip install --no-deps --force-reinstall \
+    "torchaudio==2.7.0" \
+    --index-url https://download.pytorch.org/whl/cu128
+
 # flash-attn is intentionally NOT installed; GR00T falls back to eager attention cleanly.
 # To enable later, install the matching prebuilt wheel post-build:
 #   pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.4.post1/\
