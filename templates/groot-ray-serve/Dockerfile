@@ -149,7 +149,7 @@ RUN python -m pip install --no-deps --force-reinstall \
 # `TypeError: non-default argument 'diffusion_model_cfg' follows default argument`
 # at module import. The Ray 2.59 base image happens to resolve transformers
 # higher than this, so the pin has to be applied last.
-RUN python -m pip install --no-deps "transformers==4.57.3"
+RUN python -m pip install --no-deps "transformers==4.57.3" "tokenizers==0.22.2"
 
 # flash-attn is intentionally NOT installed; GR00T falls back to eager attention cleanly.
 # To enable later, install the matching prebuilt wheel post-build:
