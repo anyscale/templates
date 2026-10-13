@@ -4,7 +4,7 @@
 name: wdl-genomics-on-ray-chr20-trio
 
 # The toolchain is baked in; a job's requirements: would install before working_dir is staged.
-image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.58.0
+image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.59.0
 
 working_dir: .
 excludes:

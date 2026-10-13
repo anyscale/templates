@@ -814,8 +814,8 @@
   cluster_env:
     # Custom image: --container-runtime none needs the toolchain on every node at boot.
     byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.58.0
-      ray_version: 2.58.0
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.59.0
+      ray_version: 2.59.0
   compute_config:
     AWS: configs/wdl-genomics-on-ray/aws.yaml
     GCP: configs/wdl-genomics-on-ray/gce.yaml

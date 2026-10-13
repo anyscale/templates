@@ -122,8 +122,8 @@ cluster's base image. `us.gcr.io/broad-dsp-lrma/lr-flye:2.8.3` is not built that
 start. Build a small image per task class instead, from the base this template's `Dockerfile`
 uses, carrying that task's tools from the same `manifest.toml`.
 
-For this template's base, `anyscale/ray:2.58.0-py312`, the target is Ray 2.58.0 and Python
-3.12.13 ([base-image reference](https://docs.anyscale.com/reference/base-images/ray-2580/py312)).
+For this template's base, `anyscale/ray:2.59.0-py312`, the target is Ray 2.59.0 and Python
+3.12.14 ([base-image reference](https://docs.anyscale.com/reference/base-images/ray-2590/py312)).
 Read it off any candidate base with
 `docker run --rm <image> python -c 'import ray, sys; print(ray.__version__, sys.version.split()[0])'`.
 The image's system `python3` is 3.10.12 and is not the interpreter Ray runs on; matching it
@@ -191,8 +191,8 @@ worker group for the request to be satisfiable, or the task waits rather than fa
 `ONTAssembleCohort.assemble.MedakaPolish.gpu_type` in the inputs, in Ray's spelling (`"L4"`) or
 GCE's.
 
-The Containerfile builds `FROM anyscale/ray:2.58.0-py312-cu128`, the CUDA variant of the cluster
-image's base, so its Ray 2.58.0 and Python 3.12.13 match. It also downloads the model at build
+The Containerfile builds `FROM anyscale/ray:2.59.0-py312-cu128`, the CUDA variant of the cluster
+image's base, so its Ray 2.59.0 and Python 3.12.14 match. It also downloads the model at build
 time with `medaka tools download_models`, because medaka otherwise fetches it on first use, which
 on a GPU node in a private subnet is a run that hangs rather than one that fails.
 
