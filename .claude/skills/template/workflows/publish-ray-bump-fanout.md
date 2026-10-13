@@ -21,6 +21,7 @@ This runs the per-template flow in `../references/publish-to-backend.md` at flee
 
 Per open bump PR:
 - **Triage-review the diff.** A clean bump touches only: the image (`cluster_env.image_uri` tag / BYOD `docker_image` + `ray_version`, or `Dockerfile FROM`), `templates/<name>/python_depset.lock`, `BUILD.yaml` `ray_version`, and in-template version strings — target version correct, required checks green.
+- **No CI at all?** A `CONFLICTING` PR has no merge ref, so `pull_request` workflows never run — the tell is **4 check suites instead of 5** (`gh pr view <n> --json mergeable,statusCheckRollup`). An empty commit does not start them: rebase the branch, or close and re-fire the bump.
 - **Anomaly** — a stray file, an unexpected edit, red CI, or a diff that doesn't read as a pure bump → **hold for the human**; never publish a bump you couldn't vet.
 - **Clean** → squash-merge **and delete the branch** (`gh pr merge --squash --delete-branch`, to keep the remote uncluttered). **Space the merges (~5s) and back off on any write error** — bulk approve+merge trips GitHub's secondary rate limit.
 
