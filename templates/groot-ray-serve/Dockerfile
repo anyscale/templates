@@ -115,6 +115,16 @@ RUN python -m pip install \
 # `protobuf<7`; keep it aligned with the base image's 4.25.x line.
 RUN python -m pip install --no-deps "protobuf==4.25.8"
 
+# Force-pin pyarrow back to a numpy-1.x-compatible version. Ray 2.59's base image
+# ships pyarrow==23.0.1 (built against numpy 2.0 and raises `ImportError: pyarrow
+# requires NumPy 2.0 or newer` at import), but Isaac Sim 5.1.0 above downgrades
+# numpy to 1.26.0. Ray 2.59 also added an eager pyarrow import in
+# ray/util/serialization_addons.py (via _register_custom_datasets_serializers)
+# whose except clause only catches ModuleNotFoundError, so an incompatible
+# pyarrow blows up the first `ray.get(...)`. pyarrow 17.0.0 is the last line
+# built against numpy<2 and still satisfies Ray's declared `pyarrow>=17.0.0`.
+RUN python -m pip install --no-deps "pyarrow==17.0.0"
+
 # flash-attn is intentionally NOT installed; GR00T falls back to eager attention cleanly.
 # To enable later, install the matching prebuilt wheel post-build:
 #   pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.4.post1/\
