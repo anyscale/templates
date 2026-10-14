@@ -8,6 +8,8 @@ llm_config = LLMConfig(
         model_source="Qwen/Qwen3-4B-Instruct-2507-FP8",
     ),
     # L4 (Ada) is FP8-friendly. Prefer H100 for best FP8 throughput.
+    # Different cloud or model? Pick a GPU with enough VRAM:
+    #   ~24GB: L4, A10, A10G  |  ~48GB: L40S  |  ~80GB: H100, A100-80G
     accelerator_type="L4",
     deployment_config=dict(
         autoscaling_config=dict(
