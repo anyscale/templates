@@ -84,6 +84,7 @@ recommended next matrix feeds a new DESIGN cycle until the stopping rule fires o
 | `SEED_INDEX.md` | The menu of candidate campaigns, by cost and reproduction confidence. |
 | `campaigns/*.md` | One pre-registered plan per candidate question; `_TEMPLATE.md` is the schema. |
 | `harness/` | The engine as tested code (registry, budget, metrics, error-analysis, feasibility, …). |
+| `SKILLS_AND_HARNESS.md` | Campaign 2 (pathology zoom-agent PoC): why the shipped Anyscale skills were never invoked, the platform's quota and budget primitives, the spec amendments, and the skill-vs-harness answer. |
 | `AUTORESEARCH.md`, `CLAUDE_WITH_ANYSCALE.md` | The battle-tested methodology + operating notes from the worked example, in `../fintech_transaction_fm/claude-anyscale/`. |
 
 ## How to start a campaign
