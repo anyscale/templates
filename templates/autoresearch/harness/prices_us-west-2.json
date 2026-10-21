@@ -1,0 +1,748 @@
+{
+ "source": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/us-west-2/index.csv",
+ "publication_date": "2026-10-15T19:13:16Z",
+ "region": "us-west-2",
+ "fetched_at": "2026-10-21T15:25:39+00:00",
+ "instances": {
+  "c5.12xlarge": {
+   "vcpus": 48,
+   "gpus": 0,
+   "on_demand_usd_hr": 2.04
+  },
+  "c5.18xlarge": {
+   "vcpus": 72,
+   "gpus": 0,
+   "on_demand_usd_hr": 3.06
+  },
+  "c5.24xlarge": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 4.08
+  },
+  "c5.2xlarge": {
+   "vcpus": 8,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.34
+  },
+  "c5.4xlarge": {
+   "vcpus": 16,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.68
+  },
+  "c5.9xlarge": {
+   "vcpus": 36,
+   "gpus": 0,
+   "on_demand_usd_hr": 1.53
+  },
+  "c5.large": {
+   "vcpus": 2,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.085
+  },
+  "c5.metal": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 4.08
+  },
+  "c5.xlarge": {
+   "vcpus": 4,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.17
+  },
+  "c6i.12xlarge": {
+   "vcpus": 48,
+   "gpus": 0,
+   "on_demand_usd_hr": 2.04
+  },
+  "c6i.16xlarge": {
+   "vcpus": 64,
+   "gpus": 0,
+   "on_demand_usd_hr": 2.72
+  },
+  "c6i.24xlarge": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 4.08
+  },
+  "c6i.2xlarge": {
+   "vcpus": 8,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.34
+  },
+  "c6i.32xlarge": {
+   "vcpus": 128,
+   "gpus": 0,
+   "on_demand_usd_hr": 5.44
+  },
+  "c6i.4xlarge": {
+   "vcpus": 16,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.68
+  },
+  "c6i.8xlarge": {
+   "vcpus": 32,
+   "gpus": 0,
+   "on_demand_usd_hr": 1.36
+  },
+  "c6i.large": {
+   "vcpus": 2,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.085
+  },
+  "c6i.metal": {
+   "vcpus": 128,
+   "gpus": 0,
+   "on_demand_usd_hr": 5.44
+  },
+  "c6i.xlarge": {
+   "vcpus": 4,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.17
+  },
+  "c7i.12xlarge": {
+   "vcpus": 48,
+   "gpus": 0,
+   "on_demand_usd_hr": 2.142
+  },
+  "c7i.16xlarge": {
+   "vcpus": 64,
+   "gpus": 0,
+   "on_demand_usd_hr": 2.856
+  },
+  "c7i.24xlarge": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 4.284
+  },
+  "c7i.2xlarge": {
+   "vcpus": 8,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.357
+  },
+  "c7i.48xlarge": {
+   "vcpus": 192,
+   "gpus": 0,
+   "on_demand_usd_hr": 8.568
+  },
+  "c7i.4xlarge": {
+   "vcpus": 16,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.714
+  },
+  "c7i.8xlarge": {
+   "vcpus": 32,
+   "gpus": 0,
+   "on_demand_usd_hr": 1.428
+  },
+  "c7i.large": {
+   "vcpus": 2,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.08925
+  },
+  "c7i.metal-24xl": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 4.284
+  },
+  "c7i.metal-48xl": {
+   "vcpus": 192,
+   "gpus": 0,
+   "on_demand_usd_hr": 8.568
+  },
+  "c7i.xlarge": {
+   "vcpus": 4,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.1785
+  },
+  "g4dn.12xlarge": {
+   "vcpus": 48,
+   "gpus": 4,
+   "on_demand_usd_hr": 3.912
+  },
+  "g4dn.16xlarge": {
+   "vcpus": 64,
+   "gpus": 1,
+   "on_demand_usd_hr": 4.352
+  },
+  "g4dn.2xlarge": {
+   "vcpus": 8,
+   "gpus": 1,
+   "on_demand_usd_hr": 0.752
+  },
+  "g4dn.4xlarge": {
+   "vcpus": 16,
+   "gpus": 1,
+   "on_demand_usd_hr": 1.204
+  },
+  "g4dn.8xlarge": {
+   "vcpus": 32,
+   "gpus": 1,
+   "on_demand_usd_hr": 2.176
+  },
+  "g4dn.metal": {
+   "vcpus": 96,
+   "gpus": 8,
+   "on_demand_usd_hr": 7.824
+  },
+  "g4dn.xlarge": {
+   "vcpus": 4,
+   "gpus": 1,
+   "on_demand_usd_hr": 0.526
+  },
+  "g5.12xlarge": {
+   "vcpus": 48,
+   "gpus": 4,
+   "on_demand_usd_hr": 5.672
+  },
+  "g5.16xlarge": {
+   "vcpus": 64,
+   "gpus": 1,
+   "on_demand_usd_hr": 4.096
+  },
+  "g5.24xlarge": {
+   "vcpus": 96,
+   "gpus": 4,
+   "on_demand_usd_hr": 8.144
+  },
+  "g5.2xlarge": {
+   "vcpus": 8,
+   "gpus": 1,
+   "on_demand_usd_hr": 1.212
+  },
+  "g5.48xlarge": {
+   "vcpus": 192,
+   "gpus": 8,
+   "on_demand_usd_hr": 16.288
+  },
+  "g5.4xlarge": {
+   "vcpus": 16,
+   "gpus": 1,
+   "on_demand_usd_hr": 1.624
+  },
+  "g5.8xlarge": {
+   "vcpus": 32,
+   "gpus": 1,
+   "on_demand_usd_hr": 2.448
+  },
+  "g5.xlarge": {
+   "vcpus": 4,
+   "gpus": 1,
+   "on_demand_usd_hr": 1.006
+  },
+  "g6.12xlarge": {
+   "vcpus": 48,
+   "gpus": 4,
+   "on_demand_usd_hr": 4.6016
+  },
+  "g6.16xlarge": {
+   "vcpus": 64,
+   "gpus": 1,
+   "on_demand_usd_hr": 3.3968
+  },
+  "g6.24xlarge": {
+   "vcpus": 96,
+   "gpus": 4,
+   "on_demand_usd_hr": 6.6752
+  },
+  "g6.2xlarge": {
+   "vcpus": 8,
+   "gpus": 1,
+   "on_demand_usd_hr": 0.9776
+  },
+  "g6.48xlarge": {
+   "vcpus": 192,
+   "gpus": 8,
+   "on_demand_usd_hr": 13.3504
+  },
+  "g6.4xlarge": {
+   "vcpus": 16,
+   "gpus": 1,
+   "on_demand_usd_hr": 1.3232
+  },
+  "g6.8xlarge": {
+   "vcpus": 32,
+   "gpus": 1,
+   "on_demand_usd_hr": 2.0144
+  },
+  "g6.xlarge": {
+   "vcpus": 4,
+   "gpus": 1,
+   "on_demand_usd_hr": 0.8048
+  },
+  "g6e.12xlarge": {
+   "vcpus": 48,
+   "gpus": 4,
+   "on_demand_usd_hr": 10.49264
+  },
+  "g6e.16xlarge": {
+   "vcpus": 64,
+   "gpus": 1,
+   "on_demand_usd_hr": 7.57719
+  },
+  "g6e.24xlarge": {
+   "vcpus": 96,
+   "gpus": 4,
+   "on_demand_usd_hr": 15.06559
+  },
+  "g6e.2xlarge": {
+   "vcpus": 8,
+   "gpus": 1,
+   "on_demand_usd_hr": 2.24208
+  },
+  "g6e.48xlarge": {
+   "vcpus": 192,
+   "gpus": 8,
+   "on_demand_usd_hr": 30.13118
+  },
+  "g6e.4xlarge": {
+   "vcpus": 16,
+   "gpus": 1,
+   "on_demand_usd_hr": 3.00424
+  },
+  "g6e.8xlarge": {
+   "vcpus": 32,
+   "gpus": 1,
+   "on_demand_usd_hr": 4.52856
+  },
+  "g6e.xlarge": {
+   "vcpus": 4,
+   "gpus": 1,
+   "on_demand_usd_hr": 1.861
+  },
+  "m5.12xlarge": {
+   "vcpus": 48,
+   "gpus": 0,
+   "on_demand_usd_hr": 2.304
+  },
+  "m5.16xlarge": {
+   "vcpus": 64,
+   "gpus": 0,
+   "on_demand_usd_hr": 3.072
+  },
+  "m5.24xlarge": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 4.608
+  },
+  "m5.2xlarge": {
+   "vcpus": 8,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.384
+  },
+  "m5.4xlarge": {
+   "vcpus": 16,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.768
+  },
+  "m5.8xlarge": {
+   "vcpus": 32,
+   "gpus": 0,
+   "on_demand_usd_hr": 1.536
+  },
+  "m5.large": {
+   "vcpus": 2,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.096
+  },
+  "m5.metal": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 4.608
+  },
+  "m5.xlarge": {
+   "vcpus": 4,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.192
+  },
+  "m6a.12xlarge": {
+   "vcpus": 48,
+   "gpus": 0,
+   "on_demand_usd_hr": 2.0736
+  },
+  "m6a.16xlarge": {
+   "vcpus": 64,
+   "gpus": 0,
+   "on_demand_usd_hr": 2.7648
+  },
+  "m6a.24xlarge": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 4.1472
+  },
+  "m6a.2xlarge": {
+   "vcpus": 8,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.3456
+  },
+  "m6a.32xlarge": {
+   "vcpus": 128,
+   "gpus": 0,
+   "on_demand_usd_hr": 5.5296
+  },
+  "m6a.48xlarge": {
+   "vcpus": 192,
+   "gpus": 0,
+   "on_demand_usd_hr": 8.2944
+  },
+  "m6a.4xlarge": {
+   "vcpus": 16,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.6912
+  },
+  "m6a.8xlarge": {
+   "vcpus": 32,
+   "gpus": 0,
+   "on_demand_usd_hr": 1.3824
+  },
+  "m6a.large": {
+   "vcpus": 2,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.0864
+  },
+  "m6a.metal": {
+   "vcpus": 192,
+   "gpus": 0,
+   "on_demand_usd_hr": 8.2944
+  },
+  "m6a.xlarge": {
+   "vcpus": 4,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.1728
+  },
+  "m6i.12xlarge": {
+   "vcpus": 48,
+   "gpus": 0,
+   "on_demand_usd_hr": 2.304
+  },
+  "m6i.16xlarge": {
+   "vcpus": 64,
+   "gpus": 0,
+   "on_demand_usd_hr": 3.072
+  },
+  "m6i.24xlarge": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 4.608
+  },
+  "m6i.2xlarge": {
+   "vcpus": 8,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.384
+  },
+  "m6i.32xlarge": {
+   "vcpus": 128,
+   "gpus": 0,
+   "on_demand_usd_hr": 6.144
+  },
+  "m6i.4xlarge": {
+   "vcpus": 16,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.768
+  },
+  "m6i.8xlarge": {
+   "vcpus": 32,
+   "gpus": 0,
+   "on_demand_usd_hr": 1.536
+  },
+  "m6i.large": {
+   "vcpus": 2,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.096
+  },
+  "m6i.metal": {
+   "vcpus": 128,
+   "gpus": 0,
+   "on_demand_usd_hr": 6.144
+  },
+  "m6i.xlarge": {
+   "vcpus": 4,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.192
+  },
+  "m7a.12xlarge": {
+   "vcpus": 48,
+   "gpus": 0,
+   "on_demand_usd_hr": 2.78208
+  },
+  "m7a.16xlarge": {
+   "vcpus": 64,
+   "gpus": 0,
+   "on_demand_usd_hr": 3.70944
+  },
+  "m7a.24xlarge": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 5.56416
+  },
+  "m7a.2xlarge": {
+   "vcpus": 8,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.46368
+  },
+  "m7a.32xlarge": {
+   "vcpus": 128,
+   "gpus": 0,
+   "on_demand_usd_hr": 7.41888
+  },
+  "m7a.48xlarge": {
+   "vcpus": 192,
+   "gpus": 0,
+   "on_demand_usd_hr": 11.12832
+  },
+  "m7a.4xlarge": {
+   "vcpus": 16,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.92736
+  },
+  "m7a.8xlarge": {
+   "vcpus": 32,
+   "gpus": 0,
+   "on_demand_usd_hr": 1.85472
+  },
+  "m7a.large": {
+   "vcpus": 2,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.11592
+  },
+  "m7a.medium": {
+   "vcpus": 1,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.05796
+  },
+  "m7a.metal-48xl": {
+   "vcpus": 192,
+   "gpus": 0,
+   "on_demand_usd_hr": 11.12832
+  },
+  "m7a.xlarge": {
+   "vcpus": 4,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.23184
+  },
+  "m7i.12xlarge": {
+   "vcpus": 48,
+   "gpus": 0,
+   "on_demand_usd_hr": 2.4192
+  },
+  "m7i.16xlarge": {
+   "vcpus": 64,
+   "gpus": 0,
+   "on_demand_usd_hr": 3.2256
+  },
+  "m7i.24xlarge": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 4.8384
+  },
+  "m7i.2xlarge": {
+   "vcpus": 8,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.4032
+  },
+  "m7i.48xlarge": {
+   "vcpus": 192,
+   "gpus": 0,
+   "on_demand_usd_hr": 9.6768
+  },
+  "m7i.4xlarge": {
+   "vcpus": 16,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.8064
+  },
+  "m7i.8xlarge": {
+   "vcpus": 32,
+   "gpus": 0,
+   "on_demand_usd_hr": 1.6128
+  },
+  "m7i.large": {
+   "vcpus": 2,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.1008
+  },
+  "m7i.metal-24xl": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 4.8384
+  },
+  "m7i.metal-48xl": {
+   "vcpus": 192,
+   "gpus": 0,
+   "on_demand_usd_hr": 9.6768
+  },
+  "m7i.xlarge": {
+   "vcpus": 4,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.2016
+  },
+  "p4d.24xlarge": {
+   "vcpus": 96,
+   "gpus": 8,
+   "on_demand_usd_hr": 21.95764
+  },
+  "p4de.24xlarge": {
+   "vcpus": 96,
+   "gpus": 8,
+   "on_demand_usd_hr": 27.44705
+  },
+  "p5.48xlarge": {
+   "vcpus": 192,
+   "gpus": 8,
+   "on_demand_usd_hr": 55.04
+  },
+  "p5.4xlarge": {
+   "vcpus": 16,
+   "gpus": 1,
+   "on_demand_usd_hr": 6.88
+  },
+  "r5.12xlarge": {
+   "vcpus": 48,
+   "gpus": 0,
+   "on_demand_usd_hr": 3.024
+  },
+  "r5.16xlarge": {
+   "vcpus": 64,
+   "gpus": 0,
+   "on_demand_usd_hr": 4.032
+  },
+  "r5.24xlarge": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 6.048
+  },
+  "r5.2xlarge": {
+   "vcpus": 8,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.504
+  },
+  "r5.4xlarge": {
+   "vcpus": 16,
+   "gpus": 0,
+   "on_demand_usd_hr": 1.008
+  },
+  "r5.8xlarge": {
+   "vcpus": 32,
+   "gpus": 0,
+   "on_demand_usd_hr": 2.016
+  },
+  "r5.large": {
+   "vcpus": 2,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.126
+  },
+  "r5.metal": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 6.048
+  },
+  "r5.xlarge": {
+   "vcpus": 4,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.252
+  },
+  "r6i.12xlarge": {
+   "vcpus": 48,
+   "gpus": 0,
+   "on_demand_usd_hr": 3.024
+  },
+  "r6i.16xlarge": {
+   "vcpus": 64,
+   "gpus": 0,
+   "on_demand_usd_hr": 4.032
+  },
+  "r6i.24xlarge": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 6.048
+  },
+  "r6i.2xlarge": {
+   "vcpus": 8,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.504
+  },
+  "r6i.32xlarge": {
+   "vcpus": 128,
+   "gpus": 0,
+   "on_demand_usd_hr": 8.064
+  },
+  "r6i.4xlarge": {
+   "vcpus": 16,
+   "gpus": 0,
+   "on_demand_usd_hr": 1.008
+  },
+  "r6i.8xlarge": {
+   "vcpus": 32,
+   "gpus": 0,
+   "on_demand_usd_hr": 2.016
+  },
+  "r6i.large": {
+   "vcpus": 2,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.126
+  },
+  "r6i.metal": {
+   "vcpus": 128,
+   "gpus": 0,
+   "on_demand_usd_hr": 8.064
+  },
+  "r6i.xlarge": {
+   "vcpus": 4,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.252
+  },
+  "r7i.12xlarge": {
+   "vcpus": 48,
+   "gpus": 0,
+   "on_demand_usd_hr": 3.1752
+  },
+  "r7i.16xlarge": {
+   "vcpus": 64,
+   "gpus": 0,
+   "on_demand_usd_hr": 4.2336
+  },
+  "r7i.24xlarge": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 6.3504
+  },
+  "r7i.2xlarge": {
+   "vcpus": 8,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.5292
+  },
+  "r7i.48xlarge": {
+   "vcpus": 192,
+   "gpus": 0,
+   "on_demand_usd_hr": 12.7008
+  },
+  "r7i.4xlarge": {
+   "vcpus": 16,
+   "gpus": 0,
+   "on_demand_usd_hr": 1.0584
+  },
+  "r7i.8xlarge": {
+   "vcpus": 32,
+   "gpus": 0,
+   "on_demand_usd_hr": 2.1168
+  },
+  "r7i.large": {
+   "vcpus": 2,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.1323
+  },
+  "r7i.metal-24xl": {
+   "vcpus": 96,
+   "gpus": 0,
+   "on_demand_usd_hr": 6.3504
+  },
+  "r7i.metal-48xl": {
+   "vcpus": 192,
+   "gpus": 0,
+   "on_demand_usd_hr": 12.7008
+  },
+  "r7i.xlarge": {
+   "vcpus": 4,
+   "gpus": 0,
+   "on_demand_usd_hr": 0.2646
+  }
+ }
+}

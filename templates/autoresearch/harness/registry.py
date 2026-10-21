@@ -52,7 +52,11 @@ def tier_weight(gpu_type: str) -> float:
 
 
 def a10g_equiv_hours(cost: dict) -> float:
-    """Raw GPU-hours reweighted to the A10G-equivalent currency."""
+    """Raw GPU-hours reweighted to the A10G-equivalent currency. A measured row carries
+    `by_tier` (GPU-hours per tier that actually ran, from usage.py) and is weighted tier by
+    tier; an estimate has one `gpu_type`."""
+    if "by_tier" in cost:
+        return round(sum(h * tier_weight(t) for t, h in cost["by_tier"].items()), 4)
     return round(cost["gpu_hours"] * tier_weight(cost["gpu_type"]), 4)
 
 
@@ -135,14 +139,21 @@ def terminal_runs(base: str, campaign: str) -> list[dict]:
 
 
 def campaign_spend(base: str, campaign: str) -> dict:
-    """Spent budget in raw and A10G-equivalent GPU-hours. R4 enforces envelopes against
-    the a10g_equiv total, NOT raw hours (critiques.md #14) — that is the whole point of
-    storing both."""
+    """Spent budget in raw and A10G-equivalent GPU-hours, plus CPU-hours and dollars. R4
+    enforces envelopes against the a10g_equiv total, NOT raw hours (critiques.md #14) — that
+    is the whole point of storing both.
+
+    A finished run counts what it actually used (its terminal row, written by reconcile.py
+    from the cluster event log); a run still in flight counts its committed estimate. So the
+    remaining budget is the envelope minus actuals minus what's still running."""
     runs = terminal_runs(base, campaign)
     return {
         "gpu_hours": round(sum(r["cost"]["gpu_hours"] for r in runs), 4),
         "a10g_equiv_hours": round(sum(r["cost"]["a10g_equiv_hours"] for r in runs), 4),
+        "cpu_hours": round(sum(r["cost"].get("cpu_hours", 0) for r in runs), 4),
+        "usd": round(sum(r["cost"].get("usd", r["cost"].get("usd_est", 0)) for r in runs), 2),
         "n_runs": len(runs),
+        "n_measured": sum(1 for r in runs if r["status"] in TERMINAL_STATES),
     }
 
 

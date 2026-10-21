@@ -58,9 +58,23 @@ def test_running_then_terminal_counts_once():
     with tempfile.TemporaryDirectory() as base:
         R.append_run(base, _run("c", "r1", "RUNNING", 0, "A10G"))
         R.append_run(base, _run("c", "r1", "SUCCEEDED", 5, "A10G"))
-        assert R.campaign_spend(base, "c") == {"gpu_hours": 5, "a10g_equiv_hours": 5.0,
-                                               "n_runs": 1}
+        spend = R.campaign_spend(base, "c")
+        assert {k: spend[k] for k in ("gpu_hours", "a10g_equiv_hours", "n_runs", "n_measured")} \
+            == {"gpu_hours": 5, "a10g_equiv_hours": 5.0, "n_runs": 1, "n_measured": 1}
     print("ok  RUNNING heartbeat + terminal row -> one run, terminal cost")
+
+
+def test_measured_row_weights_each_tier_that_ran():
+    """A fallback config that ran on two tiers is weighted tier by tier, not at one guess."""
+    with tempfile.TemporaryDirectory() as base:
+        row = _run("c", "r1", "SUCCEEDED", 3, "mixed")
+        row["cost"].update({"by_tier": {"A10G": 2.0, "L40S": 1.0}, "cpu_hours": 24.0,
+                            "usd": 4.5})
+        R.append_run(base, row)
+        spend = R.campaign_spend(base, "c")
+        assert spend["a10g_equiv_hours"] == 3.8  # 2 x 1.0 + 1 x 1.8
+        assert spend["cpu_hours"] == 24.0 and spend["usd"] == 4.5
+    print("ok  measured row: A10G-eq from the tiers that actually ran; CPU-hours and $ summed")
 
 
 def test_hard_crash_row_written_by_monitor():

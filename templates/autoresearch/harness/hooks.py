@@ -77,12 +77,29 @@ def gpu_shape(instance_type: str) -> tuple[str, int] | None:
 
 def parse_compute(yaml_text: str) -> dict:
     """Worst-case GPU fleet from a job YAML's compute_config — targeted stdlib parse
-    (instance_type / max_nodes / market_type lines), no yaml dependency. Multi-tier GPU
-    configs are refused: one run, one GPU tier, or the cost record lies (registry stores a
-    single gpu_type per row)."""
+    (instance_type / max_nodes / market_type lines, and `max_resources: GPU:`), no yaml
+    dependency.
+
+    Configs that list several GPU types as capacity fallbacks (37 of 40 jobs in the pathology
+    PoC) are priced at their most expensive tier, across every group's max_nodes, capped by
+    `max_resources: GPU` when the config sets it. That cap is enforced by the platform, so it's
+    safe to trust and it keeps fallback configs from looking 6x bigger than they can run.
+    The terminal row records the tiers that actually ran (`usage.py`)."""
     groups, cur = [], {}
+    gpu_cap, block_indent = None, None  # block_indent: set while inside `max_resources:`
     for line in yaml_text.splitlines():
         s = line.strip()
+        indent = len(line) - len(line.lstrip())
+        if s.startswith("max_resources:"):
+            block_indent = indent
+            continue
+        if block_indent is not None:
+            if not s or indent > block_indent:
+                m = re.match(r"GPU:\s*(\d+)", s)
+                if m:
+                    gpu_cap = int(m.group(1))
+                continue
+            block_indent = None
         if s.startswith("- ") or s.startswith("head_node"):
             if cur.get("instance_type"):
                 groups.append(cur)
@@ -109,12 +126,15 @@ def parse_compute(yaml_text: str) -> dict:
             on_demand = True
     if not tiers:
         return {"gpu_type": None, "num_gpus": 0, "spot": True}
+    tier = max(tiers, key=registry.tier_weight)
+    num_gpus = sum(t["num_gpus"] for t in tiers.values())
+    if gpu_cap is not None:
+        num_gpus = min(num_gpus, gpu_cap)
+    fleet = {"gpu_type": tier, "num_gpus": num_gpus,
+             "instance_type": tiers[tier]["instance_type"], "spot": not on_demand}
     if len(tiers) > 1:
-        raise ValueError(f"multiple GPU tiers in one job ({sorted(tiers)}) — split into "
-                         f"separate runs so each cost record has one gpu_type")
-    tier, t = next(iter(tiers.items()))
-    return {"gpu_type": tier, "num_gpus": t["num_gpus"],
-            "instance_type": t["instance_type"], "spot": not on_demand}
+        fleet["tiers"] = sorted(tiers)
+    return fleet
 
 
 def parse_declaration(yaml_text: str) -> dict | None:

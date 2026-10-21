@@ -31,7 +31,9 @@ assertions that can't silently rot.
 | `holdout.py` | **rigor** — adaptive overfitting | `Thresholdout` (Dwork et al.): query the holdout through it; it returns dev unless dev/holdout diverge (the overfitting signature), then reveals the honest holdout and spends a budget query. Two-eval discipline with teeth. |
 | `canary.py` | **R3** — leak / target-leak | `shuffled_label_control` (metric must collapse to the prevalence floor or it's a leak), `too_good_too_early`, `embedding_collapse`, `audit()` → BROKEN/SUSPICIOUS/CLEAN. |
 | `hooks.py` | **R4 wired live** | Claude Code `PreToolUse`/`PostToolUse` entrypoints: the pre hook prices any `anyscale job submit` (worst-case fleet from the YAML + a mandatory `# autoresearch:` declaration) and refuses it via `budget.preflight()` **before it runs**; the post hook commits the estimate as the RUNNING registry row. Armed only when `AUTORESEARCH_BASE` is set. The "by physics, not discipline" close of budget.py's stubbed-wiring gap. |
-| `reconcile.py` | **R6** terminal rows | The single writer of terminal rows: sweeps RUNNING heartbeats, asks `anyscale job status` what actually happened, writes the terminal row at wall-clock x committed fleet (labeled upper bound). Back-fillable weeks later from job state alone — a Monitor adds freshness, not correctness. |
+| `reconcile.py` | **R6** terminal rows | The single writer of terminal rows: sweeps RUNNING heartbeats and, once a job has ended and its cluster is gone, replaces the estimate with what it actually used (`usage.py`). The remaining budget is then the envelope minus actuals minus what is still running. Falls back to wall-clock x committed fleet (labeled upper bound) only if the cluster events can't be read. Back-fillable weeks later — a Monitor adds freshness, not correctness. |
+| `usage.py` | **R6** actuals | Exact GPU-hours, CPU-hours and $ per instance type for one job, from its cluster event log (read-only API, stdlib): each node from its `Launched` event to the first evidence it left; the autoscaler's own totals are a cross-check, and GPU-time they report beyond the launch ledger is counted, not dropped. On 40 PoC jobs: 509 GPU-h, vs 2,356 by the old wall-clock x max-fleet bound. |
+| `prices.py` | **cost** — no guessed prices | Stephen's lookup table: per instance type vCPUs, GPUs and on-demand $/hr from AWS's public price list (`python3 prices.py refresh`, stamped with AWS's publication date; `prices_us-west-2.json` is the snapshot), and spot $/hr time-weighted from EC2 spot price history for the node's own AZ and window. A type missing from the table is flagged unpriced, never filled in. Excludes the Anyscale platform charge. |
 | `feasibility.py` | **budget** — is $N even enough? | Combines compute-affordability (dollars → A10G-hr vs the plan), statistical power (MDE vs target gain), and a **learning-curve** power-law fit (`fit_power_law`) that extrapolates data/compute to a target — and flags when the target is *below the fitted floor* (no budget reaches it; change the method). Verdict: NOT_ENOUGH / PILOT_ONLY / GO. |
 
 Dollar budgets: `budget.to_a10g_hours($)` / `to_usd()` convert a `$100` envelope into the A10G-equivalent hours the caps use; `preflight(..., envelope_ah=to_a10g_hours(100))` enforces it.
@@ -42,7 +44,7 @@ Also in `metrics.py`: `p_value_gain` (one-sided bootstrap p for FDR), `min_detec
 
 ```bash
 cd harness
-for f in test_*.py; do python3 "$f"; done      # 100 tests, stdlib only, no pytest needed
+for f in test_*.py; do python3 "$f"; done      # 111 tests, stdlib only, no pytest needed
 ```
 
 ## The critiques these close
@@ -80,9 +82,13 @@ python3 templates/autoresearch/harness/reconcile.py $AUTORESEARCH_BASE
 ```
 
 Known gaps, on purpose: the gate reads the literal Bash command, so SDK submits or
-ssh-wrapped submits slip past it (guardrail, not security boundary — org-level instance
-allowlists are the hard layer), and wall-clock x max fleet over-counts autoscaled runs
-(the console stays the invoice of record).
+ssh-wrapped submits slip past it (guardrail, not security boundary — org-level resource
+quotas are the hard layer). The submit-time estimate is a worst case: a config that lists
+several GPU types as capacity fallbacks is priced at its most expensive tier across every
+group's `max_nodes`. Set `max_resources: {GPU: N}` in the compute config to make the
+estimate (and the platform) cap it. Actuals come from the cluster event log, which is not a
+billing record: where it doesn't say when a node left, the node is counted until the next
+evidence, so the actual is an upper bound that is usually exact.
 
 ## How a campaign uses it
 

@@ -40,17 +40,18 @@ def test_parse_compute_worst_case_fleet():
     print("ok  compute parse: 8x g5.xlarge worst case, CPU groups ignored, on-demand seen")
 
 
-def test_multi_tier_refused_and_unknown_raises():
+def test_multi_tier_priced_at_priciest_and_unknown_raises():
     two = JOB_YAML + "  - instance_type: p5.48xlarge\n    max_nodes: 1\n"
-    try:
-        hooks.parse_compute(two); assert False, "multi-tier must raise"
-    except ValueError as e:
-        assert "separate runs" in str(e)
+    f = hooks.parse_compute(two)
+    assert f["gpu_type"] == "H100" and f["num_gpus"] == 16 and f["tiers"] == ["A10G", "H100"], f
+    capped = two.replace("compute_config:\n", "compute_config:\n  max_resources:\n    GPU: 4\n")
+    assert hooks.parse_compute(capped)["num_gpus"] == 4
     try:
         hooks.gpu_shape("trn1.32xlarge"); assert False, "unpriced GPU must raise"
     except ValueError as e:
         assert "unknown instance family" in str(e)
-    print("ok  multi-tier configs and un-priced GPUs are refused, not guessed")
+    print("ok  fallback configs priced at the priciest tier, max_resources caps them; "
+          "un-priced GPUs still refused")
 
 
 def test_pre_gate_allows_declared_and_refuses_over_cap():
@@ -86,7 +87,7 @@ def test_post_ledgers_running_row_idempotently():
 
 if __name__ == "__main__":
     test_parse_compute_worst_case_fleet()
-    test_multi_tier_refused_and_unknown_raises()
+    test_multi_tier_priced_at_priciest_and_unknown_raises()
     test_pre_gate_allows_declared_and_refuses_over_cap()
     test_post_ledgers_running_row_idempotently()
     print("all hooks tests passed")
