@@ -1,0 +1,68 @@
+# Anyscale Job: the headline run. Boltz-2 and OpenBind-0 on the same
+# ligands, side by side, inside a 20-minute slot.
+#
+#   anyscale job submit -f jobs/live_run.yaml --name aiddd-live
+#
+# Every setting here comes from the packing sweep of 2026-10-22 (pack8b, pack16b,
+# scripts/pack_sweep.py) and the 308-ligand run of 2026-10-20 (live16-test).
+#
+# Why g6.4xlarge and not the cheaper g6.2xlarge: both GPU stages leave the GPU idle
+# while the CPU prepares inputs, and on an 8-vCPU node that CPU runs out first.
+# Same L4, same packing, twice the vCPUs:
+#
+#   OpenFold3, 2 per GPU    8 vCPU: 55% GPU, 20.2 s/ligand
+#                          16 vCPU: 75% GPU, 14.0 s/ligand   <- 1.44x for ~1.2x the price
+#   Boltz-2,   2 per GPU    8 vCPU: 69% GPU, 29.5 s/ligand
+#                          16 vCPU: 74% GPU, 28.0 s/ligand   <- only 1.05x; Boltz-2 is not CPU-starved
+#
+# Why 2 predictors per GPU and not 3: the sweep found the gain is entirely at 2.
+# Three and four changed nothing (75% GPU, 14.0 s/ligand at every setting) while
+# costing GPU memory. Boltz-2 gains 1.4x from 1 -> 2 as well, which contradicts the
+# older note that packing slowed it down; that note came from a run that measured
+# GPU activity rather than throughput.
+#
+# Why no L40S group yet: the case for one rested on Boltz-2 being compute-bound,
+# and the sweep measured it at 43% GPU utilization unpacked, so it is not. Run
+# scripts/pack_sweep.py on one g6e.4xlarge (--accelerator L40S) before spending on
+# a group of them; if Boltz-2 turns out materially faster there, add an l40s group
+# and move the --gpu-split accordingly.
+#
+# --gpu-split is explicit because the cost-based default mis-rounds: at 12 GPUs it
+# hands Boltz-2 8 and OpenBind-0 4, and in live16-test that left Boltz-2's GPUs idle
+# for the last twelve minutes of the run. The 14/6 below balances the two stages at
+# their measured costs, so both finish together.
+#
+# No --limit here: it is applied BEFORE --stage and takes a fixed mix of a quarter
+# fragments, so "--stage late follow-on --limit 190" quietly yields far fewer than
+# 190 once the fragments are filtered out. The stage has 308 ligands; run them all,
+# or cut the count with --stage alone.
+#
+# Both groups are pinned: a cold start of 20 GPU nodes takes longer than the demo.
+name: aiddd-live
+image_uri: anyscale/image/aiddd-boltz2-of3:4
+working_dir: .
+excludes: [image, docs, slides, .git, __pycache__, "*.ipynb"]
+env_vars:
+  AIDDD_SHARED: /mnt/user_storage/aiddd
+compute_config:
+  head_node:
+    instance_type: m5.2xlarge
+    resources: {CPU: 0}                   # the head node only drives the pipeline
+  worker_nodes:
+    - name: l4
+      instance_type: g6.4xlarge           # 1x L4 24 GB, 16 vCPU
+      min_nodes: 20
+      max_nodes: 20
+    - name: cpu
+      instance_type: m5.4xlarge           # pose scoring
+      min_nodes: 1
+      max_nodes: 4
+  enable_cross_zone_scaling: true
+entrypoint: >-
+  RUN=/mnt/user_storage/aiddd/runs/demo/$(date +%Y%m%d-%H%M%S) &&
+  python aiddd_pipeline.py --target ev71-2a --stage "late follow-on"
+  --models boltz2,openbind0 --gpu-split boltz2=14,openbind0=6
+  --boltz-per-gpu 2 --of3-per-gpu 2 --cpus-per-gpu-node 16
+  --batch-size 4 --affinity-samples 1
+  --pred-dir $RUN/predictions --out $RUN/results
+max_retries: 0

@@ -1,0 +1,76 @@
+# OpenFold3 fine-tune on OpenBind EV-A71 2A fragment structures (demo scale).
+#
+# Standard `run_openfold train` runner YAML (see openfold-3 docs/source/training.md).
+# finetune_ray_train.py loads it, fills in output_dir, the dataset paths and the
+# starting checkpoint, and applies --lr, --warmup-steps and --diffusion-samples.
+#
+# Sized for one 24 GB L4 per worker: every complex is about 165 tokens, so a
+# 192-token budget keeps the whole complex (no cropping) and fits in memory.
+
+experiment_settings:
+  mode: train
+  seed: 42
+  restart_checkpoint_path: null          # set by the launcher (OpenBind-0 weights)
+  ckpt_load_settings:
+    manual_checkpoint_loading: true      # raw state dict: load weights, fresh optimizer
+    strict_loading: true
+
+data_module_args:
+  batch_size: 1                          # one complex per GPU per step
+  num_workers: 4                         # featurization runs on CPU next to each GPU
+  epoch_len: 10000                       # steps are bounded by --max-steps instead
+
+logging_config:
+  log_lr: false
+  wandb_config: null
+
+pl_trainer_args:
+  precision: bf16-mixed
+  max_epochs: -1
+  log_every_n_steps: 1
+  limit_val_batches: 0                   # no validation set: evaluation is the benchmark pipeline
+
+model_update:
+  presets:
+    - train
+  custom:
+    settings:
+      model_selection_weight_scheme: fine_tuning
+      optimizer:
+        learning_rate: 1.0e-4
+      lr_scheduler:
+        base_lr: 0.0
+        warmup_no_steps: 10              # the default (1000) would keep the LR near zero for a short run
+        start_decay_after_n_steps: 100000
+        decay_every_n_steps: 100000
+      ema:
+        decay: 0.99
+    architecture:
+      shared:
+        use_confidence_emb_prob: 0.8
+        diffusion:
+          no_samples: 8                  # noise levels per complex per step (48 in full training)
+          use_conditioning_prob: 0.8
+      loss_module:
+        diffusion:
+          chunk_size: 2
+
+dataset_configs:
+  train:
+    openbind-ev71-2a:
+      dataset_class: WeightedPDBDataset
+      weight: 1.0
+      config:
+        crop:
+          token_crop:
+            enabled: true
+            token_budget: 192
+          chain_crop:
+            enabled: true
+        loss:
+          loss_weights:                  # fine-tuning weights from OF3's finetune_1.yml
+            bond: 4.0
+            smooth_lddt: 0.0
+
+dataset_paths:
+  openbind-ev71-2a: {}                   # filled from prepare_finetune.dataset_paths()

@@ -1,0 +1,26 @@
+# Anyscale Service: the viewer and live Boltz-2 prediction at one URL, so a whole
+# whole team can open it on a laptop or phone.
+#
+#   anyscale service deploy -f jobs/service.yaml           # prints the URL to share
+#   anyscale service terminate -n aiddd-viewer        # after the session
+#
+# Same app as `serve run serve_viewer:app` in a Workspace (README step 6).
+name: aiddd-viewer
+image_uri: anyscale/image/aiddd-boltz2-of3:4
+working_dir: .
+excludes: [image, docs, slides, .git, .bin, __pycache__, "*.ipynb"]
+env_vars:
+  AIDDD_SHARED: /mnt/user_storage/aiddd
+# Anyone with the URL can open the page and run GPU predictions (on at most 2 L4s).
+# Terminate the service when the session ends.
+query_auth_token_enabled: false
+compute_config:
+  head_node:
+    instance_type: m5.2xlarge             # the Viewer page and the HTTP proxy
+  worker_nodes:
+    - name: l4
+      instance_type: g6.2xlarge           # 1x L4: one Boltz2Live and one FineTunedLive replica share it
+      min_nodes: 2                        # the Service's share of a 16-L4 GPU budget,
+      max_nodes: 2                        # already running when the session starts
+applications:
+  - import_path: serve_viewer:app
