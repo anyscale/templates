@@ -22,7 +22,7 @@ a general OpenFold3 checkpoint on a fragment screen with Ray Train, and serves t
 an EV-A71 2A campaign, 66 fragment-screen structures raise pose accuracy on held-out follow-on compounds
 from 23.9% to 44.8%, in 2.4 hours on 8 L4 GPUs trained on spot capacity.
 
-![Before and after fine-tuning](docs/images/before_after_accuracy.gif)
+![Before and after fine-tuning](https://raw.githubusercontent.com/anyscale/templates/main/templates/cofolding-finetune-serve/docs/images/before_after_accuracy.gif)
 
 ## Prerequisites
 
@@ -42,8 +42,9 @@ Each notebook stands alone, so you can start at any of the 3.
 
 ## Setup
 
-```bash
-python scripts/setup_data.py
+
+```python
+!python scripts/setup_data.py
 ```
 
 About 500 MB. That is enough to run every notebook with `USE_GPUS = False`, the default: all tables, figures
@@ -88,8 +89,9 @@ crystallographic artefacts excluded.
 
 ## Testing
 
-```bash
-python tests/test_template.py
+
+```python
+!python tests/test_template.py
 ```
 
 CPU-only, about 1 minute. Checks that a clean environment reproduces the published accuracy figures and the

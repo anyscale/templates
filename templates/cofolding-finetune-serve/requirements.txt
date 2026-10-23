@@ -1,12 +1,11 @@
-# Pins mirror Dockerfile. boltz pins an old scipy that does not build on py3.13,
-# so this template runs on a py3.12 base image.
-boltz[cuda]
-openfold3>=0.5.0
-numpy<2.2          # numba, used by the boltz featurizer, needs numpy<=2.1
-biopython
-pandas
-pyarrow
-fastapi
-rdkit
-py3Dmol
-matplotlib
+# Pins mirror the Dockerfile, which builds this template's image. boltz pins an old
+# scipy that does not build on py3.13, so this template runs on py3.12.
+boltz[cuda]==2.2.1
+openfold3==0.5.0
+numpy==1.26.4      # numba, used by the boltz featurizer, needs numpy<=2.1
+biopython==1.84
+pandas==2.3.3
+pyarrow==23.0.1
+fastapi==0.133.0
+rdkit==2025.9.6
+matplotlib==3.10.8

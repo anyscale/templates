@@ -939,3 +939,20 @@
     tests_path: tests/nextflow-genomics-on-ray/
     command: bash tests.sh
     timeout_in_sec: 3600
+
+# owner: @miss-classification
+- name: cofolding-finetune-serve
+  owner_team: general
+  dir: templates/cofolding-finetune-serve
+  cluster_env:
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/cofolding-finetune-serve:2.59.0
+      ray_version: 2.59.0
+  compute_config:
+    AWS: configs/cofolding-finetune-serve/aws.yaml
+    GCP: configs/cofolding-finetune-serve/gce.yaml
+  test:
+    tests_path: tests/cofolding-finetune-serve/
+    command: bash tests.sh
+    # Measured: 70s setup download plus 1 min of checks, CPU only.
+    timeout_in_sec: 900

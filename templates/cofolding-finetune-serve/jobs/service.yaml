@@ -6,7 +6,7 @@
 #
 # Same app as `serve run serve_viewer:app` in a Workspace (README step 6).
 name: aiddd-viewer
-image_uri: anyscale/image/aiddd-boltz2-of3:4
+image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/cofolding-finetune-serve:2.59.0
 working_dir: .
 excludes: [image, docs, slides, .git, .bin, __pycache__, "*.ipynb"]
 env_vars:

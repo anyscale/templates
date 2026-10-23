@@ -15,7 +15,7 @@
 # (inference) to use the A10G or L40S pools when L4 capacity runs out; a stage pinned to
 # one type never competes with another for the same nodes.
 name: aiddd
-image_uri: anyscale/image/aiddd-boltz2-of3:4
+image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/cofolding-finetune-serve:2.59.0
 working_dir: .
 excludes: [image, docs, slides, .git, __pycache__]
 env_vars:
