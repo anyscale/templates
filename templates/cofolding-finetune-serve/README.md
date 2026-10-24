@@ -545,13 +545,13 @@ then:
 | 60 to 80 | 02 | Fine-tuning OpenFold3 145k with Ray Train: a short live run, then the full run trained beforehand |
 | 80 to 90 | 03 | Live prediction with Ray Serve for a molecule suggested by the audience |
 
-### Runbook
+## Runbook
 
 Times refer to the cluster defined in `jobs/job.yaml`.
 
 | Step | Task | Time |
 |---|---|---|
-| 1 | Workspace and image | Ready when the template opens |
+| 1 | Workspace | Ready when the template opens |
 | 2 | Download data and weights | 15 to 20 min, once |
 | 2b | Build the Mpro targets | About 10 min, once |
 | 3 | Smoke test: 8 ligands, 3 models | 15 to 20 min, mostly node startup |
@@ -560,28 +560,16 @@ Times refer to the cluster defined in `jobs/job.yaml`.
 | 6 | Fine-tuning with Ray Train: 1,000 steps on 8 L4 GPUs | About 2.3 h |
 | 7 | Searches with Ray Tune | 35 to 60 min |
 
-#### Step 1. Workspace and image
+### Step 1. Workspace
 
 The template's Workspace comes configured:
 
 | Setting | Value |
 |---|---|
-| Container image | `us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/cofolding-finetune-serve:2.59.0` |
 | Head node | `m5.2xlarge`, CPU only, so the notebook never holds a GPU |
 | Worker group | `g6.4xlarge` (1 L4 GPU, 16 vCPU, 64 GB), minimum 0, maximum 8, spot preferred |
 
-The jobs in `jobs/` use the same image. To build the image yourself, run the command below, then set
-`image_uri` in `jobs/job.yaml`, `jobs/live_run.yaml` and `jobs/service.yaml` to the version it prints:
-
-```bash
-anyscale image build -f Dockerfile -n aiddd-boltz2-of3 -r 2.59.0
-```
-
-> **Python version.** Boltz-2 requires a SciPy release that does not build on Python 3.13. The image also
-> contains a separate OpenFold3 0.4.3 install at `/opt/of3-legacy`, because the released fine-tuned
-> checkpoint only loads with that version.
-
-#### Step 2. Download data and weights
+### Step 2. Download data and weights
 
 ```bash
 anyscale job submit -f jobs/job.yaml --name aiddd-setup -- python scripts/setup_data.py --with-weights
@@ -601,7 +589,7 @@ All data is stored under `/mnt/user_storage/aiddd` (or `$AIDDD_SHARED`), which W
 - The script skips anything already downloaded and is safe to rerun.
 - Pass `--skip-of3` to download Boltz-2 only.
 
-#### Step 2b. Build the Mpro targets
+### Step 2b. Build the Mpro targets
 
 ```bash
 anyscale job submit -f jobs/job.yaml --name aiddd-mpro-setup -- python scripts/prepare_mpro.py
@@ -614,7 +602,7 @@ The script:
 - builds 1 MSA per protein, and
 - writes each target in the same layout as the OpenBind release.
 
-#### Step 3. Smoke test
+### Step 3. Smoke test
 
 Run 8 ligands (2 fragments and 6 follow-ons) through all 3 models:
 
@@ -636,7 +624,7 @@ Done in N min. 10 complexes scored -> /mnt/user_storage/aiddd/results/smoke
 - `ok` and `cached` both mean success. `cached` means an earlier run already predicted that ligand.
 - For `failed` entries, the first error is printed below the summary.
 
-#### Step 4. Full benchmark
+### Step 4. Full benchmark
 
 ```bash
 anyscale job submit -f jobs/job.yaml --name aiddd-ev71 -- \
@@ -669,7 +657,7 @@ For the headline run, Boltz-2 and OpenBind-0 side by side on pinned GPU nodes in
 anyscale job submit -f jobs/live_run.yaml --name aiddd-live
 ```
 
-#### Step 5. Viewer and live prediction
+### Step 5. Viewer and live prediction
 
 **In a Workspace, for development:**
 
@@ -692,7 +680,7 @@ anyscale service terminate -n aiddd-viewer       # after the session
 - The Service does not shut down on its own. It keeps at least 1 L4 GPU running until you terminate
   it.
 
-#### Step 6. Fine-tuning with Ray Train
+### Step 6. Fine-tuning with Ray Train
 
 **Build the training set** (CPU, about 30 seconds, once):
 
@@ -748,7 +736,7 @@ This submits 1 job per target (`jobs/job.yaml`, 8 L4 GPUs each) with its own res
 (`results_<run>/<target>`) and a fresh prediction folder, so poses from another checkpoint are never reused.
 Runs named `ft-p2-*` are predicted with OpenFold3 0.4.3 (`--of3ray-legacy`).
 
-#### Step 7. Searches with Ray Tune
+### Step 7. Searches with Ray Tune
 
 ```bash
 anyscale job submit -f jobs/job.yaml --name tune-ft    -- python scripts/tune_finetune.py   # about 35 min on 4 L4 GPUs
