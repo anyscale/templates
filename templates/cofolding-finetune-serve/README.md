@@ -1,4 +1,4 @@
-# Co-folding at Scale: Benchmark, Fine-Tune and Serve on Ray
+# Fine-tune and serve a co-folding model on GPUs with Ray
 
 <div align="left">
   <a target="_blank" href="https://console.anyscale.com/template-preview/cofolding-finetune-serve"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
@@ -6,6 +6,9 @@
 </div>
 
 **⏱️ Time to complete**: 60 min without GPUs, 2 h with
+
+> **No GPU needed to start.** Every result in this README, and notebooks 01 and 02, run on CPU from
+> stored results. GPUs are only needed to predict, fine-tune or serve live: set `USE_GPUS = True` when you are ready.
 
 Co-folding models predict how a drug candidate binds to its protein target, using only the protein
 sequence and the molecule's chemical structure [4]. Published accuracy numbers usually come from curated
