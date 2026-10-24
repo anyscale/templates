@@ -96,6 +96,16 @@ def setup_results():
     print(f"       scored targets: {', '.join(targets)}")
 
 
+def setup_tune_summaries():
+    """Ray Tune sweep summaries for Appendix A of notebook 02, shipped in docs/data (about 1 KB)."""
+    src = Path(__file__).resolve().parents[1] / "docs" / "data"
+    for f in sorted(src.rglob("summary.csv")):
+        dest = SHARED / f.relative_to(src)
+        if step(f"Ray Tune sweep summary: {dest.parent.name}", dest.exists()):
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(f, dest)
+
+
 def setup_boltz():
     cache = SHARED / "boltz_cache"
     if step("Boltz-2 weights and CCD", (cache / "boltz2_conf.ckpt").exists() and (cache / "boltz2_aff.ckpt").exists()):
@@ -128,6 +138,7 @@ def main():
     setup_release()
     setup_benchmark()
     setup_results()
+    setup_tune_summaries()
     if args.with_weights:
         setup_boltz()
         if not args.skip_of3:

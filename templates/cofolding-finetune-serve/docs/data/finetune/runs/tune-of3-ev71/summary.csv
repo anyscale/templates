@@ -1,0 +1,5 @@
+lr,steps,lddt_avg20,val_success,val_median_rmsd,weights,error
+3e-05,120,0.38139460422098637,,,,
+0.0001,120,0.4278192911297083,,,,
+0.0003,150,0.5897050619125366,0.9375,0.5164531684018505,/mnt/user_storage/aiddd/finetune/runs/tune-of3-ev71/trial_cd3a5_00002/checkpoint_2026-10-13_11-41-18.546921/of3_ev71_ft.pt,
+0.001,60,0.38594538122415545,,,,
