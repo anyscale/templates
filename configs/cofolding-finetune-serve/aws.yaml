@@ -1,0 +1,12 @@
+head_node:
+  instance_type: m5.2xlarge
+  resources:
+    CPU: 0
+worker_nodes:
+# 1x L4 24 GB, 16 vCPU, 64 GB: OpenFold3 featurization is CPU-bound, and 3 predictors
+# exhausted the 32 GB of a g6.2xlarge. 8 nodes is the fine-tune in notebook 02.
+- name: 1xL4
+  instance_type: g6.4xlarge
+  max_nodes: 8
+  market_type: PREFER_SPOT
+enable_cross_zone_scaling: true

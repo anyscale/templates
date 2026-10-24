@@ -1,0 +1,50 @@
+# The everyday Anyscale Job: benchmarking, fine-tuning and sweeps.
+#
+#   anyscale job submit -f jobs/job.yaml --name setup    -- python scripts/setup_data.py
+#   anyscale job submit -f jobs/job.yaml --name ev71     -- python aiddd_pipeline.py --target ev71-2a \
+#       --models boltz2,openbind0 --max-gpus 8 --out /mnt/user_storage/aiddd/results/ev71-2a
+#   anyscale job submit -f jobs/job.yaml --name finetune -- python finetune_ray_train.py \
+#       --base p2 --num-workers 8 --max-steps 1000 --checkpoint-every 100
+#
+# g6.4xlarge, not the cheaper g6.2xlarge: 3 OpenFold3 0.4.3 predictors exhausted the 32 GB
+# of a g6.2xlarge and the OS killed Ray on the node. 64 GB and 16 vCPU also make OpenFold3
+# 1.44x faster per ligand, because featurization is CPU-bound.
+#
+# Every worker group starts at 0 nodes and scales with the work queue, so GPUs cost money
+# only while there is work for them. Pass --accelerator (training) or --of3-accelerator
+# (inference) to use the A10G or L40S pools when L4 capacity runs out; a stage pinned to
+# one type never competes with another for the same nodes.
+name: aiddd
+image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/cofolding-finetune-serve:2.59.0
+working_dir: .
+excludes: [image, docs, slides, .git, __pycache__]
+env_vars:
+  AIDDD_SHARED: /mnt/user_storage/aiddd   # shared by Workspaces and Jobs
+  RAY_TRAIN_WORKER_GROUP_START_TIMEOUT_S: "900"   # Ray Train: allow time for GPU nodes to start
+compute_config:
+  head_node:
+    instance_type: m5.2xlarge
+    resources: {CPU: 0}                   # the head node only drives the pipeline
+  worker_nodes:
+    - name: l4
+      instance_type: g6.4xlarge           # 1x L4 24 GB, 16 vCPU, 64 GB RAM
+      min_nodes: 0
+      max_nodes: 16
+      market_type: PREFER_SPOT            # spot, falling back to on-demand when scarce
+    - name: a10g
+      instance_type: g5.4xlarge           # 1x A10G 24 GB: use with --accelerator A10G
+      min_nodes: 0
+      max_nodes: 8
+      market_type: PREFER_SPOT
+    - name: l40s
+      instance_type: g6e.4xlarge          # 1x L40S 48 GB: use with --accelerator L40S
+      min_nodes: 0
+      max_nodes: 8
+      market_type: PREFER_SPOT
+    - name: cpu
+      instance_type: m5.4xlarge           # validation and pose scoring
+      min_nodes: 0
+      max_nodes: 4
+  enable_cross_zone_scaling: true
+entrypoint: python aiddd_pipeline.py --help
+max_retries: 0
