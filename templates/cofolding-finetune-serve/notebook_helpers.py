@@ -18,7 +18,9 @@ from IPython.display import HTML, display
 from aiddd_pipeline import SHARED, STAGES, TARGETS, pose_in_crystal_frame
 
 USER = os.environ.get("ANYSCALE_USERNAME") or os.environ.get("USER") or "user"
-MINE = SHARED / "runs" / USER              # everything you write goes here
+# Everything you write goes here. AIDDD_MINE keeps it off SHARED when SHARED is
+# read-only, as it is when the image ships the data.
+MINE = Path(os.environ.get("AIDDD_MINE") or SHARED / "runs" / USER)
 
 MODEL_NAMES = {"boltz2": "Boltz-2", "openbind0": "OpenBind-0", "of3p2": "OpenFold3 145k (general)",
                "of3ray": "Fine-tuned with Ray Train", "of3ft": "OpenBind fine-tune (released)"}
@@ -214,6 +216,38 @@ def show_complex(row, models=("boltz2", "openbind0"), height=420):
     _viewer(shown, legend=title + "<br>" + "".join(chips), height=height, zoom="ligands")
 
 
+def show_live_overlay(row, poses, height=420):
+    """Several live poses of one molecule over its crystal, one color each, like show_complex.
+    poses: [(label, pose_pdb, color, rmsd or None)], each pose already moved onto the crystal
+    (the Service's /predict answer: "cif" with "format": "pdb")."""
+    ref_pdb = Path(row["ref_pdb"])
+    ref_sdf = ref_pdb.with_name(ref_pdb.name.replace("_complex_ref.pdb", "_ligand_ref.sdf"))
+    shown = [{"text": ref_pdb.read_text(), "fmt": "pdb",
+              "styles": [({}, {"cartoon": {"color": "#d6d3ce", "opacity": 0.55}}),
+                         ({"byres": True, "within": {"distance": 5, "sel": {"resn": "LIG"}}, "not": {"resn": "LIG"}},
+                          {"line": {"color": "#9a958c"}})]},
+             {"text": ref_sdf.read_text(), "fmt": "sdf", "styles": [({}, _stick(COLORS["crystal"]))]}]
+    chips = [_chip(COLORS["crystal"], "crystal structure")]
+    for label, pdb, color, rmsd in poses:
+        shown.append({"text": pdb, "fmt": "pdb", "styles": [({"chain": "B"}, _stick(color))]})
+        chips.append(_chip(color, label + ("" if rmsd is None else f"  {rmsd:.1f} Å {'✓' if rmsd < 2 else '✗'}")))
+    _viewer(shown, legend=f"<b>{row['complex_name']}</b><br>" + "".join(chips), height=height, zoom="ligands")
+
+
+def show_aligned(pose_pdb, parent, label="new molecule (live)", height=420):
+    """Like show_analog, for a pose already moved onto the crystal (PDB text), such as the
+    `cif` field the Service's /predict returns with "format": "pdb"."""
+    ref_pdb = Path(parent["ref_pdb"])
+    ref_sdf = ref_pdb.with_name(ref_pdb.name.replace("_complex_ref.pdb", "_ligand_ref.sdf"))
+    _viewer([{"text": ref_pdb.read_text(), "fmt": "pdb",
+              "styles": [({}, {"cartoon": {"color": "#d6d3ce", "opacity": 0.55}})]},
+             {"text": ref_sdf.read_text(), "fmt": "sdf", "styles": [({}, _stick(COLORS["crystal"]))]},
+             {"text": pose_pdb, "fmt": "pdb",
+              "styles": [({"chain": "B"}, _stick("#2e9e4f"))]}],
+            legend=_chip(COLORS["crystal"], f"parent {parent['complex_name']} (crystal)") + _chip("#2e9e4f", label),
+            height=height, zoom="ligands")
+
+
 def show_analog(cif_path, parent, label="new molecule (Boltz-2, live)", height=420):
     """A live prediction for a new molecule, moved onto the crystal of the compound it was
     made from: does the model keep the parent's binding mode?"""
@@ -229,7 +263,14 @@ def show_analog(cif_path, parent, label="new molecule (Boltz-2, live)", height=4
 
 
 def _cif_to_pdb(cif_text):
-    """mmCIF text to PDB text (3Dmol draws ribbons more reliably from PDB)."""
+    """mmCIF text to PDB text (3Dmol draws ribbons more reliably from PDB).
+
+    The Service answers with PDB text in its `cif` field (`"format": "pdb"`), so accept
+    either: an mmCIF file must open with a `data_` directive, and anything else is already
+    PDB and goes through untouched.
+    """
+    if not cif_text.lstrip().startswith("data_"):
+        return cif_text
     import io
     import tempfile
     from Bio.PDB import PDBIO

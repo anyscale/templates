@@ -1,0 +1,43 @@
+# Live demo, step 2 of 3. Same Service as jobs/service.yaml; only user_config differs, so
+# --in-place calls reconfigure() on the running replicas: no restart, no new nodes.
+# Not running yet? Deploy jobs/service.yaml first (5 to 10 min), then step 1. Edit no file in
+# this folder between steps: a code change makes the update restart every replica.
+#
+#   anyscale service deploy -f jobs/demo_1_base.yaml --in-place    # start: base model only
+#   anyscale service deploy -f jobs/demo_2_ft.yaml --in-place      # add the fine-tune
+#   anyscale service deploy -f jobs/demo_3_next_ft.yaml --in-place # add the next fine-tune
+#
+# Add our fine-tune, ev71-ours, and route EV-A71 2A requests to it. It loads on its first request,
+# next to the base model: one replica, two models in memory.
+name: aiddd-viewer
+image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/cofolding-finetune-serve:2.59.0
+working_dir: .
+excludes: [image, docs, slides, scripts, jobs, .git, .bin, __pycache__, "*.ipynb", "*.md", .ipynb_checkpoints]   # only what the app runs; edits elsewhere leave --in-place a pure reconfigure
+env_vars:
+  AIDDD_SHARED: /mnt/user_storage/aiddd
+query_auth_token_enabled: false
+compute_config:
+  head_node:
+    instance_type: m5.2xlarge
+  worker_nodes:
+    - name: l4
+      instance_type: g6.2xlarge
+      min_nodes: 2
+      max_nodes: 2
+  enable_cross_zone_scaling: true
+applications:
+  - import_path: serve_viewer:app
+    deployments:
+      - name: OF3Pool
+        user_config:
+          models:
+            base:
+              version: p2-145k
+              name: "Base model: OpenFold3 145k (general)"
+              checkpoint: /mnt/user_storage/aiddd/of3_cache/of3-p2-145k.pt
+            ev71-ours:
+              version: ev71-v1
+              name: "EV-A71 specialist: fine-tuned with Ray Train (8 L4s, 1,000 steps)"
+              checkpoint: /mnt/user_storage/aiddd/finetune/runs/ft-p2-evfrag-1000s-8g-1023-0139/checkpoint_2026-10-23_04-05-55.886640/of3_ev71_ft.pt
+      - name: Viewer
+        user_config: {route: ev71-ours, step: "demo_2: base model + our fine-tune (ev71-ours)"}

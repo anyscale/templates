@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="445" viewBox="0 0 920 445" font-family="system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+  <title>The Service app: one request, composed across CPU and GPU deployments</title>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5b6472"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="920" height="445" fill="#ffffff"/>
+
+  <!-- client -->
+  <rect x="20" y="170" width="130" height="90" rx="8" fill="#f4f5f7" stroke="#c9ced6"/>
+  <text x="85" y="200" text-anchor="middle" font-size="14" font-weight="600" fill="#22272e">Client</text>
+  <text x="85" y="221" text-anchor="middle" font-size="12" fill="#444c56">viewer page,</text>
+  <text x="85" y="237" text-anchor="middle" font-size="12" fill="#444c56">notebook, script</text>
+  <text x="85" y="253" text-anchor="middle" font-size="11" fill="#6a737d">POST /predict</text>
+
+  <!-- Viewer (CPU) -->
+  <rect x="190" y="40" width="300" height="350" rx="10" fill="#eef3fb" stroke="#7d9bc7"/>
+  <text x="340" y="66" text-anchor="middle" font-size="15" font-weight="700" fill="#22272e">Viewer</text>
+  <text x="340" y="84" text-anchor="middle" font-size="12" fill="#444c56">CPU · FastAPI ingress · 2 to 4 replicas</text>
+
+  <rect x="210" y="100" width="260" height="62" rx="6" fill="#ffffff" stroke="#b6c6df"/>
+  <text x="222" y="122" font-size="13" font-weight="600" fill="#22272e">1. Prepare (RDKit)</text>
+  <text x="222" y="141" font-size="12" fill="#444c56">canonical SMILES; find the crystal</text>
+  <text x="222" y="156" font-size="12" fill="#444c56">structure of the same compound</text>
+
+  <rect x="210" y="178" width="260" height="62" rx="6" fill="#ffffff" stroke="#b6c6df"/>
+  <text x="222" y="200" font-size="13" font-weight="600" fill="#22272e">2. Two GPU models at once</text>
+  <text x="222" y="219" font-size="12" fill="#444c56">asyncio.gather: pose by model id,</text>
+  <text x="222" y="234" font-size="12" fill="#444c56">affinity, each on its own replicas</text>
+
+  <rect x="210" y="256" width="260" height="62" rx="6" fill="#ffffff" stroke="#b6c6df"/>
+  <text x="222" y="278" font-size="13" font-weight="600" fill="#22272e">3. Score (RDKit)</text>
+  <text x="222" y="297" font-size="12" fill="#444c56">ligand RMSD to the crystal; move</text>
+  <text x="222" y="312" font-size="12" fill="#444c56">the pose onto it for the 3D view</text>
+
+  <text x="340" y="346" text-anchor="middle" font-size="12" fill="#444c56">returns: pose, RMSD, affinity, model</text>
+  <text x="340" y="362" text-anchor="middle" font-size="12" fill="#444c56">version, source (cache / memory /</text>
+  <text x="340" y="378" text-anchor="middle" font-size="12" fill="#444c56">loaded), GPU zone</text>
+
+  <!-- OF3Pool (GPU) -->
+  <rect x="560" y="40" width="340" height="170" rx="10" fill="#f2f8f3" stroke="#7fb08c"/>
+  <text x="730" y="66" text-anchor="middle" font-size="15" font-weight="700" fill="#22272e">OF3Pool: pose</text>
+  <text x="730" y="84" text-anchor="middle" font-size="12" fill="#444c56">½ L4 · 15 GB RAM · OpenFold3 0.4.x in its own Python</text>
+  <text x="730" y="99" text-anchor="middle" font-size="11" fill="#6a737d">runtime_env={"py_executable": ...}</text>
+  <text x="578" y="125" font-size="12" fill="#22272e">@serve.multiplexed: model id → checkpoint</text>
+  <rect x="578" y="136" width="96" height="26" rx="4" fill="#ffffff" stroke="#9cc6a6"/>
+  <text x="626" y="154" text-anchor="middle" font-size="12" fill="#22272e">base</text>
+  <rect x="682" y="136" width="96" height="26" rx="4" fill="#ffffff" stroke="#9cc6a6"/>
+  <text x="730" y="154" text-anchor="middle" font-size="12" fill="#22272e">ev71-v1</text>
+  <rect x="786" y="136" width="96" height="26" rx="4" fill="#ffffff" stroke="#9cc6a6"/>
+  <text x="834" y="154" text-anchor="middle" font-size="12" fill="#22272e">ev71-v2</text>
+  <text x="578" y="186" font-size="12" fill="#444c56">up to 3 in memory; registry and route in</text>
+  <text x="578" y="201" font-size="12" fill="#444c56">user_config, changed in place</text>
+
+  <!-- Boltz2Live (GPU) -->
+  <rect x="560" y="240" width="340" height="110" rx="10" fill="#fbf5ec" stroke="#d1a866"/>
+  <text x="730" y="266" text-anchor="middle" font-size="15" font-weight="700" fill="#22272e">Boltz2Live: affinity</text>
+  <text x="730" y="284" text-anchor="middle" font-size="12" fill="#444c56">½ L4 · 15 GB RAM · Boltz-2 in the image's Python</text>
+  <text x="578" y="310" font-size="12" fill="#444c56">1 replica, its own node; OpenFold3 does not</text>
+  <text x="578" y="325" font-size="12" fill="#444c56">predict affinity</text>
+
+  <!-- arrows -->
+  <line x1="150" y1="215" x2="186" y2="215" stroke="#5b6472" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="470" y1="200" x2="556" y2="135" stroke="#5b6472" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="470" y1="218" x2="556" y2="290" stroke="#5b6472" stroke-width="1.6" marker-end="url(#arr)"/>
+  <text x="460" y="426" text-anchor="middle" font-size="12" fill="#6a737d">One Anyscale Service: 2 L4 nodes, GPUs from any availability zone in the region. Each deployment scales on its own.</text>
+</svg>
