@@ -31,7 +31,14 @@ from pathlib import Path
 
 SHARED = Path(os.environ.get("AIDDD_SHARED", "/mnt/user_storage/aiddd"))
 
-RELEASE_URL = "https://zenodo.org/api/records/22142262/files/OpenBind_EV-A71_2A.zip/content"
+# A byte-identical mirror of the Zenodo release (CC0, so mirroring is permitted),
+# measured at 30 MB/s against Zenodo's 0.5 MB/s: 4 seconds instead of 4 minutes, which
+# matters when a room downloads it at once. Set AIDDD_RELEASE_URL to override, e.g. back
+# to Zenodo: https://zenodo.org/api/records/22142262/files/OpenBind_EV-A71_2A.zip/content
+RELEASE_URL = os.environ.get(
+    "AIDDD_RELEASE_URL",
+    "https://github.com/miss-classification/boltz2-openbind-ray/releases/download/"
+    "data-v1/OpenBind_EV-A71_2A.zip")
 BENCHMARK_RAW = ("https://raw.githubusercontent.com/OpenBind-Consortium/EV-A71_2A_benchmark/main/"
                  "structure/processed_outputs/")
 BENCHMARK_FILES = ["final_cofolding_pose_data.parquet", "fragment_followon_similarity.csv",
@@ -46,6 +53,7 @@ RESULTS_BUNDLE = os.environ.get(
 OF3_BASE = "https://openfold3-data.s3.amazonaws.com/openfold3-parameters/"
 OF3_CKPTS = {
     "of3-ob-2025-06-30-174k.pt": OF3_BASE + "of3-ob-2025-06-30-174k.pt",      # OpenBind-0
+    "of3-p2-145k.pt": OF3_BASE + "of3-p2-145k.pt",                            # the general model 02 fine-tunes
     "of3p2-ft-ev2a.ckpt": OF3_BASE + "openbind/of3p2-ft-ev2a.ckpt",           # fine-tuned on EV-A71 2A
 }
 

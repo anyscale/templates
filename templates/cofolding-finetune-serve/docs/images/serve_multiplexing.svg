@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="505" viewBox="0 0 920 505" font-family="system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+  <title>A standard Ray Serve deployment next to a multiplexed one</title>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5b6472"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="920" height="505" fill="#ffffff"/>
+
+  <!-- ============ Left: standard ============ -->
+  <rect x="10" y="8" width="440" height="444" rx="12" fill="#fafbfc" stroke="#e1e4e8"/>
+  <text x="230" y="36" text-anchor="middle" font-size="16" font-weight="700" fill="#22272e">Standard: one deployment per model</text>
+  <text x="230" y="55" text-anchor="middle" font-size="12" fill="#444c56">each replica loads its one model once, in __init__</text>
+
+  <rect x="140" y="72" width="180" height="48" rx="8" fill="#f4f5f7" stroke="#c9ced6"/>
+  <text x="230" y="92" text-anchor="middle" font-size="14" font-weight="600" fill="#22272e">Client</text>
+  <text x="230" y="110" text-anchor="middle" font-size="12" fill="#444c56">picks an endpoint per model</text>
+
+  <line x1="200" y1="120" x2="92" y2="164" stroke="#5b6472" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="230" y1="120" x2="230" y2="164" stroke="#5b6472" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="260" y1="120" x2="368" y2="164" stroke="#5b6472" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <!-- deployment: base -->
+  <rect x="26" y="168" width="128" height="206" rx="10" fill="#eef3fb" stroke="#7d9bc7"/>
+  <text x="90" y="188" text-anchor="middle" font-size="13" font-weight="700" fill="#22272e">Deployment</text>
+  <text x="90" y="204" text-anchor="middle" font-size="11" font-family="Menlo, Consolas, monospace" fill="#444c56">/base</text>
+  <rect x="36" y="216" width="108" height="96" rx="6" fill="#ffffff" stroke="#b6c6df"/>
+  <text x="90" y="234" text-anchor="middle" font-size="12" font-weight="600" fill="#22272e">Replica</text>
+  <text x="90" y="250" text-anchor="middle" font-size="11" fill="#6a737d">½ L4</text>
+  <rect x="46" y="260" width="88" height="24" rx="4" fill="#eef0f3" stroke="#7A8796"/>
+  <text x="90" y="277" text-anchor="middle" font-size="12" fill="#22272e">base</text>
+  <text x="90" y="300" text-anchor="middle" font-size="11" fill="#6a737d">always loaded</text>
+  <text x="90" y="340" text-anchor="middle" font-size="11" fill="#6a737d">GPU idle unless</text>
+  <text x="90" y="354" text-anchor="middle" font-size="11" fill="#6a737d">this model is asked</text>
+
+  <!-- deployment: ev71-v1 -->
+  <rect x="166" y="168" width="128" height="206" rx="10" fill="#eef3fb" stroke="#7d9bc7"/>
+  <text x="230" y="188" text-anchor="middle" font-size="13" font-weight="700" fill="#22272e">Deployment</text>
+  <text x="230" y="204" text-anchor="middle" font-size="11" font-family="Menlo, Consolas, monospace" fill="#444c56">/ev71-v1</text>
+  <rect x="176" y="216" width="108" height="96" rx="6" fill="#ffffff" stroke="#b6c6df"/>
+  <text x="230" y="234" text-anchor="middle" font-size="12" font-weight="600" fill="#22272e">Replica</text>
+  <text x="230" y="250" text-anchor="middle" font-size="11" fill="#6a737d">½ L4</text>
+  <rect x="186" y="260" width="88" height="24" rx="4" fill="#e3f3f0" stroke="#0F8B7A"/>
+  <text x="230" y="277" text-anchor="middle" font-size="12" fill="#22272e">ev71-v1</text>
+  <text x="230" y="300" text-anchor="middle" font-size="11" fill="#6a737d">always loaded</text>
+  <text x="230" y="340" text-anchor="middle" font-size="11" fill="#6a737d">GPU idle unless</text>
+  <text x="230" y="354" text-anchor="middle" font-size="11" fill="#6a737d">this model is asked</text>
+
+  <!-- deployment: ev71-v2 -->
+  <rect x="306" y="168" width="128" height="206" rx="10" fill="#eef3fb" stroke="#7d9bc7"/>
+  <text x="370" y="188" text-anchor="middle" font-size="13" font-weight="700" fill="#22272e">Deployment</text>
+  <text x="370" y="204" text-anchor="middle" font-size="11" font-family="Menlo, Consolas, monospace" fill="#444c56">/ev71-v2</text>
+  <rect x="316" y="216" width="108" height="96" rx="6" fill="#ffffff" stroke="#b6c6df"/>
+  <text x="370" y="234" text-anchor="middle" font-size="12" font-weight="600" fill="#22272e">Replica</text>
+  <text x="370" y="250" text-anchor="middle" font-size="11" fill="#6a737d">½ L4</text>
+  <rect x="326" y="260" width="88" height="24" rx="4" fill="#f8e7e2" stroke="#C8553D"/>
+  <text x="370" y="277" text-anchor="middle" font-size="12" fill="#22272e">ev71-v2</text>
+  <text x="370" y="300" text-anchor="middle" font-size="11" fill="#6a737d">always loaded</text>
+  <text x="370" y="340" text-anchor="middle" font-size="11" fill="#6a737d">GPU idle unless</text>
+  <text x="370" y="354" text-anchor="middle" font-size="11" fill="#6a737d">this model is asked</text>
+
+  <text x="230" y="404" text-anchor="middle" font-size="13" font-weight="600" fill="#22272e">3 models = 3 deployments on 1½ L4</text>
+  <text x="230" y="422" text-anchor="middle" font-size="12" fill="#444c56">a new model = a new deployment and another ½ L4</text>
+  <text x="230" y="438" text-anchor="middle" font-size="12" fill="#444c56">no model ever reloads, but most GPUs wait</text>
+
+  <!-- ============ Right: multiplexed (6.1 code = the Service's OF3Pool) ============ -->
+  <rect x="470" y="8" width="440" height="444" rx="12" fill="#fafbfc" stroke="#e1e4e8"/>
+  <text x="690" y="36" text-anchor="middle" font-size="16" font-weight="700" fill="#22272e">Multiplexed: one deployment, many models</text>
+  <text x="690" y="55" text-anchor="middle" font-size="12" fill="#444c56">each request names a model ID; the replica loads it on first use</text>
+
+  <rect x="590" y="72" width="200" height="48" rx="8" fill="#f4f5f7" stroke="#c9ced6"/>
+  <text x="690" y="92" text-anchor="middle" font-size="14" font-weight="600" fill="#22272e">Client</text>
+  <text x="690" y="110" text-anchor="middle" font-size="12" fill="#444c56">one endpoint; request has a model ID</text>
+
+  <line x1="690" y1="120" x2="690" y2="164" stroke="#5b6472" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <rect x="486" y="168" width="408" height="206" rx="10" fill="#f2f8f3" stroke="#7fb08c"/>
+  <text x="690" y="188" text-anchor="middle" font-size="13" font-weight="700" fill="#22272e">Deployment: OF3Pool</text>
+  <text x="690" y="204" text-anchor="middle" font-size="11" font-family="Menlo, Consolas, monospace" fill="#444c56">@serve.multiplexed(max_num_models_per_replica=3)</text>
+  <text x="690" y="228" text-anchor="middle" font-size="12" fill="#444c56">registry (user_config): 3 model IDs, each loaded on its first request</text>
+
+  <!-- the one replica -->
+  <rect x="516" y="242" width="348" height="106" rx="6" fill="#ffffff" stroke="#9cc6a6"/>
+  <text x="690" y="262" text-anchor="middle" font-size="12" font-weight="600" fill="#22272e">1 replica · ½ L4 · up to 3 models in memory</text>
+  <rect x="546" y="274" width="88" height="24" rx="4" fill="#eef0f3" stroke="#7A8796"/>
+  <text x="590" y="291" text-anchor="middle" font-size="12" fill="#22272e">base</text>
+  <rect x="646" y="274" width="88" height="24" rx="4" fill="#e3f3f0" stroke="#0F8B7A"/>
+  <text x="690" y="291" text-anchor="middle" font-size="12" fill="#22272e">ev71-v1</text>
+  <rect x="746" y="274" width="88" height="24" rx="4" fill="#f8e7e2" stroke="#C8553D"/>
+  <text x="790" y="291" text-anchor="middle" font-size="12" fill="#22272e">ev71-v2</text>
+  <text x="690" y="320" text-anchor="middle" font-size="11" fill="#6a737d">about 3 GB of host RAM per model: the replica reserves 15 GB</text>
+  <text x="690" y="335" text-anchor="middle" font-size="11" fill="#6a737d">a 4th model ID would evict the least recently used one</text>
+
+  <text x="690" y="404" text-anchor="middle" font-size="13" font-weight="600" fill="#22272e">3 models = 1 deployment on ½ L4</text>
+  <text x="690" y="422" text-anchor="middle" font-size="12" fill="#444c56">a new model = a new ID in user_config, no new deployment</text>
+  <text x="690" y="438" text-anchor="middle" font-size="12" fill="#444c56">with more replicas, Serve sends each ID to one that has it</text>
+
+  <!-- footer: the shared Service -->
+  <text x="460" y="474" text-anchor="middle" font-size="12" fill="#6a737d">The 6.1 code and the shared Service's OpenFold3 deployment have these same settings (6.6).</text>
+  <text x="460" y="491" text-anchor="middle" font-size="12" fill="#6a737d">In the Service, <tspan font-weight="600">Boltz-2</tspan> is a standard deployment beside it: ½ L4 and 15 GB RAM, on the other node.</text>
+</svg>

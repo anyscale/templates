@@ -22,6 +22,7 @@ only predicts what is missing.
 """
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -45,10 +46,23 @@ OF3_OB_URL = "https://openfold3-data.s3.amazonaws.com/openfold3-parameters/of3-o
 OF3_P2_CKPT = OF3_CACHE / "of3-p2-145k.pt"           # OF3-p2: start of the released fine-tune
 OF3_P2_URL = "https://openfold3-data.s3.amazonaws.com/openfold3-parameters/of3-p2-145k.pt"
 OF3_LEGACY = "/opt/of3-legacy/bin/run_openfold"       # OF3-p2 weights only load in OpenFold3 0.4.x
+OF3_LEGACY_PY = "/opt/of3-legacy/bin/python"          # its Python, for Ray actors that hold OF3-p2 weights
 OF3_FT_CKPT = OF3_CACHE / "of3p2-ft-ev2a.ckpt"
 OF3_FT_URL = ("https://openfold3-data.s3.amazonaws.com/openfold3-parameters/"
               "openbind/of3p2-ft-ev2a.ckpt")
+OF3_P2_CKPT = OF3_CACHE / "of3-p2-145k.pt"   # OF3-p2, the starting weights of of3ft
+OF3_P2_URL = "https://openfold3-data.s3.amazonaws.com/openfold3-parameters/of3-p2-145k.pt"
 PRED_ROOT = SHARED / "predictions"
+OLD_SHARED = "/mnt/user_storage/aiddd"   # the data root before the move to shared storage
+
+
+def relocate_paths(df: pd.DataFrame) -> pd.DataFrame:
+    """Results scored before the data moved to shared storage store structure paths
+    (*_cif, ref_pdb) under OLD_SHARED. Point them at SHARED."""
+    for c in df.columns:
+        if (c.endswith("_cif") or c == "ref_pdb") and df[c].dtype == object:
+            df[c] = df[c].str.replace(OLD_SHARED, str(SHARED), regex=False)
+    return df
 
 
 @dataclass(frozen=True)
@@ -107,6 +121,49 @@ MODELS = {
     "of3ray": ("OF3 fine-tuned with Ray Train", None),   # your own weights from finetune_ray_train.py
 }
 FINETUNE_RUNS = SHARED / "finetune" / "runs"
+# The fine-tune the Serve demo calls "ours": OF3-p2 145k on 66 EV-A71 fragments, 1,000 steps
+# on 8 L4s. This is the run the published results come from. A run name carries the date it
+# started, so your own fine-tune from notebook 02 is never at this path: fall back to the most
+# recent one on this cluster.
+_OURS_PUBLISHED = (FINETUNE_RUNS / "ft-p2-evfrag-1000s-8g-1023-0139"
+                   / "checkpoint_2026-10-23_04-05-55.886640" / "of3_ev71_ft.pt")
+_OURS_FOUND = sorted(FINETUNE_RUNS.glob("ft-p2-*/checkpoint_*/of3_ev71_ft.pt"),
+                     key=lambda p: p.stat().st_mtime)
+OF3_OURS_CKPT = (_OURS_PUBLISHED if _OURS_PUBLISHED.exists()
+                 else (_OURS_FOUND[-1] if _OURS_FOUND else _OURS_PUBLISHED))
+# The served models, by model id. "version" names the weights and their pose cache folder
+# (predictions/live_of3ft_<version>), so never reuse one for new weights. jobs/demo_*.yaml
+# carry the same entries as Service config.
+LIVE_MODELS = {
+    "base": {
+        "version": "p2-145k",
+        "name": "Base model: OpenFold3 145k (general)",
+        "checkpoint": str(OF3_P2_CKPT),
+        "pose_cache": str(SHARED / "predictions" / "live_of3ft_p2-145k"),
+    },
+    "ev71-ours": {
+        "version": "ev71-v1",
+        "name": "EV-A71 specialist: fine-tuned with Ray Train (8 L4s, 1,000 steps)",
+        "checkpoint": str(OF3_OURS_CKPT),
+        "pose_cache": str(SHARED / "predictions" / "live_of3ft_ev71-v1"),
+    },
+    "ev71-openbind": {
+        "version": "ev71-v2",
+        "name": "EV-A71 specialist: OpenBind fine-tune (released)",
+        "checkpoint": str(OF3_FT_CKPT),
+        "pose_cache": str(SHARED / "predictions" / "live_of3ft_ev71-v2"),
+    },
+}
+# Notebook 03's demo compounds (§6.2): EV-A71 2A late follow-ons with a crystal structure, in no
+# model's training set. Their poses are cached for every LIVE_MODELS version before the workshop.
+DEMO_COMPOUNDS = {
+    "x7259a": "CSc1ncnc(N2CCC[C@@H]2C2CC2)c1CC(=O)N1CCC[C@H](C(N)=O)C1",
+    "x7608a": "CSc1ncnc(N(C)CC(F)(F)F)c1CC(=O)N1C[C@@H](C(N)=O)C[C@@H]2C[C@@H]21",
+    "x7024a": "CSc1ncnc(N2CCC3(CCCC3)C2)c1CC(=O)N1CCC[C@H](C(N)=O)C1",
+    "x6714a": "NC(=O)[C@H]1CCC(=O)N(c2cc3cnccc3c(F)c2F)C1",
+    "x7011a": "CC[C@H]1CCCN1c1ncnc(SC)c1CC(=O)N1CCC[C@H](C(N)=O)C1",
+    "x7101a": "CSc1ncnc(N2CCC3(CCCCC3)C2)c1CC(=O)N1CCC[C@H](C(N)=O)C1",
+}
 
 
 def latest_finetune_ckpt() -> Optional[Path]:
@@ -236,9 +293,14 @@ class Boltz2Predictor:
         return None
 
     def _save(self, lig_id, src_cif, metrics):
-        cif = self.out / f"{lig_id}.cif"
-        shutil.copy(src_cif, cif)
-        (self.out / f"{lig_id}.json").write_text(json.dumps(metrics))
+        # Write to a temporary name, then rename: a reader of the shared cache never sees a
+        # half-written file. The .json goes last, since _cached needs both files.
+        cif, meta = self.out / f"{lig_id}.cif", self.out / f"{lig_id}.json"
+        tmp = f".{os.getpid()}.tmp"
+        shutil.copy(src_cif, cif.with_name(cif.name + tmp))
+        os.replace(cif.with_name(cif.name + tmp), cif)
+        meta.with_name(meta.name + tmp).write_text(json.dumps(metrics))
+        os.replace(meta.with_name(meta.name + tmp), meta)
         return {"metrics": metrics, "cif": str(cif), "status": "ok"}
 
     def __call__(self, batch: pd.DataFrame) -> pd.DataFrame:
@@ -296,6 +358,7 @@ class OF3Predictor:
         self.ckpt_path, self.binary = ckpt_path, binary
         self.samples = diffusion_samples
         self.data_workers = data_workers
+        self.model = None   # an of3_live.OF3Model holding this checkpoint: predict in this process
         self.protein = read_first_sequence(self.t.path("fasta"))
         self.out = Path(out_dir) if out_dir else self.t.pred_root / key
         self.out.mkdir(parents=True, exist_ok=True)
@@ -332,9 +395,16 @@ class OF3Predictor:
 
         if todo:
             work = Path(tempfile.mkdtemp(prefix=f"{self.key}_"))
+            queries = {lig: self._query(smi) for lig, smi in todo}
+            proc, out, run_error = None, work / "out", None
+        if todo and self.model is not None:
+            try:
+                out = self.model.predict(queries)
+            except Exception as e:
+                run_error = e
+        elif todo:
             qjson = work / "query.json"
-            qjson.write_text(json.dumps(
-                {"seeds": [42], "queries": {lig: self._query(smi) for lig, smi in todo}}))
+            qjson.write_text(json.dumps({"seeds": [42], "queries": queries}))
             # OpenFold3 starts 10 data loader processes by default, each importing torch.
             # That oversubscribes an 8 vCPU node and stalls when predictors share a GPU.
             runner = work / "runner.yml"
@@ -347,9 +417,12 @@ class OF3Predictor:
             # refuses to unpickle by default. Both checkpoints are trusted downloads.
             env = {**os.environ, "TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD": "1"}
             proc = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        if todo:
             for lig_id, _ in todo:
                 try:
-                    samples = sorted((work / "out" / lig_id).glob(f"seed_*/{lig_id}_seed_*_sample_*_model.cif"))
+                    if run_error is not None:
+                        raise run_error
+                    samples = sorted((out / lig_id).glob(f"seed_*/{lig_id}_seed_*_sample_*_model.cif"))
                     if not samples:
                         raise FileNotFoundError("no OF3 output structure")
                     best, best_score, best_agg = samples[0], -np.inf, {}
@@ -362,13 +435,14 @@ class OF3Predictor:
                     rows[lig_id] = self._save(lig_id, best, metrics)
                 except Exception as e:
                     rows[lig_id] = {"status": "failed", "error": _err(e, proc)}
+                shutil.rmtree(out / lig_id, ignore_errors=True)
             shutil.rmtree(work, ignore_errors=True)
 
         return _attach(batch, rows, self.key, OF3_METRICS, time.time() - t0, len(todo))
 
 
 def _err(e, proc):
-    tail = proc.stderr[-600:] if proc.returncode else ""
+    tail = proc.stderr[-600:] if proc is not None and proc.returncode else ""
     return f"{type(e).__name__}: {e} | {tail}"[:900]
 
 
@@ -385,6 +459,45 @@ def _attach(batch, rows, key, metric_cols, seconds, n_predicted):
     out[f"{key}_batch_seconds"] = float(seconds)
     out[f"{key}_batch_predicted"] = int(n_predicted)
     return out
+
+
+def run_openfold_pose(ckpt_path, smiles, target="ev71-2a",
+                      binary="/opt/of3-legacy/bin/run_openfold", out_dir=None):
+    """Predict one ligand's pose in the target protein with OpenFold3, via the
+    `run_openfold predict` CLI. Returns the path to the predicted structure (CIF).
+    Repeated (checkpoint, SMILES) calls return the cached file. Used by the serving
+    notebook; the batch benchmark uses OF3Predictor."""
+    t = TARGETS[target]
+    os.environ.setdefault("OPENFOLD_CACHE", str(OF3_CACHE))
+    out = Path(out_dir or t.pred_root / "live")
+    out.mkdir(parents=True, exist_ok=True)
+    dest = out / (hashlib.sha1(f"{ckpt_path}|{smiles}".encode()).hexdigest()[:16] + ".cif")
+    if dest.exists():
+        return str(dest)
+
+    msa = t.pred_root / "msa_of3" / "cfdb_uniref30.a3m"
+    if not msa.exists():
+        msa.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(t.path("msa"), msa)
+    work = Path(tempfile.mkdtemp(prefix="pose_"))
+    query = {"seeds": [42], "queries": {"q": {"chains": [
+        {"molecule_type": "protein", "chain_ids": ["A"],
+         "sequence": read_first_sequence(t.path("fasta")), "main_msa_file_paths": [str(msa)]},
+        {"molecule_type": "ligand", "chain_ids": ["B"], "smiles": smiles}],
+        "use_paired_msas": False}}}
+    (work / "query.json").write_text(json.dumps(query))
+    (work / "runner.yml").write_text("data_module_args:\n  num_workers: 2\n")
+    subprocess.run(
+        [binary, "predict", "--query_json", str(work / "query.json"),
+         "--runner_yaml", str(work / "runner.yml"), "--output_dir", str(work / "out"),
+         "--use_msa_server", "False", "--use_templates", "False",
+         "--num_diffusion_samples", "1", "--num_model_seeds", "1",
+         "--inference_ckpt_path", str(ckpt_path)],
+        check=True, env={**os.environ, "TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD": "1"})
+    cif = next((work / "out" / "q").glob("seed_*/q_seed_*_sample_*_model.cif"))
+    dest.write_text(cif.read_text())
+    shutil.rmtree(work, ignore_errors=True)
+    return str(dest)
 
 
 # ---------------------------------------------------------------------------
