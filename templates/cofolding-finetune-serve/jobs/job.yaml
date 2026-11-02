@@ -2,7 +2,7 @@
 #
 #   anyscale job submit -f jobs/job.yaml --name setup    -- python scripts/setup_data.py
 #   anyscale job submit -f jobs/job.yaml --name ev71     -- python aiddd_pipeline.py --target ev71-2a \
-#       --models boltz2,openbind0 --max-gpus 8 --out /mnt/user_storage/aiddd/results/ev71-2a
+#       --models boltz2,openbind0 --max-gpus 8 --out /mnt/shared_storage/aiddd/results/ev71-2a
 #   anyscale job submit -f jobs/job.yaml --name finetune -- python finetune_ray_train.py \
 #       --base p2 --num-workers 8 --max-steps 1000 --checkpoint-every 100
 #
@@ -19,7 +19,7 @@ image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/co
 working_dir: .
 excludes: [image, docs, slides, .git, __pycache__]
 env_vars:
-  AIDDD_SHARED: /mnt/user_storage/aiddd   # shared by Workspaces and Jobs
+  AIDDD_SHARED: /mnt/shared_storage/aiddd   # shared by Workspaces and Jobs
   RAY_TRAIN_WORKER_GROUP_START_TIMEOUT_S: "900"   # Ray Train: allow time for GPU nodes to start
 compute_config:
   head_node:

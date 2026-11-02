@@ -9,7 +9,7 @@ The default is enough to open every notebook with USE_GPUS = False: all tables,
 figures and the before/after comparison read the scored results downloaded here.
 Weights are only needed to predict or fine-tune, which is USE_GPUS = True.
 
-Everything lands under $AIDDD_SHARED (default /mnt/user_storage/aiddd), which
+Everything lands under $AIDDD_SHARED (default /mnt/shared_storage/aiddd), which
 every node of a Workspace or Job can read. Each step is skipped if its output
 already exists, so the script is safe to rerun.
 
@@ -29,7 +29,7 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-SHARED = Path(os.environ.get("AIDDD_SHARED", "/mnt/user_storage/aiddd"))
+SHARED = Path(os.environ.get("AIDDD_SHARED", "/mnt/shared_storage/aiddd"))
 
 # A byte-identical mirror of the Zenodo release (CC0, so mirroring is permitted),
 # measured at 30 MB/s against Zenodo's 0.5 MB/s: 4 seconds instead of 4 minutes, which

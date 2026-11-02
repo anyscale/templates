@@ -10,7 +10,7 @@ image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/co
 working_dir: .
 excludes: [image, docs, slides, .git, .bin, __pycache__, "*.ipynb"]
 env_vars:
-  AIDDD_SHARED: /mnt/user_storage/aiddd
+  AIDDD_SHARED: /mnt/shared_storage/aiddd
 # Anyone with the URL can open the page and run GPU predictions (on at most 2 L4s).
 # Terminate the service when the session ends.
 query_auth_token_enabled: false
