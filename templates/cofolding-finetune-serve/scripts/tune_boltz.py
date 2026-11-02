@@ -33,7 +33,7 @@ from pathlib import Path as _Path
 sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))   # the repository root
 from ray import tune
 
-SHARED = Path(os.environ.get("AIDDD_SHARED", "/mnt/user_storage/aiddd"))
+SHARED = Path(os.environ.get("AIDDD_SHARED", "/mnt/shared_storage/aiddd"))
 
 
 def ligand_set(target: str, n: int, seed: int = 0) -> pd.DataFrame:

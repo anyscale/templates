@@ -14,7 +14,7 @@ image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/co
 working_dir: .
 excludes: [image, docs, slides, scripts, jobs, .git, .bin, __pycache__, "*.ipynb", "*.md", .ipynb_checkpoints]   # only what the app runs; edits elsewhere leave --in-place a pure reconfigure
 env_vars:
-  AIDDD_SHARED: /mnt/user_storage/aiddd
+  AIDDD_SHARED: /mnt/shared_storage/aiddd
 query_auth_token_enabled: false
 compute_config:
   head_node:
@@ -34,6 +34,6 @@ applications:
             base:
               version: p2-145k
               name: "Base model: OpenFold3 145k (general)"
-              checkpoint: /mnt/user_storage/aiddd/of3_cache/of3-p2-145k.pt
+              checkpoint: /mnt/shared_storage/aiddd/of3_cache/of3-p2-145k.pt
       - name: Viewer
         user_config: {route: base, step: "demo_1: base model only"}
