@@ -8,6 +8,8 @@ llm_config = LLMConfig(
         # Or unsloth/Meta-Llama-3.1-8B-Instruct for an ungated model
         model_source="meta-llama/Llama-3.1-8B-Instruct",
     ),
+    # Different cloud or model? Pick a GPU with enough VRAM:
+    #   ~24GB: L4, A10, A10G  |  ~48GB: L40S  |  ~80GB: H100, A100-80G
     accelerator_type="L4",
     deployment_config=dict(
         autoscaling_config=dict(

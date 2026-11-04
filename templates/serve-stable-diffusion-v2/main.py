@@ -57,7 +57,8 @@ class APIIngress:
         # Set the number of GPUs and CPUs required for each model replica.
         "num_gpus": 1,
         "num_cpus": 1,
-        # Set this to your desired GPU type (e.g. T4, A10G, L4, V100, A100-40G, A100-80G).
+        # Set this to a GPU type with enough VRAM for your model:
+        #   ~24GB: L4, A10, A10G  |  ~48GB: L40S  |  ~80GB: H100, A100-80G
         "accelerator_type": "L4",
         "runtime_env": RUNTIME_ENV,
     },
