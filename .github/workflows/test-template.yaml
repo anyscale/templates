@@ -4,6 +4,13 @@ on:
   issue_comment:
     types: [created]
 
+# issue_comment runs with repository secrets, so this workflow never executes
+# code from the PR. Scripts come from the default branch; the PR checkout is
+# read as data only (BUILD.yaml, so templates added in the PR validate).
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   trigger-template-test:
     if: >-
@@ -29,33 +36,51 @@ jobs:
           core.setOutput('branch', pr.data.head.ref);
           core.setOutput('sha', pr.data.head.sha);
 
-    - name: Checkout PR
+    - name: Checkout default branch (trusted scripts)
+      uses: actions/checkout@v4
+      with:
+        path: trusted
+        persist-credentials: false
+
+    - name: Checkout PR BUILD.yaml (data only, never executed)
       uses: actions/checkout@v4
       with:
         ref: ${{ steps.pr.outputs.sha }}
+        path: pr
+        persist-credentials: false
+        sparse-checkout: BUILD.yaml
+        sparse-checkout-cone-mode: false
 
     - name: Parse and validate template names
       id: parse
+      working-directory: pr
       env:
         COMMENT_BODY: ${{ github.event.comment.body }}
-      run: bash scripts/test-pipeline/parse-test-template-comment.sh
+      run: bash "$GITHUB_WORKSPACE/trusted/scripts/test-pipeline/parse-test-template-comment.sh"
 
     - name: Trigger Buildkite build
       env:
         BUILDKITE_API_TOKEN: ${{ secrets.BUILDKITE_API_TOKEN }}
         BUILDKITE_ORG: ${{ secrets.BUILDKITE_ORG }}
         BUILDKITE_PIPELINE: ${{ secrets.BUILDKITE_TEMPLATE_TEST_PIPELINE }}
+        ANYSCALE_CLI_TOKEN_SECRET_NAME: ${{ secrets.ANYSCALE_CLI_TOKEN_SECRET_NAME }}
+        # Pass PR-derived values through env, not ${{ }} in the script body,
+        # so a crafted branch name can't inject shell.
+        PR_BRANCH: ${{ steps.pr.outputs.branch }}
+        PR_SHA: ${{ steps.pr.outputs.sha }}
+        PR_NUMBER: ${{ github.event.issue.number }}
+        TEMPLATES: ${{ steps.parse.outputs.templates }}
       run: |
         curl -sfS -o /dev/null \
           -X POST \
           -H "Authorization: Bearer $BUILDKITE_API_TOKEN" \
           -H "Content-Type: application/json" \
           -d "$(jq -n \
-            --arg branch "${{ steps.pr.outputs.branch }}" \
-            --arg sha "${{ steps.pr.outputs.sha }}" \
-            --arg templates "${{ steps.parse.outputs.templates }}" \
-            --arg msg "Test templates: ${{ steps.parse.outputs.templates }} (PR #${{ github.event.issue.number }})" \
-            --arg secret "${{ secrets.ANYSCALE_CLI_TOKEN_SECRET_NAME }}" \
+            --arg branch "$PR_BRANCH" \
+            --arg sha "$PR_SHA" \
+            --arg templates "$TEMPLATES" \
+            --arg msg "Test templates: $TEMPLATES (PR #$PR_NUMBER)" \
+            --arg secret "$ANYSCALE_CLI_TOKEN_SECRET_NAME" \
             '{
               message: $msg,
               commit: $sha,
