@@ -182,7 +182,6 @@ ci/bin
 /.idea/e2e_timeseries.iml
 /.idea/LanguageServersSettings.xml
 /.idea/modules.xml
-/.idea/nf-ray.iml
 /.idea/vcs.xml
 /.idea/vla.iml
 /.idea/wdl-on-ray.iml
