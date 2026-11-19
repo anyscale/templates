@@ -1,0 +1,12 @@
+head_node_type:
+  name: head
+  instance_type: m5.2xlarge
+
+worker_node_types:
+  - instance_type: g6.2xlarge
+    name: '1xL4:8CPU-32GB'
+    min_workers: 2
+    max_workers: 2
+
+flags:
+  allow-cross-zone-autoscaling: true
