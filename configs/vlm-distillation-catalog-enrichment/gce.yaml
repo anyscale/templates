@@ -1,0 +1,15 @@
+# Head node (CPU only)
+head_node_type:
+  name: head
+  instance_type: n2-standard-8
+  resources:
+    cpu: 0
+    gpu: 0
+
+# Worker nodes with L4 GPUs
+worker_node_types:
+  - name: gpu-worker-4xL4
+    instance_type: g2-standard-48  # 4x L4 GPUs
+    min_workers: 0
+    max_workers: 2
+    use_spot: false
