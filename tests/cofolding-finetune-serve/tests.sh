@@ -3,7 +3,7 @@ set -euxo pipefail
 
 # CPU path only: downloads the scored results (~500 MB, no model weights) and checks
 # they reproduce the published accuracy figures and training loss curve.
-# Data goes to a fresh empty dir, never the shared /mnt/user_storage/aiddd.
+# Data goes to a fresh empty dir, never the shared /mnt/shared_storage/aiddd.
 export AIDDD_SHARED="$(mktemp -d)"
 
 # Run here under set -e as well, because a failing `!python` cell does not fail papermill.

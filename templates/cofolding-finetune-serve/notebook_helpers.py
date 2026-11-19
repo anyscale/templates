@@ -15,7 +15,7 @@ from pathlib import Path
 import pandas as pd
 from IPython.display import HTML, display
 
-from aiddd_pipeline import SHARED, STAGES, TARGETS, pose_in_crystal_frame
+from aiddd_pipeline import SHARED, STAGES, TARGETS, pose_in_crystal_frame, relocate_paths
 
 USER = os.environ.get("ANYSCALE_USERNAME") or os.environ.get("USER") or "user"
 # Everything you write goes here. AIDDD_MINE keeps it off SHARED when SHARED is
@@ -302,7 +302,7 @@ def show_prediction(cif_text, label="", height=380):
 # ---------------------------------------------------------------------------
 def _parquet(path):
     files = sorted(Path(path).glob("*.parquet"))
-    return pd.concat([pd.read_parquet(f) for f in files], ignore_index=True) if files else None
+    return relocate_paths(pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)) if files else None
 
 
 def ours_run():

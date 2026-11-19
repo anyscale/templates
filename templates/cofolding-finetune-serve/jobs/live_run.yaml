@@ -43,7 +43,7 @@ image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/co
 working_dir: .
 excludes: [image, docs, slides, .git, __pycache__, "*.ipynb"]
 env_vars:
-  AIDDD_SHARED: /mnt/user_storage/aiddd
+  AIDDD_SHARED: /mnt/shared_storage/aiddd
 compute_config:
   head_node:
     instance_type: m5.2xlarge
@@ -59,7 +59,7 @@ compute_config:
       max_nodes: 4
   enable_cross_zone_scaling: true
 entrypoint: >-
-  RUN=/mnt/user_storage/aiddd/runs/demo/$(date +%Y%m%d-%H%M%S) &&
+  RUN=/mnt/shared_storage/aiddd/runs/demo/$(date +%Y%m%d-%H%M%S) &&
   python aiddd_pipeline.py --target ev71-2a --stage "late follow-on"
   --models boltz2,openbind0 --gpu-split boltz2=14,openbind0=6
   --boltz-per-gpu 2 --of3-per-gpu 2 --cpus-per-gpu-node 16

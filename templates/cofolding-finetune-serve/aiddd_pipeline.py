@@ -38,7 +38,7 @@ import numpy as np
 import pandas as pd
 import ray
 
-SHARED = Path(os.environ.get("AIDDD_SHARED", "/mnt/user_storage/aiddd"))
+SHARED = Path(os.environ.get("AIDDD_SHARED", "/mnt/shared_storage/aiddd"))
 BOLTZ_CACHE = SHARED / "boltz_cache"
 OF3_CACHE = SHARED / "of3_cache"
 OF3_OB_CKPT = OF3_CACHE / "of3-ob-2025-06-30-174k.pt"   # OpenBind-0
@@ -141,15 +141,15 @@ LIVE_MODELS = {
         "checkpoint": str(OF3_P2_CKPT),
         "pose_cache": str(SHARED / "predictions" / "live_of3ft_p2-145k"),
     },
-    "ev71-ours": {
+    "ev71-v1": {
         "version": "ev71-v1",
-        "name": "EV-A71 specialist: fine-tuned with Ray Train (8 L4s, 1,000 steps)",
+        "name": "EV-A71 specialist v1: fine-tuned with Ray Train (8 L4s, 1,000 steps)",
         "checkpoint": str(OF3_OURS_CKPT),
         "pose_cache": str(SHARED / "predictions" / "live_of3ft_ev71-v1"),
     },
-    "ev71-openbind": {
+    "ev71-v2": {
         "version": "ev71-v2",
-        "name": "EV-A71 specialist: OpenBind fine-tune (released)",
+        "name": "EV-A71 specialist v2: OpenBind fine-tune (released)",
         "checkpoint": str(OF3_FT_CKPT),
         "pose_cache": str(SHARED / "predictions" / "live_of3ft_ev71-v2"),
     },

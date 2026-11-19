@@ -45,7 +45,7 @@ from aiddd_pipeline import (
 )
 from of3_live import LiveModel, cached_answer, node_zone, predict_one
 
-SHARED = Path(os.environ.get("AIDDD_SHARED", "/mnt/user_storage/aiddd"))
+SHARED = Path(os.environ.get("AIDDD_SHARED", "/mnt/shared_storage/aiddd"))
 RESULTS = Path(os.environ.get("AIDDD_RESULTS", SHARED / "results" / "ev71-2a"))
 STRUCTURES = SHARED / "raw" / "OpenBind_EV-A71_2A" / "structures"
 MODELS = {
@@ -484,7 +484,7 @@ class OF3Pool:
         "target_ongoing_requests": 16,
     },
     max_ongoing_requests=100,  # requests wait here on GPU calls; Ray Serve's default is 5
-    user_config={"route": "ev71-openbind", "allow_fresh": False},
+    user_config={"route": "ev71-v2", "allow_fresh": False},
 )
 @serve.ingress(api)
 class Viewer:
@@ -707,7 +707,7 @@ def build_app(accelerator: str = "L4"):
     """The Viewer composed with the model deployments, on the given GPU type. Each GPU deployment
     asks for half a GPU and reserves its host memory, so on the Service's 2 single-GPU nodes
     OF3Pool and Boltz-2 each have a node to themselves. Default registry:
-    aiddd_pipeline.LIVE_MODELS; default route: ev71-openbind."""
+    aiddd_pipeline.LIVE_MODELS; default route: ev71-v2."""
     return Viewer.bind(
         Boltz2Live.options(
             ray_actor_options={

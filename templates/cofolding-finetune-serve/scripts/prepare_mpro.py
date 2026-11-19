@@ -40,7 +40,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-SHARED = Path(os.environ.get("AIDDD_SHARED", "/mnt/user_storage/aiddd"))
+SHARED = Path(os.environ.get("AIDDD_SHARED", "/mnt/shared_storage/aiddd"))
 FRAGALYSIS = "https://fragalysis.diamond.ac.uk/api/site_observations/?format=json&target=41&limit=5000"
 POTENCY = ("https://huggingface.co/datasets/openadmet/ASAP_Polaris_OpenADMET_challenge/"
            "resolve/main/Potency.csv")
