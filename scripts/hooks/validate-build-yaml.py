@@ -254,19 +254,20 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
 
         # Custom compute config dirs must be named after the entry (the
         # `name` field is the source of truth across templates/, tests/,
-        # and configs/). Shared `configs/basic-single-node/` is exempt.
+        # and configs/). The shared dirs in SHARED_CONFIG_DIRS are exempt.
         gcp_parent = parents["GCP"]
         cfg_dir_basename = gcp_parent.name
         if (
             gcp_parent.parts and gcp_parent.parts[0] == "configs"
             and same_dir
-            and cfg_dir_basename != "basic-single-node"
+            and cfg_dir_basename not in SHARED_CONFIG_DIRS
             and cfg_dir_basename != e.name
         ):
+            shared = ", ".join(f"configs/{d}/" for d in sorted(SHARED_CONFIG_DIRS))
             errors.append(
                 f"{e.name}.compute_config: dir basename {cfg_dir_basename!r} "
                 f"must equal name {e.name!r} (expected configs/{e.name}/) — "
-                f"or use the shared configs/basic-single-node/"
+                f"or use a shared config dir ({shared})"
             )
 
         if not (REPO_ROOT / e.dir).is_dir():
@@ -284,10 +285,15 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
 
 # ----------------------------------- redundant compute configs (warning)
 
-BASIC_CONFIGS = (
-    "configs/basic-single-node/aws.yaml",
-    "configs/basic-single-node/gce.yaml",
-    "configs/basic-single-node/k8s.yaml",
+# Config dirs shared by many entries instead of being named after one.
+# `basic-single-node-gpu` mirrors `basic-single-node` on AWS/GCP and adds a
+# GPU worker on K8s, where declarative configs cannot auto-select one.
+SHARED_CONFIG_DIRS = frozenset({"basic-single-node", "basic-single-node-gpu"})
+
+BASIC_CONFIGS = tuple(
+    f"configs/{d}/{f}"
+    for d in sorted(SHARED_CONFIG_DIRS)
+    for f in ("aws.yaml", "gce.yaml", "k8s.yaml")
 )
 
 
