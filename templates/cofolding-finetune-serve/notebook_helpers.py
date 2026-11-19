@@ -15,7 +15,7 @@ from pathlib import Path
 import pandas as pd
 from IPython.display import HTML, display
 
-from aiddd_pipeline import SHARED, STAGES, TARGETS, pose_in_crystal_frame
+from aiddd_pipeline import SHARED, STAGES, TARGETS, pose_in_crystal_frame, relocate_paths
 
 USER = os.environ.get("ANYSCALE_USERNAME") or os.environ.get("USER") or "user"
 # Everything you write goes here. AIDDD_MINE keeps it off SHARED when SHARED is
@@ -318,9 +318,10 @@ def load_results(target):
     """Scored binding events from the full benchmark, on the curated set (valid crystal
     reference, no suspected crystallographic artefact), one row per crystal complex.
     Adds the 145k base (of3p2_*) and our fine-tune (of3ray_*) where they have been scored."""
-    df = _parquet(SHARED / "results" / target)
+    df = relocate_paths(_parquet(SHARED / "results" / target))
     for path, key in ((BASE_RESULTS / target, "of3p2"), (SHARED / f"results_{ours_run()}" / target, "of3ray")):
         extra = _parquet(path)
+        extra = relocate_paths(extra) if extra is not None else None
         if extra is not None and f"{key}_lig_rmsd" in extra:
             cols = ["complex_name"] + [c for c in extra.columns if c.startswith(f"{key}_")]
             df = df.drop(columns=[c for c in cols[1:] if c in df]).merge(extra[cols], on="complex_name", how="left")
